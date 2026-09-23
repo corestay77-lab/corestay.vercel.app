@@ -261,7 +261,7 @@ export default function ExistingAssessmentPage() {
     }));
 
     const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);
-    const status = result.overall >= 80 ? "HEALTHY / OPTIMAL" : result.overall >= 60 ? "NEEDS IMPROVEMENT" : result.overall >= 40 ? "HIGH RISK" : "CRITICAL";
+    const status = result.overall >= 80 ? "READY" : result.overall >= 60 ? "NEED IMPROVEMENT" : result.overall >= 40 ? "HIGH RISK" : "CRITICAL";
     const risk = result.overall >= 80 ? "LOW" : result.overall >= 60 ? "MEDIUM" : "HIGH";
     const diagnosis = result.overall >= 80
       ? "Hotel memiliki kondisi bisnis yang relatif sehat dengan fondasi yang sudah berjalan baik. Fokus berikutnya adalah menjaga konsistensi dan optimasi kinerja."
@@ -285,6 +285,7 @@ export default function ExistingAssessmentPage() {
         diagnosis,
         areas,
         priorities,
+        recommendation: "CoreStay Advisory dapat membantu owner melakukan business diagnostic, revenue improvement, pricing strategy, SOP optimization, manpower planning, sales development, financial control dan management KPI untuk meningkatkan performa hotel.",
       }),
     }).catch((err) => {
       console.error("Gagal mengirim notifikasi email assessment:", err);

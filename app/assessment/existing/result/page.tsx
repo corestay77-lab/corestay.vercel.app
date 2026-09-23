@@ -114,7 +114,8 @@ export default function ExistingResultPage() {
     .sort((a, b) => a.score - b.score)
     .slice(0, 3);
 
-  const overallStyle = getScoreStyle(result.overall);
+  const overallScore = Math.min(100, Math.max(0, Number(result.overall) || 0));
+  const overallStyle = getScoreStyle(overallScore);
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">
@@ -151,7 +152,7 @@ export default function ExistingResultPage() {
             </p>
 
             <p className="mt-2 text-6xl font-bold text-cyan-400">
-              {result.overall}%
+              {overallScore}%
             </p>
 
             <p className="mt-2 text-sm text-slate-400">
@@ -190,12 +191,12 @@ export default function ExistingResultPage() {
               Analisis Kesehatan Hotel
             </h2>
             <p className="mt-2 text-sm text-slate-500">
-              Analisis kesehatan hotel berdasarkan empat area strategis.
+              Analisis kesehatan hotel berdasarkan enam area utama bisnis.
             </p>
           </div>
 
           <div className="grid gap-4 p-7 md:grid-cols-2">
-            {areaResults.slice(0,4).map((area) => {
+            {areaResults.map((area) => {
               const style = getScoreStyle(area.score);
 
               return (

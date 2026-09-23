@@ -1,4 +1,4 @@
-﻿"use client";
+"use client";
 
 import Image from "next/image";
 
@@ -19,10 +19,7 @@ export default function PreOpeningLeadPage() {
 
   const [error, setError] = useState("");
 
-  function update(
-    field: keyof typeof form,
-    value: string
-  ) {
+  function update(field: keyof typeof form, value: string) {
     setForm((previous) => ({
       ...previous,
       [field]: value,
@@ -32,24 +29,13 @@ export default function PreOpeningLeadPage() {
   function submit(event: FormEvent) {
     event.preventDefault();
 
-    if (
-      !form.nama ||
-      !form.hotel ||
-      !form.kota ||
-      !form.kamar ||
-      !form.whatsapp
-    ) {
+    if (!form.nama || !form.hotel || !form.kota || !form.kamar || !form.whatsapp) {
       setError("Mohon lengkapi data yang wajib diisi.");
       return;
     }
 
-    sessionStorage.setItem(
-      "corestay_preopening_lead",
-      JSON.stringify(form)
-    );
-
+    sessionStorage.setItem("corestay_preopening_lead", JSON.stringify(form));
     notifyAssessmentCompleted(form);
-
     router.push("/assessment/pre-opening/result");
   }
 
@@ -63,19 +49,34 @@ export default function PreOpeningLeadPage() {
         status?: string;
         diagnosis?: string;
         recommendation?: string;
-        areaResults?: { title: string; score: number; level?: string; recommendation?: string; diagnosis?: string }[];
+        areaResults?: {
+          title: string;
+          score: number;
+          level?: string;
+          recommendation?: string;
+          diagnosis?: string;
+        }[];
+        priorityActions?: unknown[];
       };
 
       const areas = (result.areaResults || []).map((item) => ({
         title: item.title,
         score: item.score,
         label: item.level,
-        recommendation: item.recommendation,\n        diagnosis: item.diagnosis || (item.score >= 80 ? "Area memiliki readiness yang baik dan perlu dipertahankan." : item.score >= 60 ? "Area sudah mulai siap, tetapi masih terdapat gap yang perlu diselesaikan sebelum opening." : "Area memiliki gap readiness yang signifikan dan perlu menjadi prioritas perbaikan sebelum opening."),
+        recommendation: item.recommendation,
+        diagnosis:
+          item.diagnosis ||
+          (item.score >= 80
+            ? "Area memiliki readiness yang baik dan perlu dipertahankan."
+            : item.score >= 60
+            ? "Area sudah mulai siap, tetapi masih terdapat gap yang perlu diselesaikan sebelum opening."
+            : "Area memiliki gap readiness yang signifikan dan perlu menjadi prioritas perbaikan sebelum opening."),
       }));
 
-      const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);
+      const priorities = [...areas]
+        .sort((a, b) => a.score - b.score)
+        .slice(0, 3);
 
-      // Fire-and-forget: jangan blok navigasi user kalau email gagal terkirim.
       fetch("/api/notify-assessment", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -86,11 +87,14 @@ export default function PreOpeningLeadPage() {
           overall: result.overall,
           status: result.status,
           diagnosis: result.diagnosis,
-          recommendation: result.recommendation || "Hasil assessment menunjukkan area yang perlu diprioritaskan sebelum hotel memasuki fase soft opening. Fokus utama diarahkan pada penyelesaian gap yang berdampak pada revenue readiness, operational readiness, people readiness, distribution dan financial control. CoreStay Advisory dapat membantu owner melakukan pre-opening readiness, penyusunan sistem operasional, SOP, manpower planning, pricing & revenue strategy, OTA setup, sales preparation dan monitoring opening readiness sampai hotel siap beroperasi.",
+          recommendation:
+            result.recommendation ||
+            "Hasil assessment menunjukkan area yang perlu diprioritaskan sebelum hotel memasuki fase soft opening. Fokus utama diarahkan pada penyelesaian gap yang berdampak pada revenue readiness, operational readiness, people readiness, distribution dan financial control. CoreStay Advisory dapat membantu owner melakukan pre-opening readiness, penyusunan sistem operasional, SOP, manpower planning, pricing & revenue strategy, OTA setup, sales preparation dan monitoring opening readiness sampai hotel siap beroperasi.",
           areas,
           priorities,
-        priorityActions: Array.isArray((result as any).priorityActions) ? (result as any).priorityActions : [],
-        recommendation: "Hasil assessment menunjukkan area yang perlu diprioritaskan sebelum hotel memasuki fase soft opening. Fokus utama diarahkan pada penyelesaian gap yang berdampak pada revenue readiness, operational readiness, people readiness, distribution dan financial control. CoreStay Advisory dapat membantu owner melakukan pre-opening readiness, penyusunan sistem operasional, SOP, manpower planning, pricing & revenue strategy, OTA setup, sales preparation dan monitoring opening readiness sampai hotel siap beroperasi.",
+          priorityActions: Array.isArray(result.priorityActions)
+            ? result.priorityActions
+            : [],
           contact: {
             nama: contact.nama,
             whatsapp: contact.whatsapp,
@@ -109,8 +113,14 @@ export default function PreOpeningLeadPage() {
   return (
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
-
-        <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-auto w-[150px] object-contain" />
+        <Image
+          src="/logo.png"
+          alt="CoreStay Advisory"
+          width={180}
+          height={55}
+          priority
+          className="h-auto w-[150px] object-contain"
+        />
 
         <div className="mt-12">
           <p className="text-sm uppercase tracking-[0.25em] text-cyan-400">
@@ -122,15 +132,13 @@ export default function PreOpeningLeadPage() {
           </h1>
 
           <p className="mt-5 text-lg leading-8 text-slate-400">
-            Masukkan data hotel untuk mendapatkan diagnosis,
-            prioritas risiko dan rekomendasi pre-opening yang lebih spesifik.
+            Masukkan data hotel untuk mendapatkan diagnosis, prioritas risiko
+            dan rekomendasi pre-opening yang lebih spesifik.
           </p>
         </div>
 
         <form onSubmit={submit} className="mt-10 space-y-6">
-
           <div className="grid gap-6 md:grid-cols-2">
-
             <input
               value={form.nama}
               onChange={(e) => update("nama", e.target.value)}
@@ -160,7 +168,6 @@ export default function PreOpeningLeadPage() {
               placeholder="Jumlah Kamar *"
               className="w-full rounded-xl border border-white/10 bg-white/[0.05] px-4 py-4 outline-none focus:border-cyan-400"
             />
-
           </div>
 
           <input
@@ -191,12 +198,8 @@ export default function PreOpeningLeadPage() {
           >
             Lihat Pre-opening Report
           </button>
-
         </form>
-
       </div>
     </main>
   );
 }
-
-

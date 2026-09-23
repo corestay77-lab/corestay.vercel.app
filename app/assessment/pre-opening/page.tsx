@@ -410,10 +410,6 @@ export default function PreOpeningAssessmentPage() {
                 <div className="font-medium">
                   {option}
                 </div>
-
-                <div className="mt-1 text-xs text-slate-500">
-                  Nilai: {index * 25}
-                </div>
               </button>
             ))}
           </div>

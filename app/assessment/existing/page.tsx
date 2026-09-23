@@ -172,6 +172,8 @@ const questions: Question[] = [
   },
 ];
 
+const ASSESSMENT_VERSION = "v2.1 — AUTO NEXT ACTIVE";
+
 const categories = [
   "revenue",
   "sales",
@@ -440,9 +442,14 @@ export default function ExistingAssessmentPage() {
           <div className="flex items-center justify-between">
             <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-auto w-[150px] object-contain" />
 
-            <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">
-              Hotel Existing
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">
+                Hotel Existing
+              </span>
+              <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[10px] font-semibold text-emerald-300">
+                {ASSESSMENT_VERSION}
+              </span>
+            </div>
           </div>
 
           <h1 className="mt-8 text-4xl font-bold md:text-5xl">
@@ -483,6 +490,9 @@ export default function ExistingAssessmentPage() {
           </h2>
 
           <div className="mt-7 space-y-3">
+            <div className="mb-4 rounded-xl border border-emerald-400/20 bg-emerald-400/5 px-4 py-3 text-xs text-emerald-300">
+              ✓ Auto Next aktif — pilih satu jawaban untuk langsung lanjut ke pertanyaan berikutnya.
+            </div>
             {question.options.map((option, index) => (
               <button
                 key={`${option.label}-${index}`}
@@ -524,7 +534,7 @@ export default function ExistingAssessmentPage() {
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-500">
-          Jawab berdasarkan kondisi hotel Anda saat ini.
+          Jawab berdasarkan kondisi hotel Anda saat ini. {ASSESSMENT_VERSION}
         </p>
 
       </div>

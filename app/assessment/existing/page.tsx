@@ -252,6 +252,39 @@ export default function ExistingAssessmentPage() {
           : "Hotel membutuhkan corrective action yang terstruktur pada area bisnis prioritas.",
       recommendation:
         "Hasil assessment menunjukkan area bisnis yang perlu diprioritaskan untuk meningkatkan kesehatan dan performa hotel. Fokus utama diarahkan pada perbaikan area dengan skor terendah, revenue improvement, pricing strategy, operational efficiency, people readiness, sales development, financial control dan management KPI. CoreStay Advisory dapat membantu owner menyusun corrective action, KPI dan monitoring implementasi sampai perbaikan kinerja berjalan terukur.",
+      areaResults: categories.map((category) => {
+        const score = categoryScores[category];
+        return {
+          category,
+          title:
+            {
+              revenue: "Revenue & Pricing",
+              sales: "Sales & Marketing",
+              operasional: "Operasional",
+              sdm: "SDM",
+              financial: "Financial",
+              management: "Management & Strategy",
+            }[category],
+          score,
+          level: score >= 80 ? "READY" : score >= 60 ? "NEED IMPROVEMENT" : score >= 40 ? "HIGH RISK" : "CRITICAL",
+          diagnosis:
+            score >= 80
+              ? "Area berjalan baik dan perlu dipertahankan melalui monitoring KPI."
+              : score >= 60
+              ? "Area cukup baik tetapi masih memiliki gap performa yang perlu diperbaiki."
+              : score >= 40
+              ? "Area memiliki gap performa yang membutuhkan corrective action."
+              : "Area berada pada kondisi kritis dan membutuhkan perbaikan segera.",
+          recommendation:
+            score >= 80
+              ? "Pertahankan performa dan lakukan continuous improvement berbasis KPI."
+              : score >= 60
+              ? "Identifikasi performance gap, tetapkan corrective action dan monitor KPI secara rutin."
+              : score >= 40
+              ? "Lakukan corrective action terstruktur dan monitoring mingguan pada area ini."
+              : "Jadikan area ini prioritas perbaikan segera dengan action plan, PIC dan target yang terukur.",
+        };
+      }),
     };
   }
 

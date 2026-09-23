@@ -365,7 +365,7 @@ export default function PreOpeningAssessmentPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto max-w-4xl px-6 py-10">
 
-        <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-auto w-[150px] object-contain" />
+        <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
 
         <div className="mt-8 flex items-center justify-between">
           <div>

@@ -114,7 +114,7 @@ export default function PreOpeningLeadPage() {
     <main className="min-h-screen bg-slate-950 text-white">
       <div className="mx-auto flex min-h-screen max-w-3xl flex-col px-6 py-10">
         <Image
-          src="/logo.png"
+          src="/logo-corestay.png"
           alt="CoreStay Advisory"
           width={180}
           height={55}

@@ -71,7 +71,7 @@ export default function PreOpeningLeadPage() {
         label: item.level,
       }));
 
-      const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 5);
+      const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);
 
       // Fire-and-forget: jangan blok navigasi user kalau email gagal terkirim.
       fetch("/api/notify-assessment", {

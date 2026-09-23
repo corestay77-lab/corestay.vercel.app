@@ -119,7 +119,7 @@ export default function PreOpeningLeadPage() {
           width={180}
           height={55}
           priority
-          className="h-auto w-[150px] object-contain"
+          className="h-[46px] w-[151px] object-contain"
         />
 
         <div className="mt-12">

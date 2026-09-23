@@ -69,6 +69,7 @@ export default function PreOpeningLeadPage() {
         title: item.title,
         score: item.score,
         label: item.level,
+        recommendation: item.recommendation,
       }));
 
       const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);
@@ -86,6 +87,8 @@ export default function PreOpeningLeadPage() {
           diagnosis: result.diagnosis,
           areas,
           priorities,
+        priorityActions: Array.isArray((result as any).priorityActions) ? (result as any).priorityActions : [],
+        recommendation: "Hasil assessment menunjukkan area yang perlu diprioritaskan sebelum hotel memasuki fase soft opening. Fokus utama diarahkan pada penyelesaian gap yang berdampak pada revenue readiness, operational readiness, people readiness, distribution dan financial control. CoreStay Advisory dapat membantu owner melakukan pre-opening readiness, penyusunan sistem operasional, SOP, manpower planning, pricing & revenue strategy, OTA setup, sales preparation dan monitoring opening readiness sampai hotel siap beroperasi.",
           contact: {
             nama: contact.nama,
             whatsapp: contact.whatsapp,

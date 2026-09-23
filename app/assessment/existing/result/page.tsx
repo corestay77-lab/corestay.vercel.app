@@ -97,7 +97,7 @@ export default function ExistingResultPage() {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-20 text-center text-white">
         <Image
-          src="/logo.png"
+          src="/logo-corestay.png"
           alt="CoreStay Advisory"
           width={180}
           height={55}
@@ -176,7 +176,7 @@ export default function ExistingResultPage() {
 
         <header className="border-b border-white/10 pb-8">
           <Image
-            src="/logo.png"
+            src="/logo-corestay.png"
             alt="CoreStay Advisory"
             width={180}
             height={55}

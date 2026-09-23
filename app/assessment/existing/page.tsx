@@ -497,7 +497,7 @@ export default function ExistingAssessmentPage() {
         <div className="mx-auto max-w-4xl px-6 py-10">
           <header>
             <div className="flex items-center justify-between">
-              <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
+              <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
               <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">Hotel Existing</span>
             </div>
             <h1 className="mt-8 text-3xl font-bold md:text-4xl">Identitas Pengisi Assessment</h1>
@@ -540,7 +540,7 @@ export default function ExistingAssessmentPage() {
 
         <header>
           <div className="flex items-center justify-between">
-            <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
+            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
 
             <div className="flex items-center gap-2">
               <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">

@@ -5,6 +5,7 @@ type AreaScore = {
   title: string;
   score: number;
   label?: string;
+  diagnosis?: string;
   recommendation?: string;
 };
 

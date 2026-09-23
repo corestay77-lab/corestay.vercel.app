@@ -186,8 +186,10 @@ export default function ExistingAssessmentPage() {
 
   const [current, setCurrent] = useState(0);
   const [answers, setAnswers] = useState<number[]>([]);
+  const [respondentName, setRespondentName] = useState("");
   const [hotelName, setHotelName] = useState("");
-  const [city, setCity] = useState("");
+  const [phone, setPhone] = useState("");
+  const [showIdentity, setShowIdentity] = useState(false);
 
   const question = questions[current];
   const selectedAnswer = answers[current];
@@ -202,7 +204,13 @@ export default function ExistingAssessmentPage() {
       return;
     }
 
-    const result = calculateResult(updated);
+    setShowIdentity(true);
+  }
+
+  function submitAssessment() {
+    if (!respondentName.trim() || !hotelName.trim() || !phone.trim()) return;
+
+    const result = calculateResult(answers);
 
     sessionStorage.setItem(
       "corestay_assessment",
@@ -247,8 +255,9 @@ export default function ExistingAssessmentPage() {
     );
 
     return {
+      respondentName,
       hotelName,
-      city,
+      phone,
       hotelType: "existing",
       overall,
       revenue: categoryScores.revenue,
@@ -361,7 +370,8 @@ export default function ExistingAssessmentPage() {
       body: JSON.stringify({
         hotelType: "existing",
         hotelName: result.hotelName,
-        city: result.city,
+        respondentName: result.respondentName,
+        phone: result.phone,
         overall: result.overall,
         status,
         risk,
@@ -378,6 +388,49 @@ export default function ExistingAssessmentPage() {
   const progress = Math.round(
     ((current + 1) / questions.length) * 100
   );
+
+  if (showIdentity) {
+    return (
+      <main className="min-h-screen bg-slate-950 text-white">
+        <div className="mx-auto max-w-4xl px-6 py-10">
+          <header>
+            <div className="flex items-center justify-between">
+              <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-auto w-[150px] object-contain" />
+              <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">Hotel Existing</span>
+            </div>
+            <h1 className="mt-8 text-3xl font-bold md:text-4xl">Identitas Pengisi Assessment</h1>
+            <p className="mt-3 text-slate-400">Lengkapi data berikut sebelum melihat hasil assessment.</p>
+          </header>
+
+          <section className="mt-8 rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-2xl">
+            <div className="space-y-5">
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">Nama</label>
+                <input type="text" value={respondentName} onChange={(e) => setRespondentName(e.target.value)} placeholder="Nama pengisi assessment" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">Nama Hotel</label>
+                <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="Nama hotel" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400" />
+              </div>
+              <div>
+                <label className="mb-2 block text-sm font-semibold text-slate-300">No. Tlp</label>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400" />
+              </div>
+            </div>
+
+            <div className="mt-8 flex items-center justify-between gap-4">
+              <button type="button" onClick={() => setShowIdentity(false)} className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-cyan-400 hover:text-cyan-400">
+                ← Kembali
+              </button>
+              <button type="button" onClick={submitAssessment} disabled={!respondentName.trim() || !hotelName.trim() || !phone.trim()} className={"rounded-xl px-6 py-3 text-sm font-semibold transition " + ((!respondentName.trim() || !hotelName.trim() || !phone.trim()) ? "cursor-not-allowed bg-slate-800 text-slate-600" : "bg-cyan-400 text-slate-950 hover:bg-cyan-300")}>
+                Lihat Hasil →
+              </button>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   return (
     <main className="min-h-screen bg-slate-950 text-white">

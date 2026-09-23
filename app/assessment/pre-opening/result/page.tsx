@@ -79,7 +79,7 @@ export default function PreOpeningResultPage() {
       <div className="mx-auto max-w-6xl px-6 py-10">
 
         <header className="border-b border-white/10 pb-8">
-          <Image src="/corestay-advisory-result.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-auto w-[150px] object-contain" />
+          <Image src="/logo.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
 
           <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-cyan-400">
             Pre-opening Readiness Report

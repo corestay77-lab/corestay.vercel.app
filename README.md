@@ -20,29 +20,6 @@ You can start editing the page by modifying `app/page.tsx`. The page auto-update
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
-## Email Notifikasi Otomatis (Live)
-
-Setiap kali user menyelesaikan assessment (baik alur *existing hotel* maupun
-*pre-opening*) dan submit form lead, rekap hasilnya otomatis dikirim via email
-ke tim CoreStay lewat [Resend](https://resend.com).
-
-Setup:
-
-1. Copy `.env.example` menjadi `.env.local`.
-2. Isi `RESEND_API_KEY` (dari dashboard Resend) dan `ASSESSMENT_NOTIFY_EMAIL`
-   (alamat email tim/admin yang menerima notifikasi lead baru).
-3. (Opsional, untuk produksi) Verifikasi domain pengirim di Resend, lalu isi
-   `ASSESSMENT_FROM_EMAIL`. Tanpa verifikasi domain, pengiriman memakai alamat
-   default `onboarding@resend.dev` yang hanya bisa mengirim ke email pemilik
-   akun Resend.
-
-Logic pengiriman ada di `app/api/notify-assessment/route.ts` dan dipanggil dari
-`app/lead/page.tsx` (existing hotel) serta
-`app/assessment/pre-opening/lead/page.tsx` (pre-opening) tepat setelah data
-lead berhasil disimpan/divalidasi. Kegagalan pengiriman email tidak
-menghalangi user melanjutkan ke halaman hasil — error hanya dicatat di log
-server.
-
 ## Learn More
 
 To learn more about Next.js, take a look at the following resources:

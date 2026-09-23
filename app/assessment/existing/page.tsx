@@ -242,6 +242,16 @@ export default function ExistingAssessmentPage() {
       sdm: categoryScores.sdm,
       financial: categoryScores.financial,
       management: categoryScores.management,
+      diagnosis:
+        overall >= 80
+          ? "Hotel memiliki kondisi bisnis yang relatif sehat dengan fondasi yang sudah berjalan baik."
+          : overall >= 60
+          ? "Hotel memiliki fondasi bisnis yang cukup baik, namun masih terdapat performance gap."
+          : overall >= 40
+          ? "Hotel memiliki beberapa area bisnis yang membutuhkan corrective action."
+          : "Hotel membutuhkan corrective action yang terstruktur pada area bisnis prioritas.",
+      recommendation:
+        "Hasil assessment menunjukkan area bisnis yang perlu diprioritaskan untuk meningkatkan kesehatan dan performa hotel. Fokus utama diarahkan pada perbaikan area dengan skor terendah, revenue improvement, pricing strategy, operational efficiency, people readiness, sales development, financial control dan management KPI. CoreStay Advisory dapat membantu owner menyusun corrective action, KPI dan monitoring implementasi sampai perbaikan kinerja berjalan terukur.",
     };
   }
 
@@ -255,12 +265,37 @@ export default function ExistingAssessmentPage() {
       management: "Management & Strategy",
     };
 
-    const areas = categories.map((category) => ({
-      title: areaTitles[category],
-      score: result[category as keyof typeof result] as number,
-    }));
+    const areas = categories.map((category) => {
+      const score = result[category as keyof typeof result] as number;
+      const recommendation =
+        score >= 80
+          ? "Pertahankan performa dan lakukan continuous improvement berbasis KPI."
+          : score >= 60
+          ? "Identifikasi performance gap, tetapkan corrective action dan monitor KPI secara rutin."
+          : score >= 40
+          ? "Lakukan corrective action terstruktur dan monitoring mingguan pada area ini."
+          : "Jadikan area ini prioritas perbaikan segera dengan action plan, PIC dan target yang terukur.";
+
+      const diagnosis =
+        score >= 80
+          ? "Area berjalan baik dan perlu dipertahankan melalui monitoring KPI."
+          : score >= 60
+          ? "Area cukup baik tetapi masih memiliki gap performa yang perlu diperbaiki."
+          : score >= 40
+          ? "Area memiliki gap performa yang membutuhkan corrective action."
+          : "Area berada pada kondisi kritis dan membutuhkan perbaikan segera.";
+
+      return {
+        title: areaTitles[category],
+        score,
+        diagnosis,
+        recommendation,
+      };
+    });
 
     const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);
+    const finalRecommendation =
+      "Hasil assessment menunjukkan area bisnis yang perlu diprioritaskan untuk meningkatkan kesehatan dan performa hotel. Fokus utama diarahkan pada perbaikan area dengan skor terendah, revenue improvement, pricing strategy, operational efficiency, people readiness, sales development, financial control dan management KPI. CoreStay Advisory dapat membantu owner menyusun corrective action, KPI dan monitoring implementasi sampai perbaikan kinerja berjalan terukur.";
     const status = result.overall >= 80 ? "READY" : result.overall >= 60 ? "NEED IMPROVEMENT" : result.overall >= 40 ? "HIGH RISK" : "CRITICAL";
     const risk = result.overall >= 80 ? "LOW" : result.overall >= 60 ? "MEDIUM" : "HIGH";
     const diagnosis = result.overall >= 80
@@ -285,7 +320,7 @@ export default function ExistingAssessmentPage() {
         diagnosis,
         areas,
         priorities,
-        recommendation: "CoreStay Advisory dapat membantu owner melakukan business diagnostic, revenue improvement, pricing strategy, SOP optimization, manpower planning, sales development, financial control dan management KPI untuk meningkatkan performa hotel.",
+        recommendation: finalRecommendation,
       }),
     }).catch((err) => {
       console.error("Gagal mengirim notifikasi email assessment:", err);
@@ -302,7 +337,7 @@ export default function ExistingAssessmentPage() {
       return;
     }
 
-    const result = calculateResult(answers);
+    const result = calculateResult([...answers]);
 
     sessionStorage.setItem(
       "corestay_assessment",

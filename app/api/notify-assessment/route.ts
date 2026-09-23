@@ -18,6 +18,8 @@ type NotifyPayload = {
   diagnosis?: string;
   areas?: AreaScore[];
   priorities?: AreaScore[];
+  priorityActions?: string[];
+  recommendation?: string;
   contact?: {
     nama?: string;
     whatsapp?: string;
@@ -105,6 +107,7 @@ function buildEmailHtml(payload: NotifyPayload) {
   const status = payload.status || getStatus(overall).label;
   const areas = normalizeAreas(payload.areas);
   const priorities = normalizeAreas(payload.priorities).slice(0, 3);
+  const isExisting = payload.hotelType === "existing";
   const title =
     payload.hotelType === "existing"
       ? "Existing Hotel Business Health Assessment"
@@ -117,9 +120,9 @@ function buildEmailHtml(payload: NotifyPayload) {
         <div style="font-size:12px;color:#67e8f9;font-weight:800;letter-spacing:.14em;text-transform:uppercase">
           CoreStay Advisory
         </div>
-        <div style="font-size:24px;font-weight:800;margin-top:8px">Pre-opening Readiness Report</div>
+        <div style="font-size:24px;font-weight:800;margin-top:8px">${isExisting ? "Existing Hotel Business Health Report" : "Pre-opening Readiness Report"}</div>
         <div style="font-size:13px;color:#cbd5e1;margin-top:6px">
-          ${escapeHtml(payload.hotelName || "Hotel")} • ${escapeHtml(payload.city || "-")} • ${escapeHtml(payload.contact?.kamar || "-")} kamar
+          ${escapeHtml(payload.hotelName || "Hotel")} • ${escapeHtml(payload.city || "-")}${payload.contact?.kamar ? ` • ${escapeHtml(payload.contact.kamar)} kamar` : ""} • ${isExisting ? "Existing Hotel" : "Pre-opening"}
         </div>
       </div>
 
@@ -131,12 +134,12 @@ function buildEmailHtml(payload: NotifyPayload) {
         <table role="presentation" style="width:100%;margin-top:16px;border-collapse:collapse">
           <tr>
             <td style="width:50%;vertical-align:top;padding:18px;background:#ecfeff;border-radius:14px">
-              <div style="font-size:12px;color:#0e7490;font-weight:700">OVERALL READINESS</div>
+              <div style="font-size:12px;color:#0e7490;font-weight:700">${isExisting ? "OVERALL BUSINESS HEALTH" : "OVERALL READINESS"}</div>
               <div style="font-size:42px;line-height:1.1;color:#0891b2;font-weight:900;margin-top:4px">${overall}<span style="font-size:18px">/100</span></div>
             </td>
             <td style="width:16px"></td>
             <td style="vertical-align:top;padding:18px;background:#f8fafc;border-radius:14px">
-              <div style="font-size:12px;color:#64748b;font-weight:700">OPENING RISK</div>
+              <div style="font-size:12px;color:#64748b;font-weight:700">${isExisting ? "BUSINESS RISK" : "OPENING RISK"}</div>
               <div style="font-size:22px;font-weight:900;margin-top:8px;color:#dc2626">${escapeHtml(payload.risk || (overall < 40 ? "HIGH" : overall < 60 ? "HIGH" : overall < 80 ? "MEDIUM" : "LOW"))}</div>
             </td>
           </tr>
@@ -149,8 +152,8 @@ function buildEmailHtml(payload: NotifyPayload) {
         </div>` : ""}
 
         <div style="margin-top:24px">
-          <div style="font-size:17px;font-weight:800;color:#0f172a">Pre-opening Readiness Score</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px">Kesiapan berdasarkan area strategis hotel.</div>
+          <div style="font-size:17px;font-weight:800;color:#0f172a">${isExisting ? "Existing Hotel Performance Score" : "Pre-opening Readiness Score"}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px">${isExisting ? "Perbandingan kondisi enam area utama bisnis hotel berdasarkan jawaban assessment Anda." : "Nilai kesiapan hotel berdasarkan setiap area strategis."}</div>
           <table style="width:100%;border-collapse:collapse;margin-top:10px">
             <thead>
               <tr style="background:#f8fafc">
@@ -165,9 +168,15 @@ function buildEmailHtml(payload: NotifyPayload) {
 
         ${priorities.length ? `
         <div style="margin-top:26px">
-          <div style="font-size:17px;font-weight:800;color:#0f172a">3 Area Prioritas Sebelum Opening</div>
+          <div style="font-size:17px;font-weight:800;color:#0f172a">${isExisting ? "3 Area Prioritas Perbaikan" : "3 Area Prioritas Sebelum Opening"}</div>
           ${renderPriorityCards(priorities)}
         </div>` : ""}
+
+        ${payload.priorityActions?.length ? `
+        <div style="margin-top:26px"><div style="font-size:17px;font-weight:800;color:#0f172a">30-Day Priority Action</div>${payload.priorityActions.map((action) => `<div style="margin-top:10px;padding:12px 14px;border:1px solid #e2e8f0;border-radius:10px;background:#f8fafc;font-size:12px;line-height:1.6;color:#475569">${escapeHtml(action)}</div>`).join("")}</div>` : ""}
+
+        ${payload.recommendation ? `
+        <div style="margin-top:26px;padding:18px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px"><div style="font-size:17px;font-weight:800;color:#0f172a">Rekomendasi CoreStay Advisory</div><div style="font-size:12px;line-height:1.7;color:#334155;margin-top:8px">${escapeHtml(payload.recommendation)}</div></div>` : ""}
 
         ${payload.contact ? `
         <div style="margin-top:26px;padding:18px;background:#f8fafc;border-radius:12px">

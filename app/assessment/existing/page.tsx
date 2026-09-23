@@ -196,6 +196,21 @@ export default function ExistingAssessmentPage() {
     const updated = [...answers];
     updated[current] = score;
     setAnswers(updated);
+
+    if (current < questions.length - 1) {
+      setCurrent(current + 1);
+      return;
+    }
+
+    const result = calculateResult(updated);
+
+    sessionStorage.setItem(
+      "corestay_assessment",
+      JSON.stringify(result)
+    );
+
+    notifyAssessmentCompleted(result);
+    router.push("/assessment/existing/result");
   }
 
   function previousQuestion() {
@@ -360,28 +375,6 @@ export default function ExistingAssessmentPage() {
     });
   }
 
-  function nextQuestion() {
-    if (selectedAnswer === undefined) {
-      return;
-    }
-
-    if (current < questions.length - 1) {
-      setCurrent(current + 1);
-      return;
-    }
-
-    const result = calculateResult([...answers]);
-
-    sessionStorage.setItem(
-      "corestay_assessment",
-      JSON.stringify(result)
-    );
-
-    notifyAssessmentCompleted(result);
-
-    router.push("/assessment/existing/result");
-  }
-
   const progress = Math.round(
     ((current + 1) / questions.length) * 100
   );
@@ -462,8 +455,7 @@ export default function ExistingAssessmentPage() {
 
         
 
-        <div className="mt-8 flex items-center justify-between gap-4">
-
+        <div className="mt-8 flex items-center justify-start">
           <button
             type="button"
             onClick={previousQuestion}
@@ -476,24 +468,6 @@ export default function ExistingAssessmentPage() {
           >
             ← Sebelumnya
           </button>
-
-          <button
-            type="button"
-            onClick={nextQuestion}
-            disabled={selectedAnswer === undefined}
-            className={`flex items-center gap-3 rounded-xl px-6 py-3 text-sm font-semibold transition ${
-              selectedAnswer === undefined
-                ? "cursor-not-allowed bg-slate-800 text-slate-600"
-                : "bg-cyan-400 text-slate-950 hover:bg-cyan-300"
-            }`}
-          >
-            {current === questions.length - 1
-              ? "Lihat Hasil"
-              : "Pertanyaan Berikutnya"}
-
-            <span className="text-lg">→</span>
-          </button>
-
         </div>
 
         <p className="mt-6 text-center text-sm text-slate-500">

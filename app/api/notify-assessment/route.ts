@@ -5,6 +5,7 @@ type AreaScore = {
   title: string;
   score: number;
   label?: string;
+  recommendation?: string;
 };
 
 type NotifyPayload = {
@@ -13,6 +14,7 @@ type NotifyPayload = {
   city?: string;
   overall: number;
   status?: string;
+  risk?: string;
   diagnosis?: string;
   areas?: AreaScore[];
   priorities?: AreaScore[];
@@ -25,117 +27,163 @@ type NotifyPayload = {
 };
 
 function escapeHtml(value: string) {
-  return value
+  return String(value)
     .replace(/&/g, "&amp;")
     .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
+function clampScore(value: unknown) {
+  const score = Number(value);
+  return Number.isFinite(score) ? Math.min(100, Math.max(0, score)) : 0;
+}
+
+function getStatus(score: number) {
+  if (score >= 80) return { label: "READY", color: "#22c55e" };
+  if (score >= 60) return { label: "NEED IMPROVEMENT", color: "#eab308" };
+  if (score >= 40) return { label: "HIGH RISK", color: "#f97316" };
+  return { label: "CRITICAL", color: "#ef4444" };
+}
+
+function normalizeAreas(areas: AreaScore[] = []) {
+  return areas.map((area) => ({
+    ...area,
+    score: clampScore(area.score),
+  }));
 }
 
 function renderAreaRows(areas: AreaScore[] = []) {
-  if (!areas.length) return "<p style='color:#94a3b8'>-</p>";
+  if (!areas.length) {
+    return "<tr><td colspan='3' style='padding:14px;color:#94a3b8'>Tidak ada data area.</td></tr>";
+  }
 
-  return `
-    <table style="width:100%;border-collapse:collapse;margin-top:8px">
-      ${areas
-        .map(
-          (area) => `
+  return areas
+    .map((area) => {
+      const status = getStatus(area.score);
+      return `
         <tr>
-          <td style="padding:8px 0;border-bottom:1px solid #1e293b;color:#e2e8f0;font-size:14px">
+          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:13px">
             ${escapeHtml(area.title)}
           </td>
-          <td style="padding:8px 0;border-bottom:1px solid #1e293b;color:#f87171;font-weight:700;text-align:right;font-size:14px">
-            ${area.score}% ${area.label ? `(${escapeHtml(area.label)})` : ""}
+          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0f172a;font-weight:800;font-size:13px">
+            ${area.score}%
           </td>
-        </tr>`
-        )
-        .join("")}
-    </table>
-  `;
+          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:${status.color};font-weight:800;font-size:11px">
+            ${status.label}
+          </td>
+        </tr>
+      `;
+    })
+    .join("");
+}
+
+function renderPriorityCards(priorities: AreaScore[] = []) {
+  return priorities
+    .map((area, index) => {
+      const status = getStatus(area.score);
+      return `
+        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-top:10px;background:#ffffff">
+          <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.08em">
+            Priority ${index + 1}
+          </div>
+          <div style="margin-top:5px;font-size:15px;font-weight:800;color:#0f172a">
+            ${escapeHtml(area.title)}
+          </div>
+          <div style="margin-top:5px;font-size:13px;font-weight:800;color:${status.color}">
+            ${area.score}% — ${status.label}
+          </div>
+          ${area.recommendation ? `<div style="margin-top:8px;font-size:12px;line-height:1.6;color:#475569">${escapeHtml(area.recommendation)}</div>` : ""}
+        </div>
+      `;
+    })
+    .join("");
 }
 
 function buildEmailHtml(payload: NotifyPayload) {
+  const overall = clampScore(payload.overall);
+  const status = payload.status || getStatus(overall).label;
+  const areas = normalizeAreas(payload.areas);
+  const priorities = normalizeAreas(payload.priorities).slice(0, 3);
   const title =
     payload.hotelType === "existing"
       ? "Existing Hotel Business Health Assessment"
-      : "Pre-opening Hotel Readiness Assessment";
+      : "Pre-opening Readiness Report";
 
   return `
-  <div style="background:#0b1220;padding:32px;font-family:Helvetica,Arial,sans-serif;color:#f5f7fa">
-    <div style="max-width:600px;margin:0 auto">
-      <p style="color:#22d3ee;font-weight:700;font-size:12px;letter-spacing:1px;text-transform:uppercase">
-        CoreStay Advisory — Notifikasi Assessment Baru
-      </p>
-
-      <h1 style="font-size:22px;margin:8px 0 4px">
-        ${escapeHtml(payload.hotelName || "Hotel (nama belum diisi)")}
-      </h1>
-
-      <p style="color:#9aa5b5;margin:0 0 20px;font-size:13px">
-        ${escapeHtml(payload.city || "-")} • ${title}
-      </p>
-
-      <div style="background:#111a2c;border-radius:12px;padding:20px;margin-bottom:16px">
-        <p style="color:#9aa5b5;font-size:12px;margin:0">Overall Score</p>
-        <p style="color:#22d3ee;font-size:32px;font-weight:800;margin:4px 0">
-          ${payload.overall}%
-        </p>
-        ${
-          payload.status
-            ? `<p style="color:#f87171;font-weight:700;font-size:14px;margin:0">${escapeHtml(
-                payload.status
-              )}</p>`
-            : ""
-        }
-        ${
-          payload.diagnosis
-            ? `<p style="color:#cbd5e1;font-size:13px;margin-top:8px;line-height:1.6">${escapeHtml(
-                payload.diagnosis
-              )}</p>`
-            : ""
-        }
+  <div style="margin:0;background:#f1f5f9;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
+    <div style="max-width:720px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0">
+      <div style="background:#0f172a;padding:28px 30px;color:#ffffff">
+        <div style="font-size:12px;color:#67e8f9;font-weight:800;letter-spacing:.14em;text-transform:uppercase">
+          CoreStay Advisory
+        </div>
+        <div style="font-size:24px;font-weight:800;margin-top:8px">Pre-opening Readiness Report</div>
+        <div style="font-size:13px;color:#cbd5e1;margin-top:6px">
+          ${escapeHtml(payload.hotelName || "Hotel")} • ${escapeHtml(payload.city || "-")} • ${escapeHtml(payload.contact?.kamar || "-")} kamar
+        </div>
       </div>
 
-      ${
-        payload.areas?.length
-          ? `<div style="background:#111a2c;border-radius:12px;padding:20px;margin-bottom:16px">
-              <p style="color:#f5f7fa;font-weight:700;font-size:14px;margin:0 0 4px">Skor per Area</p>
-              ${renderAreaRows(payload.areas)}
-            </div>`
-          : ""
-      }
+      <div style="padding:26px 30px">
+        <div style="display:inline-block;border-radius:999px;background:#fef2f2;color:#dc2626;padding:7px 11px;font-size:11px;font-weight:800;letter-spacing:.04em">
+          ${escapeHtml(status)}
+        </div>
 
-      ${
-        payload.priorities?.length
-          ? `<div style="background:#111a2c;border-radius:12px;padding:20px;margin-bottom:16px">
-              <p style="color:#f59e0b;font-weight:700;font-size:14px;margin:0 0 4px">Prioritas Perbaikan</p>
-              ${renderAreaRows(payload.priorities)}
-            </div>`
-          : ""
-      }
+        <table role="presentation" style="width:100%;margin-top:16px;border-collapse:collapse">
+          <tr>
+            <td style="width:50%;vertical-align:top;padding:18px;background:#ecfeff;border-radius:14px">
+              <div style="font-size:12px;color:#0e7490;font-weight:700">OVERALL READINESS</div>
+              <div style="font-size:42px;line-height:1.1;color:#0891b2;font-weight:900;margin-top:4px">${overall}<span style="font-size:18px">/100</span></div>
+            </td>
+            <td style="width:16px"></td>
+            <td style="vertical-align:top;padding:18px;background:#f8fafc;border-radius:14px">
+              <div style="font-size:12px;color:#64748b;font-weight:700">OPENING RISK</div>
+              <div style="font-size:22px;font-weight:900;margin-top:8px;color:#dc2626">${escapeHtml(payload.risk || (overall < 40 ? "HIGH" : overall < 60 ? "HIGH" : overall < 80 ? "MEDIUM" : "LOW"))}</div>
+            </td>
+          </tr>
+        </table>
 
-      ${
-        payload.contact
-          ? `<div style="background:#111a2c;border-radius:12px;padding:20px">
-              <p style="color:#f5f7fa;font-weight:700;font-size:14px;margin:0 0 8px">Data Kontak</p>
-              <p style="color:#cbd5e1;font-size:13px;margin:2px 0">Nama: ${escapeHtml(
-                payload.contact.nama || "-"
-              )}</p>
-              <p style="color:#cbd5e1;font-size:13px;margin:2px 0">WhatsApp: ${escapeHtml(
-                payload.contact.whatsapp || "-"
-              )}</p>
-              <p style="color:#cbd5e1;font-size:13px;margin:2px 0">Email: ${escapeHtml(
-                payload.contact.email || "-"
-              )}</p>
-              <p style="color:#cbd5e1;font-size:13px;margin:2px 0">Jumlah Kamar: ${escapeHtml(
-                payload.contact.kamar || "-"
-              )}</p>
-            </div>`
-          : `<p style="color:#64748b;font-size:12px">Belum ada data kontak (hotel existing saat ini belum mengumpulkan kontak sebelum melihat hasil).</p>`
-      }
+        ${payload.diagnosis ? `
+        <div style="margin-top:22px;padding:18px;border-left:4px solid #06b6d4;background:#f8fafc">
+          <div style="font-size:12px;font-weight:800;color:#0e7490;text-transform:uppercase;letter-spacing:.08em">Executive Diagnosis</div>
+          <div style="font-size:13px;line-height:1.7;color:#334155;margin-top:7px">${escapeHtml(payload.diagnosis)}</div>
+        </div>` : ""}
 
-      <p style="color:#475569;font-size:11px;margin-top:24px;text-align:center">
-        Email otomatis dari corestay.vercel.app
-      </p>
+        <div style="margin-top:24px">
+          <div style="font-size:17px;font-weight:800;color:#0f172a">Pre-opening Readiness Score</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px">Kesiapan berdasarkan area strategis hotel.</div>
+          <table style="width:100%;border-collapse:collapse;margin-top:10px">
+            <thead>
+              <tr style="background:#f8fafc">
+                <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">AREA</th>
+                <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">SCORE</th>
+                <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">STATUS</th>
+              </tr>
+            </thead>
+            <tbody>${renderAreaRows(areas)}</tbody>
+          </table>
+        </div>
+
+        ${priorities.length ? `
+        <div style="margin-top:26px">
+          <div style="font-size:17px;font-weight:800;color:#0f172a">3 Area Prioritas Sebelum Opening</div>
+          ${renderPriorityCards(priorities)}
+        </div>` : ""}
+
+        ${payload.contact ? `
+        <div style="margin-top:26px;padding:18px;background:#f8fafc;border-radius:12px">
+          <div style="font-size:14px;font-weight:800">Data Kontak</div>
+          <div style="font-size:12px;line-height:1.8;color:#475569;margin-top:6px">
+            Nama: ${escapeHtml(payload.contact.nama || "-")}<br>
+            WhatsApp: ${escapeHtml(payload.contact.whatsapp || "-")}<br>
+            Email: ${escapeHtml(payload.contact.email || "-")}<br>
+            Jumlah Kamar: ${escapeHtml(payload.contact.kamar || "-")}
+          </div>
+        </div>` : ""}
+
+        <div style="margin-top:26px;padding-top:18px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8">
+          CoreStay Advisory — Pre-opening Hotel Readiness Assessment
+        </div>
+      </div>
     </div>
   </div>
   `;
@@ -146,10 +194,7 @@ export async function POST(request: NextRequest) {
     const payload = (await request.json()) as NotifyPayload;
 
     if (!payload || typeof payload.overall !== "number") {
-      return NextResponse.json(
-        { ok: false, error: "Payload tidak valid." },
-        { status: 400 }
-      );
+      return NextResponse.json({ ok: false, error: "Payload tidak valid." }, { status: 400 });
     }
 
     const apiKey = process.env.RESEND_API_KEY;
@@ -158,21 +203,12 @@ export async function POST(request: NextRequest) {
       process.env.NOTIFY_FROM_EMAIL || "CoreStay Assessment <onboarding@resend.dev>";
 
     if (!apiKey || !notifyEmail) {
-      console.error(
-        "RESEND_API_KEY atau NOTIFY_EMAIL belum di-set di environment variables."
-      );
-
-      return NextResponse.json(
-        { ok: false, error: "Email service belum dikonfigurasi." },
-        { status: 500 }
-      );
+      console.error("RESEND_API_KEY atau NOTIFY_EMAIL belum di-set di environment variables.");
+      return NextResponse.json({ ok: false, error: "Email service belum dikonfigurasi." }, { status: 500 });
     }
 
     const resend = new Resend(apiKey);
-
-    const subject = `Assessment Baru: ${payload.hotelName || "Hotel"} — ${
-      payload.overall
-    }% (${payload.hotelType === "existing" ? "Existing" : "Pre-opening"})`;
+    const subject = `Assessment Baru: ${payload.hotelName || "Hotel"} — ${clampScore(payload.overall)}/100 (Pre-opening)`;
 
     const { error } = await resend.emails.send({
       from: fromEmail,
@@ -189,9 +225,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   } catch (err) {
     console.error("NOTIFY ASSESSMENT ERROR:", err);
-    return NextResponse.json(
-      { ok: false, error: "Terjadi kesalahan saat mengirim email." },
-      { status: 500 }
-    );
+    return NextResponse.json({ ok: false, error: "Terjadi kesalahan saat mengirim email." }, { status: 500 });
   }
 }

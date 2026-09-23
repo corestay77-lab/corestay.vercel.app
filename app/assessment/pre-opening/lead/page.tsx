@@ -62,14 +62,14 @@ export default function PreOpeningLeadPage() {
         overall: number;
         status?: string;
         diagnosis?: string;
-        areaResults?: { title: string; score: number; level?: string }[];
+        areaResults?: { title: string; score: number; level?: string; recommendation?: string; diagnosis?: string }[];
       };
 
       const areas = (result.areaResults || []).map((item) => ({
         title: item.title,
         score: item.score,
         label: item.level,
-        recommendation: item.recommendation,
+        recommendation: item.recommendation,\n        diagnosis: item.diagnosis || (item.score >= 80 ? "Area memiliki readiness yang baik dan perlu dipertahankan." : item.score >= 60 ? "Area sudah mulai siap, tetapi masih terdapat gap yang perlu diselesaikan sebelum opening." : "Area memiliki gap readiness yang signifikan dan perlu menjadi prioritas perbaikan sebelum opening."),
       }));
 
       const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);

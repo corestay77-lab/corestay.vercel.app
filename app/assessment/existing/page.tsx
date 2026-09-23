@@ -607,10 +607,6 @@ export default function ExistingAssessmentPage() {
                 <div className="font-medium">
                   {option.label}
                 </div>
-
-                <div className="mt-1 text-xs text-slate-500">
-                  Nilai: {option.score}
-                </div>
               </button>
             ))}
           </div>

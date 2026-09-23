@@ -57,7 +57,7 @@ function normalizeAreas(areas: AreaScore[] = []) {
 
 function renderAreaRows(areas: AreaScore[] = []) {
   if (!areas.length) {
-    return "<tr><td colspan='3' style='padding:14px;color:#94a3b8'>Tidak ada data area.</td></tr>";
+    return "<tr><td colspan='5' style='padding:14px;color:#94a3b8'>Tidak ada data area.</td></tr>";
   }
 
   return areas
@@ -73,6 +73,12 @@ function renderAreaRows(areas: AreaScore[] = []) {
           </td>
           <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:${status.color};font-weight:800;font-size:11px">
             ${status.label}
+          </td>
+          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;color:#475569;font-size:12px;line-height:1.55">
+            ${escapeHtml(area.diagnosis || "")}
+          </td>
+          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;color:#475569;font-size:12px;line-height:1.55">
+            ${escapeHtml(area.recommendation || "")}
           </td>
         </tr>
       `;
@@ -159,7 +165,7 @@ function buildEmailHtml(payload: NotifyPayload) {
               <tr style="background:#f8fafc">
                 <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">AREA</th>
                 <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">SCORE</th>
-                <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">STATUS</th>
+                <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">STATUS</th>\n                <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">DIAGNOSIS</th>\n                <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">REKOMENDASI</th>
               </tr>
             </thead>
             <tbody>${renderAreaRows(areas)}</tbody>

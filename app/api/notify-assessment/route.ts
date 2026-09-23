@@ -181,7 +181,7 @@ function buildEmailHtml(payload: NotifyPayload) {
         </div>` : ""}
 
         <div style="margin-top:26px;padding-top:18px;border-top:1px solid #e2e8f0;text-align:center;font-size:11px;color:#94a3b8">
-          CoreStay Advisory — Pre-opening Hotel Readiness Assessment
+          CoreStay Advisory — ${title}
         </div>
       </div>
     </div>
@@ -208,7 +208,8 @@ export async function POST(request: NextRequest) {
     }
 
     const resend = new Resend(apiKey);
-    const subject = `Assessment Baru: ${payload.hotelName || "Hotel"} — ${clampScore(payload.overall)}/100 (Pre-opening)`;
+    const assessmentLabel = payload.hotelType === "existing" ? "Existing Hotel" : "Pre-opening";
+    const subject = `Assessment Baru: ${payload.hotelName || "Hotel"} — ${clampScore(payload.overall)}/100 (${assessmentLabel})`;
 
     const { error } = await resend.emails.send({
       from: fromEmail,

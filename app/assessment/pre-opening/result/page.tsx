@@ -18,6 +18,7 @@ type Result = {
   status: string;
   risk: string;
   diagnosis: string;
+  recommendation: string;
   areaResults: AreaResult[];
   priorityActions: string[];
 };
@@ -372,18 +373,7 @@ export default function PreOpeningResultPage() {
           </h2>
 
           <p className="mt-4 leading-8 text-slate-300">
-            Hasil assessment menunjukkan area yang perlu diprioritaskan
-            sebelum hotel memasuki fase soft opening. Fokus utama sebaiknya
-            diarahkan pada penyelesaian gap yang memiliki dampak langsung
-            terhadap revenue readiness, operational readiness, people readiness,
-            distribution dan financial control.
-          </p>
-
-          <p className="mt-4 leading-8 text-slate-400">
-            CoreStay Advisory dapat membantu owner melakukan pre-opening
-            readiness, penyusunan sistem operasional, SOP, manpower planning,
-            pricing & revenue strategy, OTA setup, sales preparation dan
-            monitoring opening readiness sampai hotel siap beroperasi.
+            {result.recommendation}
           </p>
         </section>
 

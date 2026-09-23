@@ -27,148 +27,248 @@ const options: Option[] = [
 const questions: Question[] = [
   {
     category: "revenue",
-    title: "Revenue & Pricing",
-    question:
-      "Seberapa baik hotel menentukan harga kamar berdasarkan demand dan kondisi pasar?",
-    options,
+    title: "Revenue Management & Pricing",
+    question: "Sejauh mana hotel menerapkan strategi pricing berbasis demand, segmentasi pasar, seasonality, dan pergerakan kompetitor?",
+    options: [
+      { label: "Belum memiliki struktur pricing; tarif lebih banyak ditetapkan secara flat atau berdasarkan kebiasaan.", score: 0 },
+      { label: "Sudah ada penyesuaian tarif pada periode tertentu, tetapi belum menggunakan data demand dan kompetitor secara sistematis.", score: 25 },
+      { label: "Dynamic pricing mulai diterapkan untuk beberapa periode atau segmen, namun belum konsisten antar-channel.", score: 50 },
+      { label: "Pricing berbasis demand, seasonality, segmentasi, dan kompetitor sudah dijalankan serta direview secara berkala.", score: 75 },
+      { label: "Strategi pricing dinamis terintegrasi dengan forecast, pickup, market intelligence, dan evaluasi revenue secara rutin.", score: 100 },
+    ],
   },
   {
     category: "revenue",
-    title: "Revenue & Pricing",
-    question:
-      "Seberapa baik hotel memonitor Occupancy, ADR dan RevPAR?",
-    options,
+    title: "Revenue Management & Pricing",
+    question: "Sejauh mana manajemen menggunakan Occupancy, ADR, RevPAR, pickup, dan forecast sebagai dasar pengambilan keputusan revenue?",
+    options: [
+      { label: "KPI revenue belum tersedia atau hanya dilihat saat diperlukan.", score: 0 },
+      { label: "Occupancy dan ADR tersedia, tetapi belum dianalisis secara rutin untuk keputusan bisnis.", score: 25 },
+      { label: "Occupancy, ADR, dan RevPAR sudah dipantau, namun analisis tren dan forecast belum konsisten.", score: 50 },
+      { label: "KPI utama direview secara periodik dan digunakan untuk mengarahkan pricing serta strategi penjualan.", score: 75 },
+      { label: "Dashboard KPI, pickup, forecast, pace, dan variance menjadi bagian rutin dari revenue meeting dan decision making.", score: 100 },
+    ],
   },
   {
     category: "revenue",
-    title: "Revenue & Pricing",
-    question:
-      "Seberapa optimal penggunaan OTA dan channel distribusi hotel?",
-    options,
+    title: "Revenue Management & Pricing",
+    question: "Seberapa efektif hotel mengelola OTA, direct booking, corporate, wholesale, dan channel mix untuk menjaga net revenue?",
+    options: [
+      { label: "Distribusi masih bergantung pada satu atau dua channel tanpa strategi channel mix yang jelas.", score: 0 },
+      { label: "Beberapa channel sudah aktif, tetapi kontribusi, biaya komisi, dan performanya belum dibandingkan.", score: 25 },
+      { label: "Channel mix mulai dikelola berdasarkan volume dan revenue, namun belum ada target kontribusi yang jelas.", score: 50 },
+      { label: "Hotel memiliki target channel mix dan secara berkala mengevaluasi revenue, conversion, serta distribution cost.", score: 75 },
+      { label: "Channel mix dioptimalkan berdasarkan net ADR, acquisition cost, conversion, parity, dan profitability per channel.", score: 100 },
+    ],
   },
   {
     category: "revenue",
-    title: "Revenue & Pricing",
-    question:
-      "Seberapa baik hotel mengelola promo, discount, corporate rate dan direct booking?",
-    options,
+    title: "Revenue Management & Pricing",
+    question: "Seberapa terstruktur hotel mengelola promotion, discount, corporate rate, package, dan direct booking agar tidak menggerus ADR?",
+    options: [
+      { label: "Promo dan discount diberikan tanpa framework, target segment, atau evaluasi hasil yang jelas.", score: 0 },
+      { label: "Promo sudah dilakukan pada periode tertentu, tetapi approval, segmentasi, dan evaluasi masih terbatas.", score: 25 },
+      { label: "Hotel mulai memiliki promo berdasarkan periode atau segmen, namun belum seluruhnya diukur terhadap ADR dan conversion.", score: 50 },
+      { label: "Setiap program memiliki target, periode, segmentasi, mekanisme approval, dan evaluasi performance.", score: 75 },
+      { label: "Promotion strategy dikelola berdasarkan contribution margin, displacement, demand forecast, dan hasil kampanye secara terukur.", score: 100 },
+    ],
   },
 
   {
     category: "sales",
-    title: "Sales & Marketing",
-    question:
-      "Seberapa jelas target market dan positioning hotel?",
-    options,
+    title: "Sales, Marketing & Distribution",
+    question: "Seberapa tajam hotel mendefinisikan target market, customer segment, positioning, dan value proposition dibandingkan kompetitor setempat?",
+    options: [
+      { label: "Target market dan positioning belum dirumuskan secara formal.", score: 0 },
+      { label: "Segmen utama sudah diketahui secara umum, tetapi belum diterjemahkan menjadi positioning dan value proposition yang jelas.", score: 25 },
+      { label: "Segmentasi dan positioning sudah tersedia, namun penerapannya belum konsisten pada produk dan komunikasi.", score: 50 },
+      { label: "Target segment, positioning, value proposition, dan competitive set menjadi acuan sales serta marketing.", score: 75 },
+      { label: "Positioning ditopang market intelligence, customer insight, competitive mapping, dan dievaluasi berdasarkan performance segment.", score: 100 },
+    ],
   },
   {
     category: "sales",
-    title: "Sales & Marketing",
-    question:
-      "Seberapa aktif hotel melakukan sales dan membangun corporate account?",
-    options,
+    title: "Sales, Marketing & Distribution",
+    question: "Seberapa efektif tim Sales mengembangkan corporate account, government, group, MICE, travel trade, dan account potensial lainnya?",
+    options: [
+      { label: "Aktivitas sales bersifat reaktif dan belum memiliki account list atau target akuisisi.", score: 0 },
+      { label: "Beberapa account sudah dikelola, tetapi prospecting dan follow-up belum memiliki ritme yang terukur.", score: 25 },
+      { label: "Account management dan prospecting sudah berjalan dengan pipeline sederhana, namun conversion belum dianalisis konsisten.", score: 50 },
+      { label: "Sales memiliki account segmentation, sales call plan, pipeline, target produksi, dan review berkala.", score: 75 },
+      { label: "Strategic account management berjalan dengan revenue target per account, pipeline forecasting, conversion tracking, dan retention plan.", score: 100 },
+    ],
   },
   {
     category: "sales",
-    title: "Sales & Marketing",
-    question:
-      "Seberapa konsisten hotel menjalankan marketing, digital promotion dan customer acquisition?",
-    options,
+    title: "Sales, Marketing & Distribution",
+    question: "Seberapa terukur hotel menjalankan digital marketing, content, reputation management, campaign, dan customer acquisition?",
+    options: [
+      { label: "Aktivitas digital belum memiliki kalender, target, atau pengukuran hasil.", score: 0 },
+      { label: "Media sosial dan promosi digital sudah berjalan, tetapi masih berorientasi pada aktivitas, bukan hasil bisnis.", score: 25 },
+      { label: "Campaign dan content plan sudah tersedia dengan beberapa metrik seperti reach, engagement, atau booking.", score: 50 },
+      { label: "Digital campaign memiliki target acquisition, tracking conversion, content calendar, dan evaluasi performance.", score: 75 },
+      { label: "Marketing dikelola melalui attribution, ROAS/CAC, CRM, remarketing, reputation score, dan optimasi berbasis customer data.", score: 100 },
+    ],
   },
 
   {
     category: "operasional",
-    title: "Operasional",
-    question:
-      "Seberapa lengkap SOP operasional hotel saat ini?",
-    options,
+    title: "Hotel Operations & Service Quality",
+    question: "Sejauh mana hotel memiliki SOP, service standard, checklist, dan work instruction yang lengkap untuk setiap fungsi operasional?",
+    options: [
+      { label: "Sebagian besar proses masih mengandalkan kebiasaan dan pengalaman individu.", score: 0 },
+      { label: "SOP tersedia pada beberapa departemen utama, namun belum lengkap atau belum diperbarui.", score: 25 },
+      { label: "Mayoritas proses kritis sudah memiliki SOP dan checklist, tetapi implementasinya belum seragam.", score: 50 },
+      { label: "SOP, checklist, service standard, dan work instruction tersedia serta direview secara berkala.", score: 75 },
+      { label: "Dokumentasi operasional terintegrasi dengan audit, training, quality assurance, incident review, dan continuous improvement.", score: 100 },
+    ],
   },
   {
     category: "operasional",
-    title: "Operasional",
-    question:
-      "Seberapa konsisten SOP dijalankan oleh setiap department?",
-    options,
+    title: "Hotel Operations & Service Quality",
+    question: "Seberapa konsisten setiap departemen menjalankan standar kerja dan melakukan handover antar-shift maupun antar-departemen?",
+    options: [
+      { label: "Pelaksanaan kerja sangat bergantung pada individu dan belum memiliki mekanisme kontrol yang konsisten.", score: 0 },
+      { label: "Standar kerja diketahui oleh tim, tetapi handover dan supervisory control masih sering terlewat.", score: 25 },
+      { label: "Handover dan briefing sudah dilakukan, namun kualitas pelaksanaan berbeda antar-shift atau departemen.", score: 50 },
+      { label: "Supervisor melakukan monitoring, briefing, checklist, dan corrective action secara konsisten.", score: 75 },
+      { label: "Disiplin operasional didukung audit trail, service recovery log, cross-department coordination, dan review KPI layanan.", score: 100 },
+    ],
   },
   {
     category: "operasional",
-    title: "Operasional",
-    question:
-      "Seberapa baik hotel melakukan quality control terhadap pelayanan dan kebersihan?",
-    options,
+    title: "Hotel Operations & Service Quality",
+    question: "Seberapa efektif hotel mengendalikan guest experience, cleanliness, maintenance, complaint handling, dan service recovery?",
+    options: [
+      { label: "Keluhan dan isu kualitas ditangani setelah terjadi tanpa sistem monitoring yang terstruktur.", score: 0 },
+      { label: "Sudah ada pemeriksaan kualitas dan penanganan keluhan, tetapi dokumentasi dan follow-up belum konsisten.", score: 25 },
+      { label: "Quality check, complaint log, dan preventive maintenance sudah berjalan pada area tertentu.", score: 50 },
+      { label: "Guest feedback, inspection, complaint closure, preventive maintenance, dan service recovery dimonitor oleh manajemen.", score: 75 },
+      { label: "Hotel menggunakan VOC, review analytics, QA audit, preventive maintenance KPI, root-cause analysis, dan service recovery measurement.", score: 100 },
+    ],
   },
   {
     category: "operasional",
-    title: "Operasional",
-    question:
-      "Seberapa baik hotel mengontrol biaya dan efisiensi operasional?",
-    options,
+    title: "Hotel Operations & Service Quality",
+    question: "Seberapa efektif hotel mengendalikan departmental cost, productivity, utility, wastage, dan operational efficiency tanpa menurunkan service standard?",
+    options: [
+      { label: "Biaya operasional belum memiliki target dan kontrol yang terstruktur.", score: 0 },
+      { label: "Beberapa biaya utama dipantau, tetapi variance dan productivity belum dianalisis secara rutin.", score: 25 },
+      { label: "Departmental budget dan cost monitoring sudah tersedia, namun corrective action belum konsisten.", score: 50 },
+      { label: "Cost per occupied room, productivity, utility, wastage, dan budget variance direview secara berkala.", score: 75 },
+      { label: "Operational efficiency dikendalikan melalui productivity benchmark, engineering controls, procurement discipline, cost-per-unit, dan continuous improvement.", score: 100 },
+    ],
   },
 
   {
     category: "sdm",
-    title: "SDM",
-    question:
-      "Seberapa jelas struktur organisasi dan pembagian tanggung jawab karyawan?",
-    options,
+    title: "People, Organization & Performance",
+    question: "Seberapa jelas struktur organisasi, job description, span of control, delegation of authority, dan accountability di hotel?",
+    options: [
+      { label: "Struktur dan tanggung jawab masih informal serta banyak bergantung pada individu.", score: 0 },
+      { label: "Struktur organisasi sudah tersedia, tetapi beberapa fungsi dan kewenangan masih tumpang tindih.", score: 25 },
+      { label: "Job description dan reporting line mayoritas sudah jelas, namun accountability belum sepenuhnya terukur.", score: 50 },
+      { label: "Organization structure, job description, authority matrix, dan accountability diterapkan secara konsisten.", score: 75 },
+      { label: "Organisasi dirancang berdasarkan workload, productivity, succession, competency framework, dan business requirement.", score: 100 },
+    ],
   },
   {
     category: "sdm",
-    title: "SDM",
-    question:
-      "Seberapa baik recruitment, manpower planning dan penempatan karyawan dilakukan?",
-    options,
+    title: "People, Organization & Performance",
+    question: "Seberapa terstruktur hotel melakukan manpower planning, recruitment, selection, onboarding, dan deployment berdasarkan kebutuhan operasi?",
+    options: [
+      { label: "Recruitment dilakukan terutama saat posisi kosong tanpa manpower plan dan workforce forecast.", score: 0 },
+      { label: "Kebutuhan tenaga kerja mulai dipetakan, tetapi belum menggunakan workload dan productivity standard.", score: 25 },
+      { label: "Manpower budget dan recruitment process sudah tersedia, namun workforce planning belum sepenuhnya berbasis forecast.", score: 50 },
+      { label: "Manpower plan, recruitment timeline, competency requirement, onboarding, dan deployment dikendalikan secara sistematis.", score: 75 },
+      { label: "Workforce planning menggunakan occupancy forecast, productivity ratio, skill matrix, talent pipeline, dan succession planning.", score: 100 },
+    ],
   },
   {
     category: "sdm",
-    title: "SDM",
-    question:
-      "Seberapa baik training, KPI dan evaluasi kinerja karyawan dijalankan?",
-    options,
+    title: "People, Organization & Performance",
+    question: "Seberapa efektif hotel mengelola training, competency development, KPI individu, appraisal, engagement, dan succession?",
+    options: [
+      { label: "Training dan evaluasi kinerja belum memiliki kalender, indikator, atau dokumentasi yang konsisten.", score: 0 },
+      { label: "Training dilakukan berdasarkan kebutuhan sesaat dan appraisal sudah ada tetapi belum menjadi dasar pengembangan.", score: 25 },
+      { label: "Training plan, KPI, dan appraisal tersedia untuk sebagian besar posisi, namun linkage dengan career path masih terbatas.", score: 50 },
+      { label: "Competency matrix, training plan, KPI, appraisal, coaching, dan development plan berjalan secara periodik.", score: 75 },
+      { label: "Talent management terintegrasi dengan competency framework, performance calibration, career path, succession, dan ROI training.", score: 100 },
+    ],
   },
 
   {
     category: "financial",
-    title: "Financial",
-    question:
-      "Seberapa baik hotel memiliki laporan profit & loss yang rutin dan akurat?",
-    options,
+    title: "Financial Control & Profitability",
+    question: "Seberapa andal hotel menghasilkan monthly P&L yang tepat waktu, akurat, dan dapat digunakan untuk mengevaluasi departmental profitability?",
+    options: [
+      { label: "Laporan keuangan belum tersedia secara rutin atau belum dapat digunakan untuk membaca kinerja hotel.", score: 0 },
+      { label: "P&L tersedia, tetapi proses closing lambat dan rekonsiliasi atau klasifikasi biaya masih sering bermasalah.", score: 25 },
+      { label: "Monthly P&L sudah tersedia dengan struktur yang cukup baik, namun variance analysis belum konsisten.", score: 50 },
+      { label: "P&L diterbitkan tepat waktu, direkonsiliasi, dianalisis terhadap budget/forecast, dan dibahas dalam management review.", score: 75 },
+      { label: "Financial reporting terintegrasi dengan departmental profitability, USALI-based analysis, forecast, scenario planning, dan management action.", score: 100 },
+    ],
   },
   {
     category: "financial",
-    title: "Financial",
-    question:
-      "Seberapa baik hotel mengetahui serta mengontrol cost setiap department?",
-    options,
+    title: "Financial Control & Profitability",
+    question: "Seberapa kuat hotel mengendalikan departmental cost melalui budgeting, purchasing control, inventory, stock variance, dan cost-per-unit?",
+    options: [
+      { label: "Pengeluaran lebih banyak dikendalikan berdasarkan kebutuhan harian tanpa budget dan approval discipline yang jelas.", score: 0 },
+      { label: "Budget dan purchasing process sudah ada, tetapi monitoring variance dan inventory belum konsisten.", score: 25 },
+      { label: "Department budget, purchasing approval, stock control, dan cost review sudah berjalan namun belum sepenuhnya terintegrasi.", score: 50 },
+      { label: "Budget versus actual, purchasing compliance, inventory variance, food cost, dan departmental cost direview rutin.", score: 75 },
+      { label: "Cost control menggunakan zero-based review, supplier benchmarking, inventory analytics, yield control, cost-per-occupied-room, dan variance action plan.", score: 100 },
+    ],
   },
   {
     category: "financial",
-    title: "Financial",
-    question:
-      "Seberapa baik management mengetahui profitability dan cash flow hotel?",
-    options,
+    title: "Financial Control & Profitability",
+    question: "Seberapa baik manajemen memahami GOP, cash flow, working capital, break-even, profitability driver, dan kebutuhan pendanaan hotel?",
+    options: [
+      { label: "Fokus utama masih pada omzet dan saldo kas tanpa analisis profitability atau cash flow yang memadai.", score: 0 },
+      { label: "Cash flow dan profit sudah diperhatikan, tetapi forecast dan driver utama belum dipetakan secara sistematis.", score: 25 },
+      { label: "GOP, cash flow, dan beberapa profitability indicator sudah dianalisis, namun belum menjadi management routine.", score: 50 },
+      { label: "Cash flow forecast, GOP, break-even, working capital, dan profitability driver dibahas dalam review manajemen.", score: 75 },
+      { label: "Management menggunakan integrated financial model, scenario analysis, cash conversion, break-even sensitivity, dan capital planning.", score: 100 },
+    ],
   },
 
   {
     category: "management",
-    title: "Management & Strategy",
-    question:
-      "Seberapa baik management menggunakan data dan KPI dalam mengambil keputusan?",
-    options,
+    title: "Leadership, Strategy & Business Performance",
+    question: "Sejauh mana keputusan manajemen hotel didasarkan pada data operasional, commercial performance, financial result, guest insight, dan market intelligence?",
+    options: [
+      { label: "Keputusan dominan berdasarkan pengalaman atau judgement tanpa dashboard dan analisis pendukung yang konsisten.", score: 0 },
+      { label: "Data tersedia dari beberapa departemen, tetapi belum terintegrasi sebagai dasar keputusan manajemen.", score: 25 },
+      { label: "Management menggunakan KPI dan laporan departemen, namun analisis root cause dan cross-functional insight belum rutin.", score: 50 },
+      { label: "Commercial, operational, guest, dan financial data dibahas secara terintegrasi dalam management review.", score: 75 },
+      { label: "Hotel menerapkan performance dashboard, data governance, predictive insight, scenario analysis, dan fact-based decision making.", score: 100 },
+    ],
   },
   {
     category: "management",
-    title: "Management & Strategy",
-    question:
-      "Seberapa rutin owner atau management melakukan business review dan evaluasi KPI?",
-    options,
+    title: "Leadership, Strategy & Business Performance",
+    question: "Seberapa disiplin owner dan management menjalankan business review, KPI review, action tracking, serta accountability lintas departemen?",
+    options: [
+      { label: "Business review tidak memiliki jadwal dan tindak lanjut yang terdokumentasi.", score: 0 },
+      { label: "Review dilakukan ketika muncul masalah, tetapi action item dan PIC belum selalu ditindaklanjuti.", score: 25 },
+      { label: "Management meeting dan KPI review sudah berjalan, namun konsistensi action tracking masih bervariasi.", score: 50 },
+      { label: "Review memiliki agenda, KPI, action plan, PIC, deadline, dan follow-up yang terdokumentasi.", score: 75 },
+      { label: "Performance governance berjalan dengan monthly business review, rolling action tracker, accountability matrix, escalation, dan closed-loop management.", score: 100 },
+    ],
   },
   {
     category: "management",
-    title: "Management & Strategy",
-    question:
-      "Seberapa jelas strategi, target dan action plan hotel untuk meningkatkan kinerja bisnis?",
-    options,
+    title: "Leadership, Strategy & Business Performance",
+    question: "Seberapa jelas hotel memiliki strategic plan, annual target, budget, initiative portfolio, dan prioritas peningkatan kinerja yang terukur?",
+    options: [
+      { label: "Target bisnis belum diterjemahkan menjadi strategic priorities dan action plan yang terukur.", score: 0 },
+      { label: "Target tahunan sudah ada, tetapi belum sepenuhnya diturunkan menjadi KPI, initiative, budget, dan PIC.", score: 25 },
+      { label: "Strategic plan dan KPI sudah tersedia, namun prioritas initiative serta monitoring milestone belum konsisten.", score: 50 },
+      { label: "Strategic priorities diterjemahkan menjadi target, budget, KPI, initiative, PIC, timeline, dan review berkala.", score: 75 },
+      { label: "Strategy execution menggunakan balanced performance framework, initiative governance, scenario planning, milestone control, dan continuous re-prioritization.", score: 100 },
+    ],
   },
 ];
 

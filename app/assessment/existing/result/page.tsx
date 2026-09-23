@@ -14,6 +14,16 @@ type ExistingResult = {
   sdm: number;
   financial: number;
   management: number;
+  diagnosis?: string;
+  recommendation?: string;
+  areaResults?: {
+    category: string;
+    title: string;
+    score: number;
+    level: string;
+    diagnosis: string;
+    recommendation: string;
+  }[];
 };
 
 const areas = [
@@ -102,13 +112,36 @@ export default function ExistingResultPage() {
     );
   }
 
-  const areaResults = areas.map((area) => ({
-    ...area,
-    score: Math.min(
-      100,
-      Math.max(0, Number(result[area.key]) || 0)
-    ),
-  }));
+  const fallbackAreas = areas.map((area) => {
+    const score = Math.min(100, Math.max(0, Number(result[area.key]) || 0));
+    return {
+      ...area,
+      score,
+      diagnosis:
+        score >= 80
+          ? "Area berjalan baik dan perlu dipertahankan melalui monitoring KPI."
+          : score >= 60
+          ? "Area cukup baik tetapi masih memiliki gap performa yang perlu diperbaiki."
+          : score >= 40
+          ? "Area memiliki gap performa yang membutuhkan corrective action."
+          : "Area berada pada kondisi kritis dan membutuhkan perbaikan segera.",
+      recommendation:
+        score >= 80
+          ? "Pertahankan performa dan lakukan continuous improvement berbasis KPI."
+          : score >= 60
+          ? "Identifikasi performance gap, tetapkan corrective action dan monitor KPI secara rutin."
+          : score >= 40
+          ? "Lakukan corrective action terstruktur dan monitoring mingguan pada area ini."
+          : "Jadikan area ini prioritas perbaikan segera dengan action plan, PIC dan target yang terukur.",
+    };
+  });
+
+  const areaResults = result.areaResults?.length
+    ? result.areaResults.map((area) => ({
+        ...area,
+        score: Math.min(100, Math.max(0, Number(area.score) || 0)),
+      }))
+    : fallbackAreas;
 
   const priorities = [...areaResults]
     .sort((a, b) => a.score - b.score)
@@ -455,7 +488,7 @@ export default function ExistingResultPage() {
           </h2>
 
           <p className="mt-4 text-lg leading-8 text-slate-300">
-            {getOverallStatus(result.overall)}
+            {result.diagnosis || getOverallStatus(result.overall)}
           </p>
 
           <p className="mt-4 leading-8 text-slate-400">
@@ -468,6 +501,37 @@ export default function ExistingResultPage() {
 
         </section>
 
+        <section className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-900">
+          <div className="border-b border-white/10 p-7">
+            <p className="text-sm font-semibold uppercase tracking-wider text-cyan-400">Assessment Detail</p>
+            <h2 className="mt-2 text-2xl font-bold">Diagnosis & Rekomendasi per Area</h2>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full min-w-[900px] text-left text-sm">
+              <thead className="bg-slate-950">
+                <tr>
+                  <th className="px-6 py-4">Area</th>
+                  <th className="px-6 py-4">Score</th>
+                  <th className="px-6 py-4">Status</th>
+                  <th className="px-6 py-4">Diagnosis</th>
+                  <th className="px-6 py-4">Rekomendasi</th>
+                </tr>
+              </thead>
+              <tbody>
+                {areaResults.map((area) => (
+                  <tr key={area.key || area.category} className="border-t border-white/5 align-top">
+                    <td className="px-6 py-5 font-semibold">{area.title}</td>
+                    <td className="px-6 py-5 font-bold text-cyan-400">{area.score}%</td>
+                    <td className="px-6 py-5">{area.level || getScoreStyle(area.score).label}</td>
+                    <td className="px-6 py-5 leading-7 text-slate-300">{area.diagnosis}</td>
+                    <td className="px-6 py-5 leading-7 text-slate-400">{area.recommendation}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </section>
+
         <section className="mt-8 rounded-3xl border border-cyan-400/20 bg-cyan-400/5 p-7">
 
           <h2 className="text-2xl font-bold">
@@ -475,10 +539,8 @@ export default function ExistingResultPage() {
           </h2>
 
           <p className="mt-4 leading-8 text-slate-300">
-            CoreStay Advisory dapat membantu owner melakukan business
-            diagnostic, revenue improvement, pricing strategy, SOP
-            optimization, manpower planning, sales development, financial
-            control dan management KPI untuk meningkatkan performa hotel.
+            {result.recommendation ||
+              "Hasil assessment menunjukkan area bisnis yang perlu diprioritaskan untuk meningkatkan kesehatan dan performa hotel."}
           </p>
 
         </section>

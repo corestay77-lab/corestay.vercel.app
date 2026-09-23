@@ -261,6 +261,15 @@ export default function ExistingAssessmentPage() {
     }));
 
     const priorities = [...areas].sort((a, b) => a.score - b.score).slice(0, 3);
+    const status = result.overall >= 80 ? "HEALTHY / OPTIMAL" : result.overall >= 60 ? "NEEDS IMPROVEMENT" : result.overall >= 40 ? "HIGH RISK" : "CRITICAL";
+    const risk = result.overall >= 80 ? "LOW" : result.overall >= 60 ? "MEDIUM" : "HIGH";
+    const diagnosis = result.overall >= 80
+      ? "Hotel memiliki kondisi bisnis yang relatif sehat dengan fondasi yang sudah berjalan baik. Fokus berikutnya adalah menjaga konsistensi dan optimasi kinerja."
+      : result.overall >= 60
+      ? "Hotel memiliki fondasi bisnis yang cukup baik, namun masih terdapat beberapa performance gap yang perlu diperbaiki secara terukur."
+      : result.overall >= 40
+      ? "Hotel memiliki beberapa area bisnis yang membutuhkan corrective action dan monitoring manajemen agar kinerja dapat ditingkatkan."
+      : "Hotel membutuhkan corrective action yang terstruktur pada area bisnis prioritas sebelum target peningkatan kinerja dapat dicapai.";
 
     // Fire-and-forget: jangan blok navigasi user kalau email gagal terkirim.
     fetch("/api/notify-assessment", {
@@ -271,6 +280,9 @@ export default function ExistingAssessmentPage() {
         hotelName: result.hotelName,
         city: result.city,
         overall: result.overall,
+        status,
+        risk,
+        diagnosis,
         areas,
         priorities,
       }),

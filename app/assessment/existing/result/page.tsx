@@ -97,11 +97,11 @@ export default function ExistingResultPage() {
     return (
       <main className="min-h-screen bg-slate-950 px-6 py-20 text-center text-white">
         <Image
-          src="/corestay-advisory-result.png"
+          src="/logo.png"
           alt="CoreStay Advisory"
           width={180}
           height={55}
-          className="mx-auto h-auto w-[150px]"
+          className="mx-auto h-[46px] w-[151px] object-contain"
         />
 
         <h1 className="mt-10 text-3xl font-bold">
@@ -176,12 +176,12 @@ export default function ExistingResultPage() {
 
         <header className="border-b border-white/10 pb-8">
           <Image
-            src="/corestay-advisory-result.png"
+            src="/logo.png"
             alt="CoreStay Advisory"
             width={180}
             height={55}
             priority
-            className="h-auto w-[150px] object-contain"
+            className="h-[46px] w-[151px] object-contain"
           />
 
           <p className="mt-8 text-sm font-semibold uppercase tracking-wider text-cyan-400">

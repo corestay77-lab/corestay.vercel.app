@@ -3,6 +3,16 @@
 import Image from "next/image";
 import { useEffect, useState } from "react";
 
+type ExistingAreaResult = {
+  key?: string;
+  category?: string;
+  title: string;
+  score: number;
+  level?: string;
+  diagnosis: string;
+  recommendation: string;
+};
+
 type ExistingResult = {
   hotelName: string;
   city: string;
@@ -16,14 +26,7 @@ type ExistingResult = {
   management: number;
   diagnosis?: string;
   recommendation?: string;
-  areaResults?: {
-    category: string;
-    title: string;
-    score: number;
-    level: string;
-    diagnosis: string;
-    recommendation: string;
-  }[];
+  areaResults?: ExistingAreaResult[];
 };
 
 const areas = [
@@ -112,11 +115,12 @@ export default function ExistingResultPage() {
     );
   }
 
-  const fallbackAreas = areas.map((area) => {
+  const fallbackAreas: ExistingAreaResult[] = areas.map((area) => {
     const score = Math.min(100, Math.max(0, Number(result[area.key]) || 0));
     return {
       ...area,
       score,
+      level: getScoreStyle(score).label,
       diagnosis:
         score >= 80
           ? "Area berjalan baik dan perlu dipertahankan melalui monitoring KPI."
@@ -136,11 +140,27 @@ export default function ExistingResultPage() {
     };
   });
 
-  const areaResults = result.areaResults?.length
-    ? result.areaResults.map((area) => ({
-        ...area,
-        score: Math.min(100, Math.max(0, Number(area.score) || 0)),
-      }))
+  const areaResults: ExistingAreaResult[] = result.areaResults?.length
+    ? result.areaResults.map((area) => {
+        const matchingArea = areas.find(
+          (item) =>
+            item.key === area.key ||
+            item.key === area.category ||
+            item.title === area.title
+        );
+
+        const score = Math.min(100, Math.max(0, Number(area.score) || 0));
+
+        return {
+          key: area.key || matchingArea?.key || area.category || area.title,
+          category: area.category || matchingArea?.key,
+          title: area.title || matchingArea?.title || "Area",
+          score,
+          level: area.level || getScoreStyle(score).label,
+          diagnosis: area.diagnosis || "Diagnosis belum tersedia.",
+          recommendation: area.recommendation || "Rekomendasi belum tersedia.",
+        };
+      })
     : fallbackAreas;
 
   const priorities = [...areaResults]
@@ -234,7 +254,7 @@ export default function ExistingResultPage() {
 
               return (
                 <div
-                  key={`matrix-${area.key}`}
+                  key={`matrix-${area.key || area.title}`}
                   className="rounded-2xl border border-white/10 bg-slate-950 p-5"
                 >
                   <div className="flex items-center justify-between">
@@ -262,6 +282,7 @@ export default function ExistingResultPage() {
             })}
           </div>
         </section>
+
         <section className="mt-8 overflow-hidden rounded-3xl border border-white/10 bg-slate-900">
 
           <div className="border-b border-white/10 p-7">
@@ -327,7 +348,7 @@ export default function ExistingResultPage() {
 
                   return (
                     <div
-                      key={area.key}
+                      key={area.key || area.title}
                       className="group flex h-full min-w-[100px] flex-1 flex-col items-center justify-end"
                     >
 
@@ -375,7 +396,7 @@ export default function ExistingResultPage() {
 
                 return (
                   <div
-                    key={`score-${area.key}`}
+                    key={`score-${area.key || area.title}`}
                     className="rounded-xl border border-white/5 bg-slate-950/70 p-4"
                   >
 
@@ -432,7 +453,7 @@ export default function ExistingResultPage() {
 
               return (
                 <div
-                  key={`priority-${area.key}`}
+                  key={`priority-${area.key || area.title}`}
                   className="rounded-2xl border border-white/10 bg-slate-950 p-5"
                 >
 
@@ -519,7 +540,7 @@ export default function ExistingResultPage() {
               </thead>
               <tbody>
                 {areaResults.map((area) => (
-                  <tr key={area.key || area.category} className="border-t border-white/5 align-top">
+                  <tr key={area.key || area.category || area.title} className="border-t border-white/5 align-top">
                     <td className="px-6 py-5 font-semibold">{area.title}</td>
                     <td className="px-6 py-5 font-bold text-cyan-400">{area.score}%</td>
                     <td className="px-6 py-5">{area.level || getScoreStyle(area.score).label}</td>
@@ -553,6 +574,3 @@ export default function ExistingResultPage() {
     </main>
   );
 }
-
-
-

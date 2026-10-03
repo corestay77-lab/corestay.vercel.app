@@ -1,6 +1,15 @@
 export default function PaketHargaPage() {
   const packages = [
     {
+      code: "FREE",
+      title: "Free Check",
+      subtitle: "Gratis",
+      description: "Untuk owner yang baru mengenal CoreStay dan ingin mendapatkan gambaran awal kondisi bisnis hotel.",
+      items: ["Quick Hotel Health Check", "Beberapa indikator dasar", "Rekomendasi awal"],
+      price: "Gratis",
+      note: "Untuk owner yang baru mengenal CoreStay",
+    },
+    {
       code: "A",
       title: "Hotel Assessment",
       subtitle: "For Existing Hotels",
@@ -44,7 +53,7 @@ export default function PaketHargaPage() {
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#6b8a80]">CoreStay Business</p>
         <h1 className="mt-3 text-4xl font-semibold text-[#17243d]">Paket & Harga</h1>
         <p className="mt-4 max-w-3xl text-[#66738a]">
-          Solusi assessment dan advisory untuk bisnis hotel — dari assessment, performance improvement,
+          Solusi assessment dan advisory untuk bisnis hotel — mulai dari free check, assessment, performance improvement,
           business transformation, hingga hotel development dan pre-opening.
         </p>
 
@@ -53,7 +62,9 @@ export default function PaketHargaPage() {
             <section key={pkg.code} className="rounded-3xl border border-[#dce4ef] bg-white p-7 shadow-sm">
               <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6b8a80]">Package {pkg.code}</p>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6b8a80]">
+                    {pkg.code === "FREE" ? "Free" : `Package ${pkg.code}`}
+                  </p>
                   <h2 className="mt-2 text-2xl font-semibold text-[#17243d]">{pkg.title}</h2>
                   <p className="mt-1 text-sm font-medium text-[#203b68]">{pkg.subtitle}</p>
                 </div>

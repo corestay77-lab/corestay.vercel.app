@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateObject } from "ai";
+import { openai } from "@ai-sdk/openai";
 import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 
@@ -66,7 +67,7 @@ export async function POST(request: Request) {
     let object: z.infer<typeof FinancialAssessment>;
     try {
       const result = await generateObject({
-        model: "openai/gpt-5.5",
+        model: openai("gpt-5.5"),
         schema: FinancialAssessment,
         system: `Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia.
 Analisa laporan keuangan secara konservatif dan berbasis angka.

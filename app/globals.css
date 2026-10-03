@@ -1,26 +1,16 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
+:root { --background: #ffffff; --foreground: #171717; }
+@theme inline { --color-background: var(--background); --color-foreground: var(--foreground); --font-sans: var(--font-geist-sans); --font-mono: var(--font-geist-mono); }
+@media (prefers-color-scheme: dark) { :root { --background: #0a0a0a; --foreground: #ededed; } }
+body { background: var(--background); color: var(--foreground); font-family: Arial, Helvetica, sans-serif; }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* One navigation system: the shared CoreStay sidebar from app/layout.tsx. */
+.site-sidebar ~ main > aside { display: none !important; }
+.site-sidebar-mobile ~ main > div[class*="lg:hidden"] { display: none !important; }
+.assessment-theme > .assessment-sidebar,
+.assessment-theme > .assessment-mobile-nav { display: none !important; }
+@media (min-width: 1024px) {
+  .site-sidebar ~ main { padding-left: 250px !important; }
+  .assessment-theme { margin-left: 0 !important; padding-left: 250px !important; }
 }

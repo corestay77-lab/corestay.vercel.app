@@ -14,6 +14,8 @@ type AssessmentResult = {
   extractedFigures: { label: string; value: string; period: string }[];
 };
 
+const MAX_FILE_SIZE = 4 * 1024 * 1024;
+
 const steps = [
   "UPLOAD LAPORAN KEUANGAN PDF",
   "CoreStay membaca PDF",
@@ -32,8 +34,17 @@ export default function FinancialAssessmentPage() {
 
   async function handleFile(file?: File) {
     if (!file) return;
+
     if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
       setError("Silakan upload laporan dalam format PDF.");
+      return;
+    }
+
+    if (file.size > MAX_FILE_SIZE) {
+      setFileName("");
+      setResult(null);
+      setError("Ukuran file terlalu besar. Maksimal file yang dapat diupload adalah 4 MB.");
+      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
@@ -91,10 +102,17 @@ export default function FinancialAssessmentPage() {
               {loading ? "…" : "↑"}
             </div>
             <h2 className="mt-5 text-xl font-bold">{loading ? "CoreStay sedang menganalisa…" : "Upload Laporan Keuangan PDF"}</h2>
-            <p className="mt-2 text-sm text-slate-500">Maksimal 12 MB • PDF</p>
+            <p className="mt-2 text-sm font-medium text-slate-600">PDF saja • Maksimal 4 MB</p>
+            <p className="mt-1 text-xs text-slate-400">Laporan keuangan PDF, maksimal 4 MB per file.</p>
             {fileName && <p className="mx-auto mt-5 max-w-full truncate rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">✓ {fileName}</p>}
           </button>
-          <input ref={inputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
+          <input
+            ref={inputRef}
+            type="file"
+            accept="application/pdf,.pdf"
+            className="hidden"
+            onChange={(e) => handleFile(e.target.files?.[0])}
+          />
           {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         </section>
 

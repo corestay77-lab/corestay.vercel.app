@@ -77,7 +77,10 @@ export default function CoreStaySidebar() {
             <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/65 transition hover:translate-x-1 hover:bg-white/10 hover:text-white"><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Logout</button>
           </>
         ) : (
-          <Link href="/login" onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:translate-x-1 hover:bg-white/10 hover:text-white ${pathname === "/login" ? "bg-white/10 text-white" : "text-white/65"}`}><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Login</Link>
+          <>
+            <Link href="/login" onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:translate-x-1 hover:bg-white/10 hover:text-white ${pathname === "/login" ? "bg-white/10 text-white" : "text-white/65"}`}><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Login</Link>
+            <Link href="/signup" onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:translate-x-1 hover:bg-white/10 hover:text-white ${pathname === "/signup" ? "bg-white/10 text-white" : "text-white/65"}`}><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Sign Up</Link>
+          </>
         )}
       </nav>
     </div>

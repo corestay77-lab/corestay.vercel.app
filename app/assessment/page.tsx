@@ -68,8 +68,7 @@ export default function AssessmentPage() {
               </h2>
               <p className="relative mt-4 max-w-lg text-sm leading-7 text-white/60 sm:text-base">
                 Untuk hotel yang sudah beroperasi dan ingin mengevaluasi revenue,
-                pricing, operational efficiency, people, guest experience dan
-                profitability.
+                pricing, operational efficiency, people, guest experience dan profitability.
               </p>
               <p className="relative mt-8 flex items-center justify-between border-t border-white/10 pt-5 text-sm font-semibold text-amber-200">
                 Pilih Hotel Existing <span className="text-lg transition group-hover:translate-x-1">→</span>
@@ -105,9 +104,7 @@ export default function AssessmentPage() {
                 Pre-opening Hotel
               </h2>
               <p className="relative mt-4 max-w-lg text-sm leading-7 text-white/60 sm:text-base">
-                Untuk hotel yang sedang dibangun, renovasi atau mempersiapkan
-                opening pertama—concept, market, pricing, SOP, SDM, system,
-                sales dan financial readiness.
+                Untuk hotel yang sedang dibangun, renovasi atau mempersiapkan opening pertama—concept, market, pricing, SOP, SDM, system, sales dan financial readiness.
               </p>
               <p className="relative mt-8 flex items-center justify-between border-t border-white/10 pt-5 text-sm font-semibold text-fuchsia-200">
                 Pilih Pre-opening Hotel <span className="text-lg transition group-hover:translate-x-1">→</span>
@@ -125,7 +122,7 @@ export default function AssessmentPage() {
           >
             <span className="relative z-10 flex items-center justify-center gap-3 text-sm sm:text-base">
               {!selected
-                ? "Pilih Hotel Existing atau Pre-opening Terlebih Dahulu"
+                ? "Pilih Jenis Hotel Terlebih Dahulu"
                 : selected === "existing"
                   ? "Lanjutkan — Hotel Existing →"
                   : "Lanjutkan — Pre-opening Hotel →"}
@@ -133,7 +130,7 @@ export default function AssessmentPage() {
           </button>
         </div>
 
-        <div className="mx-auto mt-7 text-center text-[11px] uppercase tracking-[.15em] text-white/40">
+        <div className="mx-auto mt-7 text-center text-[11px] leading-6 text-white/40">
           Assessment akan menyesuaikan pertanyaan dan rekomendasi berdasarkan jenis hotel yang Anda pilih.
         </div>
 

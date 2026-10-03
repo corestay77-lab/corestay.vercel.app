@@ -100,6 +100,12 @@ Jangan mengisi angka yang tidak tertulis di dokumen.`,
       error: "Laporan belum dapat dianalisa. Pastikan AI Gateway sudah dikonfigurasi di Vercel.",
     }, { status: 500 });
   } finally {
-    if (parser) await parser.destroy();
+    if (parser) {
+      try {
+        await parser.destroy();
+      } catch (cleanupError) {
+        console.error("PDF parser cleanup error:", cleanupError);
+      }
+    }
   }
 }

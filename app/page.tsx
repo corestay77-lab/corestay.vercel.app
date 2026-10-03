@@ -10,9 +10,9 @@ export default function Home() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
-    <main className="min-h-screen overflow-hidden bg-[#fffaf2] text-slate-900">
+    <main className="min-h-screen overflow-hidden bg-[#f7f9f7] text-slate-800">
       {/* HEADER */}
-      <header className="sticky top-0 z-50 border-b border-white/50 bg-white/75 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-slate-200/70 bg-white/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-5">
           <Link href="/" className="flex items-center">
             <Image
@@ -29,7 +29,7 @@ export default function Home() {
             href={whatsappUrl}
             target="_blank"
             rel="noopener noreferrer"
-            className="rounded-full bg-gradient-to-r from-emerald-500 to-teal-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/20 transition hover:-translate-y-0.5 hover:shadow-xl"
+            className="rounded-full bg-[#315c52] px-5 py-2.5 text-sm font-semibold text-white shadow-md shadow-[#315c52]/15 transition hover:-translate-y-0.5 hover:bg-[#274d44]"
           >
             WhatsApp
           </a>
@@ -37,25 +37,24 @@ export default function Home() {
       </header>
 
       {/* HERO */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-amber-100 via-rose-50 to-cyan-100">
-        <div className="absolute -left-32 top-10 h-80 w-80 rounded-full bg-fuchsia-400/30 blur-3xl" />
-        <div className="absolute right-0 top-0 h-96 w-96 rounded-full bg-cyan-400/30 blur-3xl" />
-        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-amber-300/30 blur-3xl" />
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#eef6f1] via-white to-[#fdf4ec]">
+        <div className="absolute -right-32 -top-24 h-96 w-96 rounded-full bg-[#dceee6] blur-3xl" />
+        <div className="absolute -left-40 bottom-0 h-96 w-96 rounded-full bg-[#f7e4d5] blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl px-6 pb-24 pt-20 md:pb-32 md:pt-28">
           <div className="max-w-4xl">
-            <div className="mb-6 inline-flex rounded-full border border-amber-300/70 bg-white/70 px-4 py-2 text-sm font-semibold text-amber-800 shadow-sm backdrop-blur">
+            <div className="mb-6 inline-flex rounded-full border border-[#cfe1d8] bg-white/80 px-4 py-2 text-sm font-semibold text-[#315c52] shadow-sm">
               Hospitality Business Transformation & Advisory
             </div>
 
-            <h1 className="text-5xl font-black leading-[1.05] tracking-tight text-slate-950 md:text-7xl">
+            <h1 className="text-5xl font-bold leading-[1.08] tracking-tight text-slate-900 md:text-7xl">
               Make Your Hotel
-              <span className="block bg-gradient-to-r from-amber-600 via-rose-500 to-fuchsia-600 bg-clip-text text-transparent">
+              <span className="block text-[#315c52]">
                 More Organized & Profitable.
               </span>
             </h1>
 
-            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-700 md:text-xl">
+            <p className="mt-7 max-w-2xl text-lg leading-8 text-slate-600 md:text-xl">
               CoreStay Advisory membantu owner hotel memperbaiki operasional,
               pricing, revenue, SOP, dan sistem kerja agar bisnis hotel
               berjalan lebih rapi, terukur, dan menguntungkan.
@@ -65,7 +64,7 @@ export default function Home() {
             <div className="mt-10 flex flex-col gap-4 sm:flex-row">
               <Link
                 href="/assessment"
-                className="rounded-2xl bg-gradient-to-r from-amber-500 via-orange-500 to-rose-500 px-7 py-4 text-center font-bold text-white shadow-xl shadow-orange-500/25 transition hover:-translate-y-1 hover:shadow-2xl"
+                className="rounded-2xl bg-[#315c52] px-7 py-4 text-center font-semibold text-white shadow-lg shadow-[#315c52]/20 transition hover:-translate-y-1 hover:bg-[#274d44]"
               >
                 Start Hotel Assessment
               </Link>
@@ -74,24 +73,24 @@ export default function Home() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="rounded-2xl border border-white/80 bg-white/75 px-7 py-4 text-center font-bold text-slate-800 shadow-lg backdrop-blur transition hover:-translate-y-1 hover:bg-white"
+                className="rounded-2xl border border-slate-200 bg-white/90 px-7 py-4 text-center font-semibold text-slate-700 shadow-sm transition hover:-translate-y-1 hover:border-[#c6dcd3] hover:bg-[#f5faf7]"
               >
                 Consult via WhatsApp
               </a>
             </div>
 
-            <p className="mt-4 text-sm font-medium text-slate-600">
+            <p className="mt-4 text-sm text-slate-500">
               Initial consultation for hotel owners & management.
             </p>
           </div>
 
           {/* VALUE CARDS */}
           <div className="mt-20 grid gap-5 md:grid-cols-3">
-            <div className="group rounded-3xl border border-amber-200 bg-gradient-to-br from-white to-amber-50 p-7 shadow-xl shadow-amber-200/30 transition hover:-translate-y-2">
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-amber-400 to-orange-500 text-lg font-black text-white shadow-lg">
+            <div className="rounded-3xl border border-[#dce9e3] bg-white p-7 shadow-[0_18px_50px_rgba(49,92,82,0.08)] transition hover:-translate-y-1">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#e7f1ec] text-sm font-bold text-[#315c52]">
                 01
               </div>
-              <h2 className="text-xl font-black text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900">
                 Operational System
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
@@ -100,11 +99,11 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group rounded-3xl border border-cyan-200 bg-gradient-to-br from-white to-cyan-50 p-7 shadow-xl shadow-cyan-200/30 transition hover:-translate-y-2">
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-cyan-400 to-blue-500 text-lg font-black text-white shadow-lg">
+            <div className="rounded-3xl border border-[#e1e7ee] bg-white p-7 shadow-[0_18px_50px_rgba(70,90,110,0.07)] transition hover:-translate-y-1">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#eaf0f7] text-sm font-bold text-[#48657f]">
                 02
               </div>
-              <h2 className="text-xl font-black text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900">
                 Pricing & Revenue
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
@@ -113,11 +112,11 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="group rounded-3xl border border-fuchsia-200 bg-gradient-to-br from-white to-fuchsia-50 p-7 shadow-xl shadow-fuchsia-200/30 transition hover:-translate-y-2">
-              <div className="mb-5 flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-fuchsia-500 to-violet-600 text-lg font-black text-white shadow-lg">
+            <div className="rounded-3xl border border-[#eadfd7] bg-white p-7 shadow-[0_18px_50px_rgba(120,90,70,0.07)] transition hover:-translate-y-1">
+              <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f8eee7] text-sm font-bold text-[#9a684c]">
                 03
               </div>
-              <h2 className="text-xl font-black text-slate-900">
+              <h2 className="text-xl font-bold text-slate-900">
                 Hotel Business Health
               </h2>
               <p className="mt-3 leading-7 text-slate-600">
@@ -130,20 +129,20 @@ export default function Home() {
       </section>
 
       {/* ASSESSMENT CTA */}
-      <section className="relative overflow-hidden bg-gradient-to-r from-violet-700 via-fuchsia-600 to-rose-500">
-        <div className="absolute -right-20 -top-20 h-64 w-64 rounded-full bg-white/15 blur-3xl" />
-        <div className="absolute -bottom-24 -left-20 h-72 w-72 rounded-full bg-amber-300/20 blur-3xl" />
+      <section className="relative overflow-hidden bg-[#315c52]">
+        <div className="absolute right-0 top-0 h-72 w-72 rounded-full bg-[#78a895]/25 blur-3xl" />
+        <div className="absolute bottom-0 left-0 h-64 w-64 rounded-full bg-[#d9b38c]/15 blur-3xl" />
 
         <div className="relative mx-auto max-w-6xl px-6 py-20 text-center text-white">
-          <p className="text-sm font-bold uppercase tracking-[0.25em] text-amber-200">
+          <p className="text-sm font-semibold uppercase tracking-[0.25em] text-[#d8e9e1]">
             Hotel Business Health Assessment
           </p>
 
-          <h2 className="mt-4 text-3xl font-black md:text-5xl">
+          <h2 className="mt-4 text-3xl font-bold md:text-5xl">
             Seberapa sehat bisnis hotel Anda?
           </h2>
 
-          <p className="mx-auto mt-5 max-w-2xl leading-7 text-white/85">
+          <p className="mx-auto mt-5 max-w-2xl leading-7 text-white/80">
             Mulai dengan assessment sederhana untuk melihat area yang perlu
             diperbaiki sebelum mengambil keputusan bisnis berikutnya.
           </p>
@@ -151,7 +150,7 @@ export default function Home() {
           <div className="mt-8">
             <Link
               href="/assessment"
-              className="inline-block rounded-2xl bg-white px-8 py-4 font-black text-violet-700 shadow-2xl transition hover:-translate-y-1 hover:bg-amber-50"
+              className="inline-block rounded-2xl bg-white px-8 py-4 font-semibold text-[#315c52] shadow-xl transition hover:-translate-y-1 hover:bg-[#f5faf7]"
             >
               Start Assessment
             </Link>
@@ -160,10 +159,9 @@ export default function Home() {
       </section>
 
       {/* FOOTER */}
-      <footer className="bg-slate-950 text-white">
+      <footer className="bg-[#243b36] text-white">
         <div className="mx-auto max-w-6xl px-6 py-14">
           <div className="grid gap-10 md:grid-cols-3">
-            {/* BRAND */}
             <div>
               <Image
                 src="/logo-corestay.png"
@@ -180,9 +178,8 @@ export default function Home() {
               </p>
             </div>
 
-            {/* SERVICES */}
             <div>
-              <h3 className="font-bold text-amber-300">
+              <h3 className="font-semibold text-[#d8e9e1]">
                 CoreStay Advisory
               </h3>
 
@@ -195,9 +192,8 @@ export default function Home() {
               </ul>
             </div>
 
-            {/* CONTACT */}
             <div>
-              <h3 className="font-bold text-cyan-300">
+              <h3 className="font-semibold text-[#e8c9aa]">
                 Let&apos;s Talk
               </h3>
 
@@ -210,14 +206,13 @@ export default function Home() {
                 href={whatsappUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-5 inline-block font-bold text-emerald-300 transition hover:text-white"
+                className="mt-5 inline-block font-semibold text-[#d8e9e1] transition hover:text-white"
               >
                 WhatsApp: 0851 0900 6363 →
               </a>
             </div>
           </div>
 
-          {/* BOTTOM FOOTER */}
           <div className="mt-12 flex flex-col gap-4 border-t border-white/10 pt-7 text-xs text-slate-400 md:flex-row md:items-center md:justify-between">
             <p>
               © {new Date().getFullYear()} CoreStay Advisory. All rights reserved.

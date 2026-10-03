@@ -27,6 +27,20 @@ export default function Home() {
       <section className="relative overflow-hidden bg-[#edf2f8]">
         <div className="absolute -right-32 -top-32 h-[32rem] w-[32rem] rounded-full bg-[#d8e2f0] blur-3xl" />
         <div className="absolute -left-40 bottom-0 h-[28rem] w-[28rem] rounded-full bg-[#e9e1d8] blur-3xl" />
+        <div className="pointer-events-none absolute inset-x-0 bottom-0 hidden h-[58%] overflow-hidden lg:block" aria-hidden="true">
+          <svg viewBox="0 0 1440 430" preserveAspectRatio="none" className="absolute bottom-0 h-full w-full opacity-[0.13]">
+            <defs>
+              <linearGradient id="hotelFade" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor="#203b68" stopOpacity="0.95" />
+                <stop offset="100%" stopColor="#203b68" stopOpacity="0.15" />
+              </linearGradient>
+            </defs>
+            <path fill="url(#hotelFade)" d="M0 430V335h95v-72h70v-38h76v38h48v-92h90v92h42V155h108v108h48V76h132v187h56V190h84v73h74V118h120v145h48V45h138v218h48v-83h74v83h101v167H0Z"/>
+            <g fill="#eef3f8">
+              <path d="M125 286h34v34h-34zM183 286h34v34h-34zM319 190h34v34h-34zM377 190h34v34h-34zM510 112h34v34h-34zM568 112h34v34h-34zM692 230h34v34h-34zM750 230h34v34h-34zM873 158h34v34h-34zM931 158h34v34h-34zM1052 86h34v34h-34zM1110 86h34v34h-34zM1235 122h34v34h-34zM1293 122h34v34h-34z"/>
+            </g>
+          </svg>
+        </div>
         <div className="relative mx-auto grid max-w-7xl items-center gap-14 px-6 py-20 lg:grid-cols-[1.05fr_.95fr] lg:px-8 lg:py-28">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#58708f]">CoreStay Advisory</p>

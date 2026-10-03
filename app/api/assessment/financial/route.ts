@@ -41,23 +41,33 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
 
+    if (!process.env.AI_GATEWAY_API_KEY) {
+      console.error("Financial assessment: AI_GATEWAY_API_KEY is missing in the runtime environment.");
+      return NextResponse.json({
+        error: "AI Gateway belum aktif pada deployment ini. Periksa Environment Variable AI_GATEWAY_API_KEY pada Vercel Production, lalu redeploy.",
+        code: "AI_GATEWAY_KEY_MISSING",
+      }, { status: 503 });
+    }
+
     const buffer = Buffer.from(await file.arrayBuffer());
     parser = new PDFParse({ data: buffer });
     const parsed = await parser.getText();
-    const text = parsed.text.trim();
+    const extractedText = parsed.text.trim();
 
-    if (!text) {
+    if (!extractedText) {
       return NextResponse.json({
         error: "PDF tidak memiliki teks yang dapat dibaca. Untuk PDF hasil scan/foto, OCR perlu ditambahkan pada tahap berikutnya.",
       }, { status: 422 });
     }
 
-    const cleanedText = text.slice(0, 120000);
+    const cleanedText = extractedText.slice(0, 120000);
 
-    const { object } = await generateObject({
-      model: "openai/gpt-5.6-terra",
-      schema: FinancialAssessment,
-      system: `Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia.
+    let object: z.infer<typeof FinancialAssessment>;
+    try {
+      const result = await generateObject({
+        model: "openai/gpt-5.5",
+        schema: FinancialAssessment,
+        system: `Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia.
 Analisa laporan keuangan secara konservatif dan berbasis angka.
 Jangan mengarang angka yang tidak ada. Jika angka tidak ditemukan, tulis "Tidak tersedia".
 Kenali Rupiah, juta, ribu, persen, debit/kredit, revenue, COGS, payroll, OPEX, GOP/EBITDA dan laba/rugi.
@@ -65,7 +75,7 @@ Pisahkan fakta dari interpretasi.
 Financial health score 0-100 harus mencerminkan kesehatan finansial berdasarkan data yang benar-benar tersedia.
 Berikan rekomendasi praktis untuk owner/management hotel.
 Action plan harus konkret dan berurutan.`,
-      prompt: `Analisa laporan keuangan hotel berikut.
+        prompt: `Analisa laporan keuangan hotel berikut.
 
 Nama file: ${file.name}
 
@@ -86,7 +96,17 @@ Keluarkan:
 9. Angka keuangan yang berhasil ditemukan, dengan periode dan satuan sesuai laporan.
 
 Jangan mengisi angka yang tidak tertulis di dokumen.`,
-    });
+      });
+      object = result.object;
+    } catch (aiError) {
+      console.error("Financial assessment AI error:", aiError);
+      const message = aiError instanceof Error ? aiError.message : String(aiError);
+      return NextResponse.json({
+        error: "AI Gateway gagal memproses analisa. Periksa AI Gateway API key, kredit/limit Gateway, dan model yang digunakan.",
+        code: "AI_GATEWAY_REQUEST_FAILED",
+        detail: message.slice(0, 500),
+      }, { status: 502 });
+    }
 
     return NextResponse.json({
       success: true,
@@ -96,8 +116,11 @@ Jangan mengisi angka yang tidak tertulis di dokumen.`,
     });
   } catch (error) {
     console.error("Financial assessment error:", error);
+    const message = error instanceof Error ? error.message : String(error);
     return NextResponse.json({
-      error: "Laporan belum dapat dianalisa. Pastikan AI Gateway sudah dikonfigurasi di Vercel.",
+      error: "Server gagal membaca atau memproses PDF.",
+      code: "FINANCIAL_ASSESSMENT_SERVER_ERROR",
+      detail: message.slice(0, 500),
     }, { status: 500 });
   } finally {
     if (parser) {

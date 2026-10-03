@@ -1,8 +1,7 @@
 import { NextResponse } from "next/server";
 import { generateObject } from "ai";
+import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
-import { CanvasFactory } from "pdf-parse/worker";
-import { PDFParse } from "pdf-parse";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -24,7 +23,7 @@ const FinancialAssessment = z.object({
 });
 
 export async function POST(request: Request) {
-  let parser: PDFParse | null = null;
+  let pdf: Awaited<ReturnType<typeof getDocumentProxy>> | null = null;
 
   try {
     const formData = await request.formData();
@@ -50,9 +49,9 @@ export async function POST(request: Request) {
       }, { status: 503 });
     }
 
-    const buffer = Buffer.from(await file.arrayBuffer());
-    parser = new PDFParse({ data: buffer, CanvasFactory });
-    const parsed = await parser.getText();
+    const buffer = await file.arrayBuffer();
+    pdf = await getDocumentProxy(new Uint8Array(buffer));
+    const parsed = await extractText(pdf, { mergePages: true });
     const extractedText = parsed.text.trim();
 
     if (!extractedText) {
@@ -113,7 +112,7 @@ Jangan mengisi angka yang tidak tertulis di dokumen.`,
     return NextResponse.json({
       success: true,
       fileName: file.name,
-      pages: parsed.total,
+      pages: parsed.totalPages,
       result: object,
     });
   } catch (error) {
@@ -125,9 +124,9 @@ Jangan mengisi angka yang tidak tertulis di dokumen.`,
       detail: message.slice(0, 500),
     }, { status: 500 });
   } finally {
-    if (parser) {
+    if (pdf) {
       try {
-        await parser.destroy();
+        pdf.cleanup();
       } catch (cleanupError) {
         console.error("PDF parser cleanup error:", cleanupError);
       }

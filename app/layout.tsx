@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import CoreStaySidebar from "@/components/CoreStaySidebar";
+import PremiumReportBanner from "@/components/PremiumReportBanner";
 import "./globals.css";
 
 const geistSans = Geist({ variable: "--font-geist-sans", subsets: ["latin"] });
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col">
         <CoreStaySidebar />
         {children}
+        <PremiumReportBanner />
       </body>
     </html>
   );

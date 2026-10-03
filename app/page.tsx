@@ -10,7 +10,7 @@ export default function Home() {
 
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-[#17243d]">
-      <header className="sticky top-0 z-50 border-b border-[#dce3ee] bg-[#f4f7fb]/90 backdrop-blur-xl">
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
           <Link href="/" className="flex items-center">
             <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[150px] object-contain mix-blend-screen" priority />

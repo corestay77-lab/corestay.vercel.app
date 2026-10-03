@@ -49,8 +49,21 @@ export default function FinancialAssessmentPage() {
         method: "POST",
         body: formData,
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || "Analisa gagal.");
+      const raw = await response.text();
+      let data: { result?: AssessmentResult; error?: string } = {};
+      if (raw.trim()) {
+        try {
+          data = JSON.parse(raw);
+        } catch {
+          throw new Error(`Server mengembalikan respons yang tidak valid (HTTP ${response.status}). Silakan coba lagi.`);
+        }
+      }
+      if (!response.ok) {
+        throw new Error(data.error || `Analisa gagal (HTTP ${response.status}).`);
+      }
+      if (!data.result) {
+        throw new Error("Server tidak mengembalikan hasil analisa.");
+      }
       setResult(data.result);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analisa gagal diproses.");

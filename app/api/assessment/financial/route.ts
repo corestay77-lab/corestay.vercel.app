@@ -42,11 +42,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
 
-    if (!process.env.AI_GATEWAY_API_KEY) {
-      console.error("Financial assessment: AI_GATEWAY_API_KEY is missing in the runtime environment.");
+    if (!process.env.OPENAI_API_KEY) {
+      console.error("Financial assessment: OpenAI API key is missing in the runtime environment.");
       return NextResponse.json({
-        error: "AI Gateway belum aktif pada deployment ini. Periksa Environment Variable AI_GATEWAY_API_KEY pada Vercel Production, lalu redeploy.",
-        code: "AI_GATEWAY_KEY_MISSING",
+        error: "OpenAI API belum aktif pada deployment ini. Periksa OPENAI_API_KEY pada Vercel Production, lalu redeploy.",
+        code: "OPENAI_KEY_MISSING",
       }, { status: 503 });
     }
 
@@ -101,11 +101,11 @@ Jangan mengisi angka yang tidak tertulis di dokumen.`,
       });
       object = result.object;
     } catch (aiError) {
-      console.error("Financial assessment AI error:", aiError);
+      console.error("Financial assessment OpenAI error:", aiError);
       const message = aiError instanceof Error ? aiError.message : String(aiError);
       return NextResponse.json({
-        error: "AI Gateway gagal memproses analisa. Periksa AI Gateway API key, kredit/limit Gateway, dan model yang digunakan.",
-        code: "AI_GATEWAY_REQUEST_FAILED",
+        error: "OpenAI gagal memproses analisa. Periksa OPENAI_API_KEY, saldo/limit API OpenAI, dan model yang digunakan.",
+        code: "OPENAI_REQUEST_FAILED",
         detail: message.slice(0, 500),
       }, { status: 502 });
     }

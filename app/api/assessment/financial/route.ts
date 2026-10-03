@@ -1,7 +1,8 @@
 import { NextResponse } from "next/server";
-import { PDFParse } from "pdf-parse";
 import { generateObject } from "ai";
 import { z } from "zod";
+import { CanvasFactory } from "pdf-parse/worker";
+import { PDFParse } from "pdf-parse";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
@@ -50,13 +51,14 @@ export async function POST(request: Request) {
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
-    parser = new PDFParse({ data: buffer });
+    parser = new PDFParse({ data: buffer, CanvasFactory });
     const parsed = await parser.getText();
     const extractedText = parsed.text.trim();
 
     if (!extractedText) {
       return NextResponse.json({
         error: "PDF tidak memiliki teks yang dapat dibaca. Untuk PDF hasil scan/foto, OCR perlu ditambahkan pada tahap berikutnya.",
+        code: "PDF_TEXT_EMPTY",
       }, { status: 422 });
     }
 

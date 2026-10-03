@@ -22,7 +22,7 @@ const steps = [
   "Ekstraksi angka keuangan",
   "Validasi & normalisasi data",
   "Financial Assessment Engine",
-  "AI Business Analysis",
+  "CoreStay Analysis",
 ];
 
 export default function FinancialAssessmentPage() {
@@ -106,13 +106,7 @@ export default function FinancialAssessmentPage() {
             <p className="mt-1 text-xs text-slate-400">Laporan keuangan PDF, maksimal 4 MB per file.</p>
             {fileName && <p className="mx-auto mt-5 max-w-full truncate rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">✓ {fileName}</p>}
           </button>
-          <input
-            ref={inputRef}
-            type="file"
-            accept="application/pdf,.pdf"
-            className="hidden"
-            onChange={(e) => handleFile(e.target.files?.[0])}
-          />
+          <input ref={inputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
           {error && <div className="mt-4 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
         </section>
 

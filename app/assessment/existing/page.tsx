@@ -493,38 +493,54 @@ export default function ExistingAssessmentPage() {
 
   if (showIdentity) {
     return (
-      <main className="min-h-screen bg-slate-950 text-white">
+      <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]"><aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-[#17243d] lg:flex lg:flex-col">
+        <div className="flex h-full flex-col px-6 py-7">
+          <a href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" /></a>
+          <div className="mt-10">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#17243d]/35">Assessment</p>
+            <nav className="mt-4 space-y-1.5">
+              <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-[#17243d]">Hotel Assessment</a>
+              <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Hotel Existing</a>
+              <a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Pre-opening Hotel</a>
+            </nav>
+          </div>
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p>
+            <p className="mt-2 text-xs leading-5 text-[#17243d]/50">Hotel Business Health Assessment</p>
+          </div>
+        </div>
+      </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-[#17243d] backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-[#17243d]/70">Assessment</a></div></header>
         <div className="mx-auto max-w-4xl px-6 py-10">
           <header>
             <div className="flex items-center justify-between">
               <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
-              <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">Hotel Existing</span>
+              <span className="rounded-full border border-[#203b68]/20 bg-[#203b68]/10 px-4 py-2 text-xs text-[#203b68]">Hotel Existing</span>
             </div>
             <h1 className="mt-8 text-3xl font-bold md:text-4xl">Identitas Pengisi Assessment</h1>
-            <p className="mt-3 text-slate-400">Lengkapi data berikut sebelum melihat hasil assessment.</p>
+            <p className="mt-3 text-[#66738a]">Lengkapi data berikut sebelum melihat hasil assessment.</p>
           </header>
 
-          <section className="mt-8 rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-2xl">
+          <section className="mt-8 rounded-3xl border border-[#dce3ee] bg-white p-7 shadow-2xl">
             <div className="space-y-5">
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">Nama</label>
-                <input type="text" value={respondentName} onChange={(e) => setRespondentName(e.target.value)} placeholder="Nama pengisi assessment" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400" />
+                <label className="mb-2 block text-sm font-semibold text-[#4e5d73]">Nama</label>
+                <input type="text" value={respondentName} onChange={(e) => setRespondentName(e.target.value)} placeholder="Nama pengisi assessment" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 text-[#17243d] outline-none transition placeholder:text-slate-600 focus:border-[#203b68]" />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">Nama Hotel</label>
-                <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="Nama hotel" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400" />
+                <label className="mb-2 block text-sm font-semibold text-[#4e5d73]">Nama Hotel</label>
+                <input type="text" value={hotelName} onChange={(e) => setHotelName(e.target.value)} placeholder="Nama hotel" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 text-[#17243d] outline-none transition placeholder:text-slate-600 focus:border-[#203b68]" />
               </div>
               <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-300">No. Tlp</label>
-                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-2xl border border-slate-700 bg-slate-950 px-4 py-4 text-white outline-none transition placeholder:text-slate-600 focus:border-cyan-400" />
+                <label className="mb-2 block text-sm font-semibold text-[#4e5d73]">No. Tlp</label>
+                <input type="tel" value={phone} onChange={(e) => setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 text-[#17243d] outline-none transition placeholder:text-slate-600 focus:border-[#203b68]" />
               </div>
             </div>
 
             <div className="mt-8 flex items-center justify-between gap-4">
-              <button type="button" onClick={() => setShowIdentity(false)} className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-cyan-400 hover:text-cyan-400">
+              <button type="button" onClick={() => setShowIdentity(false)} className="rounded-xl border border-[#d5dde8] px-5 py-3 text-sm font-semibold text-[#4e5d73] transition hover:border-[#203b68] hover:text-[#203b68]">
                 ← Kembali
               </button>
-              <button type="button" onClick={submitAssessment} disabled={!respondentName.trim() || !hotelName.trim() || !phone.trim()} className={"rounded-xl px-6 py-3 text-sm font-semibold transition " + ((!respondentName.trim() || !hotelName.trim() || !phone.trim()) ? "cursor-not-allowed bg-slate-800 text-slate-600" : "bg-cyan-400 text-slate-950 hover:bg-cyan-300")}>
+              <button type="button" onClick={submitAssessment} disabled={!respondentName.trim() || !hotelName.trim() || !phone.trim()} className={"rounded-xl px-6 py-3 text-sm font-semibold transition " + ((!respondentName.trim() || !hotelName.trim() || !phone.trim()) ? "cursor-not-allowed bg-[#e4e9f0] text-slate-600" : "bg-[#203b68] text-slate-950 hover:bg-cyan-300")}>
                 Lihat Hasil →
               </button>
             </div>
@@ -535,7 +551,7 @@ export default function ExistingAssessmentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#f4f7fb] text-[#17243d]">
       <div className="mx-auto max-w-4xl px-6 py-10">
 
         <header>
@@ -543,7 +559,7 @@ export default function ExistingAssessmentPage() {
             <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
 
             <div className="flex items-center gap-2">
-              <span className="rounded-full border border-cyan-400/20 bg-cyan-400/10 px-4 py-2 text-xs text-cyan-300">
+              <span className="rounded-full border border-[#203b68]/20 bg-[#203b68]/10 px-4 py-2 text-xs text-[#203b68]">
                 Hotel Existing
               </span>
               <span className="rounded-full border border-emerald-400/20 bg-emerald-400/10 px-3 py-2 text-[10px] font-semibold text-emerald-300">
@@ -556,32 +572,32 @@ export default function ExistingAssessmentPage() {
             Assessment Kesehatan Bisnis Hotel
           </h1>
 
-          <p className="mt-4 text-slate-400">
+          <p className="mt-4 text-[#66738a]">
             Evaluasi kondisi hotel berdasarkan 6 area utama bisnis hotel.
           </p>
         </header>
 
-        <section className="mt-8 rounded-2xl border border-slate-800 bg-slate-900 p-5">
+        <section className="mt-8 rounded-2xl border border-[#dce3ee] bg-white p-5">
           <div className="flex justify-between text-sm">
-            <span className="text-slate-400">
+            <span className="text-[#66738a]">
               Pertanyaan {current + 1} dari {questions.length}
             </span>
 
-            <span className="font-semibold text-cyan-400">
+            <span className="font-semibold text-[#203b68]">
               {progress}%
             </span>
           </div>
 
-          <div className="mt-3 h-2 overflow-hidden rounded-full bg-slate-800">
+          <div className="mt-3 h-2 overflow-hidden rounded-full bg-[#e4e9f0]">
             <div
-              className="h-full rounded-full bg-cyan-400 transition-all"
+              className="h-full rounded-full bg-[#203b68] transition-all"
               style={{ width: `${progress}%` }}
             />
           </div>
         </section>
 
-        <section className="mt-6 rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-2xl">
-          <p className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
+        <section className="mt-6 rounded-3xl border border-[#dce3ee] bg-white p-7 shadow-2xl">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#203b68]">
             {question.title}
           </p>
 
@@ -600,8 +616,8 @@ export default function ExistingAssessmentPage() {
                 onClick={() => selectAnswer(option.score)}
                 className={`w-full rounded-2xl border p-4 text-left transition ${
                   selectedAnswer === option.score
-                    ? "border-cyan-400 bg-cyan-400/10"
-                    : "border-slate-700 bg-slate-950 hover:border-cyan-400"
+                    ? "border-[#203b68] bg-[#203b68]/10"
+                    : "border-[#d5dde8] bg-[#f4f7fb] hover:border-[#203b68]"
                 }`}
               >
                 <div className="font-medium">
@@ -621,15 +637,15 @@ export default function ExistingAssessmentPage() {
             disabled={current === 0}
             className={`rounded-xl border px-5 py-3 text-sm font-semibold transition ${
               current === 0
-                ? "cursor-not-allowed border-slate-800 text-slate-700"
-                : "border-slate-700 text-slate-300 hover:border-cyan-400 hover:text-cyan-400"
+                ? "cursor-not-allowed border-[#dce3ee] text-slate-700"
+                : "border-[#d5dde8] text-[#4e5d73] hover:border-[#203b68] hover:text-[#203b68]"
             }`}
           >
             ← Sebelumnya
           </button>
         </div>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-[#7b8798]">
           Jawab berdasarkan kondisi hotel Anda saat ini. {ASSESSMENT_VERSION}
         </p>
 

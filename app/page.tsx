@@ -13,7 +13,7 @@ export default function Home() {
       <header className="sticky top-0 z-50 border-b border-[#dce3ee] bg-[#f4f7fb]/90 backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
           <Link href="/" className="flex items-center">
-            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[150px] object-contain mix-blend-multiply" priority />
+            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[150px] object-contain mix-blend-screen" priority />
           </Link>
           <nav className="hidden items-center gap-8 text-sm font-medium text-[#66738a] md:flex">
             <a href="#services" className="hover:text-[#203b68]">Services</a>
@@ -135,7 +135,7 @@ export default function Home() {
         <div className="mx-auto max-w-7xl px-6 py-16 lg:px-8">
           <div className="grid gap-12 md:grid-cols-[1.4fr_1fr_1fr]">
             <div>
-              <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[160px] object-contain mix-blend-multiply" />
+              <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[160px] object-contain mix-blend-screen" />
               <p className="mt-5 max-w-md text-sm leading-7 text-white/60">Hospitality Business Transformation & Advisory untuk membantu owner hotel membangun operasional yang lebih rapi, pricing yang lebih tepat, dan bisnis yang lebih menguntungkan.</p>
             </div>
             <div><p className="text-sm font-bold text-[#d1dced]">CoreStay Advisory</p><ul className="mt-5 space-y-3 text-sm text-white/55"><li>Hotel Business Assessment</li><li>Operational System</li><li>Pricing & Revenue</li><li>SOP & Company Rules</li><li>Pre-opening & Hotel Reset</li></ul></div>

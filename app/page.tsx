@@ -1,5 +1,8 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
+import { useState } from "react";
 
 export default function Home() {
   const whatsappNumber = "6285109006363";
@@ -7,31 +10,44 @@ export default function Home() {
     "Halo CoreStay Advisory, saya ingin berkonsultasi mengenai bisnis hotel saya."
   );
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  const closeMobileMenu = () => setMobileMenuOpen(false);
 
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]">
       <aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-white lg:flex lg:flex-col">
         <div className="flex h-full flex-col px-6 py-7">
-          <Link href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" priority /></Link>
+          <Link href="/" className="flex items-center justify-center rounded-2xl px-2 py-3">
+            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" priority />
+          </Link>
           <div className="mt-6"><p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Navigation</p><nav className="mt-4 space-y-1.5"><a href="#services" className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white"><span className="h-1.5 w-1.5 rounded-full bg-white/30 group-hover:bg-[#d8b985]" />Services</a><a href="#assessment" className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white"><span className="h-1.5 w-1.5 rounded-full bg-white/30 group-hover:bg-[#d8b985]" />Assessment</a><a href="#contact" className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white"><span className="h-1.5 w-1.5 rounded-full bg-white/30 group-hover:bg-[#d8b985]" />Contact</a></nav></div>
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p><p className="mt-2 text-xs leading-5 text-white/50">Hospitality Business Transformation & Advisory.</p><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-xs font-bold text-[#162b4a] transition hover:bg-[#eef2f7]">Talk to Us</a></div>
         </div>
       </aside>
 
       <div className="lg:hidden">
-        <details className="group fixed left-0 top-0 z-[70]">
-          <summary className="flex h-12 w-12 cursor-pointer list-none items-center justify-center rounded-br-2xl bg-black text-white shadow-lg [&::-webkit-details-marker]:hidden" aria-label="Open menu">
-            <span className="flex w-5 flex-col gap-1"><span className="h-0.5 w-full bg-white"/><span className="h-0.5 w-full bg-white"/><span className="h-0.5 w-full bg-white"/></span>
-          </summary>
-          <div className="fixed inset-0 bg-black/45 backdrop-blur-[2px]" />
-          <aside className="fixed inset-y-0 left-0 w-[280px] bg-black px-6 py-7 text-white shadow-2xl">
-            <Link href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[160px] object-contain mix-blend-screen" /></Link>
-            <p className="mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Navigation</p>
-            <nav className="mt-4 space-y-1.5"><a href="#services" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white">Services</a><a href="#assessment" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white">Assessment</a><a href="#contact" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/70 hover:bg-white/10 hover:text-white">Contact</a></nav>
-            <div className="absolute bottom-7 left-6 right-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p><p className="mt-2 text-xs leading-5 text-white/50">Hospitality Business Transformation & Advisory.</p><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-xs font-bold text-[#162b4a]">Talk to Us</a></div>
-          </aside>
-        </details>
-        <Link href="/" className="fixed left-14 right-4 top-2.5 z-[60] flex h-9 items-center justify-center"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[120px] object-contain mix-blend-screen" priority /></Link>
+        <button type="button" onClick={() => setMobileMenuOpen(true)} aria-label="Open menu" aria-expanded={mobileMenuOpen} className="fixed left-0 top-0 z-[70] flex h-12 w-12 items-center justify-center rounded-br-2xl bg-black text-white shadow-lg">
+          <span className="flex w-5 flex-col gap-1"><span className="h-0.5 w-full bg-white" /><span className="h-0.5 w-full bg-white" /><span className="h-0.5 w-full bg-white" /></span>
+        </button>
+
+        <div className={`fixed inset-0 z-[60] bg-black/45 backdrop-blur-[2px] transition-opacity duration-300 ${mobileMenuOpen ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`} onClick={closeMobileMenu} />
+
+        <aside className={`fixed inset-y-0 left-0 z-[70] w-[280px] bg-black px-6 py-7 text-white shadow-2xl transition-transform duration-300 ease-out ${mobileMenuOpen ? "translate-x-0" : "-translate-x-full"}`} aria-hidden={!mobileMenuOpen}>
+          <div className="flex items-center justify-between">
+            <Link href="/" onClick={closeMobileMenu} className="flex items-center rounded-2xl px-2 py-3">
+              <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[160px] object-contain mix-blend-screen" />
+            </Link>
+            <button type="button" onClick={closeMobileMenu} aria-label="Close menu" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-xl text-white/80 transition hover:bg-white/15 hover:text-white">×</button>
+          </div>
+          <p className="mt-8 px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Navigation</p>
+          <nav className="mt-4 space-y-1.5">
+            <a href="#services" onClick={closeMobileMenu} className="block rounded-xl px-3 py-3 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">Services</a>
+            <a href="#assessment" onClick={closeMobileMenu} className="block rounded-xl px-3 py-3 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">Assessment</a>
+            <a href="#contact" onClick={closeMobileMenu} className="block rounded-xl px-3 py-3 text-sm font-medium text-white/70 transition hover:bg-white/10 hover:text-white">Contact</a>
+          </nav>
+          <div className="absolute bottom-7 left-6 right-6 rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p><p className="mt-2 text-xs leading-5 text-white/50">Hospitality Business Transformation & Advisory.</p><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-xs font-bold text-[#162b4a]">Talk to Us</a></div>
+        </aside>
       </div>
 
       <section className="relative overflow-hidden bg-[#edf2f8]">
@@ -44,7 +60,7 @@ export default function Home() {
 
       <section id="assessment" className="bg-[#eeeae4] py-14 lg:py-18"><div className="mx-auto max-w-7xl px-6 lg:px-8"><div className="overflow-hidden rounded-[2.5rem] bg-[#203b68] p-8 text-white shadow-[0_25px_80px_rgba(32,59,104,0.18)] md:p-12"><div className="grid items-center gap-10 md:grid-cols-[1fr_auto]"><div><p className="text-xs font-bold uppercase tracking-[0.22em] text-[#cbd8e8]">Hotel Business Health Assessment</p><h2 className="mt-4 max-w-3xl text-3xl font-semibold tracking-tight md:text-5xl">Seberapa sehat bisnis hotel Anda?</h2><p className="mt-4 max-w-2xl leading-7 text-white/70">Mulai dengan assessment sederhana untuk melihat area yang perlu diperbaiki sebelum mengambil keputusan bisnis berikutnya.</p></div><Link href="/assessment" className="rounded-xl bg-white px-7 py-4 text-center text-sm font-bold text-[#203b68] shadow-xl transition hover:-translate-y-1 hover:bg-[#f7f9fc]">Start Assessment →</Link></div></div></div></section>
 
-      <footer id="contact" className="bg-[#162b4a] text-white"><div className="mx-auto max-w-7xl px-6 py-12 lg:px-8"><div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]"><div><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[160px] object-contain mix-blend-screen" /><p className="mt-5 max-w-md text-sm leading-7 text-white/60">Hospitality Business Transformation & Advisory untuk membantu owner hotel membangun operasional yang lebih rapi, pricing yang lebih tepat, dan bisnis yang lebih menguntungkan.</p></div><div><p className="text-sm font-bold text-[#d1dced]">CoreStay Advisory</p><ul className="mt-5 space-y-3 text-sm text-white/55"><li>Hotel Business Assessment</li><li>Operational System</li><li>Pricing & Revenue</li><li>SOP & Company Rules</li><li>Pre-opening & Hotel Reset</li></ul></div><div><p className="text-sm font-bold text-[#d8b985]">Let's Talk</p><p className="mt-5 text-sm leading-7 text-white/55">Punya masalah dengan operasional, SDM, pricing, atau revenue hotel?</p><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm font-bold text-[#d1dced] hover:text-white">WhatsApp: 0851 0900 6363 →</a></div></div><div className="mt-8 border-t border-white/10 pt-7 text-xs text-white/35">© {new Date().getFullYear()} CoreStay Advisory. All rights reserved.</div></div></footer>
+      <footer id="contact" className="bg-[#162b4a] text-white"><div className="mx-auto max-w-7xl px-6 py-12 lg:px-8"><div className="grid gap-8 md:grid-cols-[1.4fr_1fr_1fr]"><div><p className="text-sm font-bold text-white">CoreStay Advisory</p><p className="mt-5 max-w-md text-sm leading-7 text-white/60">Hospitality Business Transformation & Advisory untuk membantu owner hotel membangun operasional yang lebih rapi, pricing yang lebih tepat, dan bisnis yang lebih menguntungkan.</p></div><div><p className="text-sm font-bold text-[#d1dced]">CoreStay Advisory</p><ul className="mt-5 space-y-3 text-sm text-white/55"><li>Hotel Business Assessment</li><li>Operational System</li><li>Pricing & Revenue</li><li>SOP & Company Rules</li><li>Pre-opening & Hotel Reset</li></ul></div><div><p className="text-sm font-bold text-[#d8b985]">Let's Talk</p><p className="mt-5 text-sm leading-7 text-white/55">Punya masalah dengan operasional, SDM, pricing, atau revenue hotel?</p><a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-5 inline-block text-sm font-bold text-[#d1dced] hover:text-white">WhatsApp: 0851 0900 6363 →</a></div></div><div className="mt-8 border-t border-white/10 pt-7 text-xs text-white/35">© {new Date().getFullYear()} CoreStay Advisory. All rights reserved.</div></div></footer>
     </main>
   );
 }

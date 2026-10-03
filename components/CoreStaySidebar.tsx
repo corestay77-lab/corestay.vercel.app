@@ -27,6 +27,27 @@ export default function CoreStaySidebar() {
   }, [activeAssessment]);
 
   useEffect(() => {
+    let mounted = true;
+    supabase.auth.getSession().then(({ data }) => {
+      if (mounted) setLoggedIn(!!data.session);
+    });
+    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (mounted) setLoggedIn(!!session);
+    });
+    return () => {
+      mounted = false;
+      listener.subscription.unsubscribe();
+    };
+  }, []);
+
+  async function logout() {
+    await supabase.auth.signOut();
+    setLoggedIn(false);
+    setOpen(false);
+    window.location.href = "/";
+  }
+
+  useEffect(() => {
     requestAnimationFrame(() => {
       const el = menuRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
       el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
@@ -50,8 +71,14 @@ export default function CoreStaySidebar() {
       </nav>
       <p className="mt-6 px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Account</p>
       <nav className="mt-3 space-y-1">
-        <Link aria-current={pathname === "/profil" ? "page" : undefined} href="/profil" onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:translate-x-1 hover:bg-white/10 hover:text-white ${pathname === "/profil" ? "bg-white/10 text-white" : "text-white/65"}`}><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Profil</Link>
-        <Link href="/" onClick={close} className="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium text-white/65 transition hover:translate-x-1 hover:bg-white/10 hover:text-white"><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Logout</Link>
+        {loggedIn ? (
+          <>
+            <Link aria-current={pathname === "/profil" ? "page" : undefined} href="/profil" onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:translate-x-1 hover:bg-white/10 hover:text-white ${pathname === "/profil" ? "bg-white/10 text-white" : "text-white/65"}`}><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Profil</Link>
+            <button type="button" onClick={logout} className="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-white/65 transition hover:translate-x-1 hover:bg-white/10 hover:text-white"><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Logout</button>
+          </>
+        ) : (
+          <Link href="/login" onClick={close} className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition hover:translate-x-1 hover:bg-white/10 hover:text-white ${pathname === "/login" ? "bg-white/10 text-white" : "text-white/65"}`}><i className="h-1.5 w-1.5 rounded-full bg-white/30" />Login</Link>
+        )
       </nav>
     </div>
   );

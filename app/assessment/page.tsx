@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -22,17 +23,17 @@ export default function AssessmentPage() {
           <div className="mt-10">
             <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#17243d]/35">Assessment</p>
             <nav className="mt-4 space-y-1.5">
-              <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-[#17243d]">Hotel Assessment</a>
-              <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Hotel Existing</a>
+              <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-white">Hotel Assessment</a>
+              <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-[#17243d]">Hotel Existing</a>
               <a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Pre-opening Hotel</a>
             </nav>
           </div>
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
             <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p>
-            <p className="mt-2 text-xs leading-5 text-[#17243d]/50">Hotel Business Health Assessment</p>
+            <p className="mt-2 text-xs leading-5 text-white/50">Hotel Business Health Assessment</p>
           </div>
         </div>
-      </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-[#17243d] backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-[#17243d]/70">Assessment</a></div></header>
+      </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-white backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-white/70">Assessment</a></div></header>
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_10%_10%,rgba(245,158,11,.32),transparent_26%),radial-gradient(circle_at_90%_10%,rgba(6,182,212,.28),transparent_28%),radial-gradient(circle_at_15%_85%,rgba(236,72,153,.24),transparent_28%),radial-gradient(circle_at_85%_80%,rgba(139,92,246,.28),transparent_30%)]" />
       <div className="pointer-events-none absolute -left-24 top-1/4 h-72 w-72 rounded-full bg-[#203b68]/15 blur-3xl" />
       <div className="pointer-events-none absolute -right-24 bottom-1/4 h-80 w-80 rounded-full bg-pink-500/15 blur-3xl" />

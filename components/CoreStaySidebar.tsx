@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 const assessmentItems = [
   ["Assessment 1", "Hotel Existing", "/assessment/existing"],
@@ -15,6 +16,7 @@ export default function CoreStaySidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [assessmentOpen, setAssessmentOpen] = useState(true);
+  const [loggedIn, setLoggedIn] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   if (pathname.startsWith("/admin") || pathname.startsWith("/pms")) return null;
   const activeAssessment = pathname === "/assessment" || pathname.startsWith("/assessment/");

@@ -37,8 +37,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "File harus berformat PDF." }, { status: 400 });
     }
 
-    if (file.size > 12 * 1024 * 1024) {
-      return NextResponse.json({ error: "Ukuran PDF maksimal 12 MB." }, { status: 400 });
+    if (file.size > 4 * 1024 * 1024) {
+      return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
 
     const buffer = Buffer.from(await file.arrayBuffer());
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
     const cleanedText = text.slice(0, 120000);
 
     const { object } = await generateObject({
-      model: "openai/gpt-5.4",
+      model: "openai/gpt-5.6-terra",
       schema: FinancialAssessment,
       system: `Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia.
 Analisa laporan keuangan secara konservatif dan berbasis angka.

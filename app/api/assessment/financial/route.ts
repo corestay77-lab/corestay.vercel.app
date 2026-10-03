@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { generateObject } from "ai";
-import { openai } from "@ai-sdk/openai";
+import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { extractText, getDocumentProxy } from "unpdf";
 import { z } from "zod";
 
@@ -42,11 +42,11 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
 
-    if (!process.env.OPENAI_API_KEY) {
-      console.error("Financial assessment: OpenAI API key is missing in the runtime environment.");
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("Financial assessment: Gemini API key is missing in the runtime environment.");
       return NextResponse.json({
-        error: "OpenAI API belum aktif pada deployment ini. Periksa OPENAI_API_KEY pada Vercel Production, lalu redeploy.",
-        code: "OPENAI_KEY_MISSING",
+        error: "Gemini API belum aktif pada deployment ini. Tambahkan GEMINI_API_KEY pada Vercel Production, lalu redeploy.",
+        code: "GEMINI_KEY_MISSING",
       }, { status: 503 });
     }
 
@@ -67,7 +67,7 @@ export async function POST(request: Request) {
     let object: z.infer<typeof FinancialAssessment>;
     try {
       const result = await generateObject({
-        model: openai("gpt-5.5"),
+        model: createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY! })("gemini-3.8-flash"),
         schema: FinancialAssessment,
         system: `Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia.
 Analisa laporan keuangan secara konservatif dan berbasis angka.
@@ -101,11 +101,11 @@ Jangan mengisi angka yang tidak tertulis di dokumen.`,
       });
       object = result.object;
     } catch (aiError) {
-      console.error("Financial assessment OpenAI error:", aiError);
+      console.error("Financial assessment Gemini error:", aiError);
       const message = aiError instanceof Error ? aiError.message : String(aiError);
       return NextResponse.json({
-        error: "OpenAI gagal memproses analisa. Periksa OPENAI_API_KEY, saldo/limit API OpenAI, dan model yang digunakan.",
-        code: "OPENAI_REQUEST_FAILED",
+        error: "Gemini gagal memproses analisa. Periksa GEMINI_API_KEY dan batas penggunaan Gemini Free Tier.",
+        code: "GEMINI_REQUEST_FAILED",
         detail: message.slice(0, 500),
       }, { status: 502 });
     }

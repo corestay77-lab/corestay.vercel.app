@@ -30,7 +30,7 @@ export default function FinancialAssessmentPage() {
   const [fileName, setFileName] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [result, setResult] = useState<AssessmentResult | null>(null);
+  const [result, setResult] = useState<AssessmentResult | null>(null);\n  const [reportId, setReportId] = useState("");
 
   async function handleFile(file?: File) {
     if (!file) return;
@@ -75,7 +75,7 @@ export default function FinancialAssessmentPage() {
       if (!data.result) {
         throw new Error("Server tidak mengembalikan hasil analisa.");
       }
-      setResult(data.result);
+      setResult(data.result);\n      setReportId(data.reportId || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "Analisa gagal diproses.");
     } finally {
@@ -83,7 +83,7 @@ export default function FinancialAssessmentPage() {
     }
   }
 
-  return (
+  async function downloadPdf() {\n    if (!reportId) return;\n    const { data: { session } } = await supabase.auth.getSession();\n    if (!session) { router.replace("/login"); return; }\n    const response = await fetch(`/api/assessment/financial/report/${reportId}`, { headers: { Authorization: `Bearer ${session.access_token}` } });\n    if (!response.ok) { setError("PDF tidak dapat diunduh."); return; }\n    const blob = await response.blob(); const url = URL.createObjectURL(blob); const a = document.createElement("a"); a.href = url; a.download = "CoreStay-Financial-Assessment.pdf"; a.click(); URL.revokeObjectURL(url);\n  }\n\n  return (
     <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]">
       <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
         <div className="max-w-3xl">
@@ -160,7 +160,7 @@ export default function FinancialAssessmentPage() {
               </div>
             </div>
 
-            <div className="rounded-3xl border border-[#d8b985]/30 bg-[#d8b985]/[0.08] p-6">
+            <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6"><p className="font-bold text-emerald-900">✓ Laporan PDF tersimpan</p><p className="mt-2 text-sm leading-6 text-emerald-800">Laporan ini sudah tersimpan ke akun Anda dan akan tampil di Hasil Saya serta Laporan.</p><button type="button" onClick={downloadPdf} className="mt-4 rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white">Download Financial Assessment PDF</button></div><div className="rounded-3xl border border-[#d8b985]/30 bg-[#d8b985]/[0.08] p-6">
               <p className="font-bold">Laporan Premium → PDF Download</p>
               <p className="mt-2 text-sm leading-6 text-slate-600">
                 Hasil analisa ini menjadi dasar laporan premium CoreStay: diagnosis,

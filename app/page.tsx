@@ -9,18 +9,49 @@ export default function Home() {
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-[#17243d]">
-      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 backdrop-blur-xl">
-        <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4 lg:px-8">
-          <Link href="/" className="flex items-center">
-            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[150px] object-contain mix-blend-screen" priority />
+    <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]">
+      <aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-white lg:flex lg:flex-col">
+        <div className="flex h-full flex-col px-6 py-7">
+          <Link href="/" className="flex items-center justify-center rounded-2xl px-2 py-3">
+            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" priority />
           </Link>
-          <nav className="hidden items-center gap-8 text-sm font-medium text-[#66738a] md:flex">
-            <a href="#services" className="hover:text-[#203b68]">Services</a>
-            <a href="#assessment" className="hover:text-[#203b68]">Assessment</a>
-            <a href="#contact" className="hover:text-[#203b68]">Contact</a>
+
+          <div className="mt-10">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Navigation</p>
+            <nav className="mt-4 space-y-1.5">
+              <a href="#services" className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-white/30 transition group-hover:bg-[#d8b985]" />
+                Services
+              </a>
+              <a href="#assessment" className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-white/30 transition group-hover:bg-[#d8b985]" />
+                Assessment
+              </a>
+              <a href="#contact" className="group flex items-center gap-3 rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white">
+                <span className="h-1.5 w-1.5 rounded-full bg-white/30 transition group-hover:bg-[#d8b985]" />
+                Contact
+              </a>
+            </nav>
+          </div>
+
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p>
+            <p className="mt-2 text-xs leading-5 text-white/50">Hospitality Business Transformation & Advisory.</p>
+            <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="mt-4 flex items-center justify-center rounded-xl bg-white px-4 py-3 text-xs font-bold text-[#162b4a] transition hover:bg-[#eef2f7]">Talk to Us</a>
+          </div>
+        </div>
+      </aside>
+
+      <header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 backdrop-blur-xl lg:hidden">
+        <div className="flex items-center justify-between gap-4 px-5 py-3.5">
+          <Link href="/" className="flex items-center">
+            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[135px] object-contain mix-blend-screen" priority />
+          </Link>
+          <nav className="flex items-center gap-4 text-xs font-semibold text-white/65">
+            <a href="#services" className="hover:text-white">Services</a>
+            <a href="#assessment" className="hover:text-white">Assessment</a>
+            <a href="#contact" className="hover:text-white">Contact</a>
           </nav>
-          <a href={whatsappUrl} target="_blank" rel="noopener noreferrer" className="rounded-full bg-[#203b68] px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-[#203b68]/15 transition hover:-translate-y-0.5 hover:bg-[#162d52]">Talk to Us</a>
         </div>
       </header>
 

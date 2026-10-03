@@ -362,14 +362,30 @@ export default function PreOpeningAssessmentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-slate-950 text-white">
+    <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]"><aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-[#17243d] lg:flex lg:flex-col">
+        <div className="flex h-full flex-col px-6 py-7">
+          <a href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" /></a>
+          <div className="mt-10">
+            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#17243d]/35">Assessment</p>
+            <nav className="mt-4 space-y-1.5">
+              <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-[#17243d]">Hotel Assessment</a>
+              <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Hotel Existing</a>
+              <a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Pre-opening Hotel</a>
+            </nav>
+          </div>
+          <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
+            <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p>
+            <p className="mt-2 text-xs leading-5 text-[#17243d]/50">Hotel Business Health Assessment</p>
+          </div>
+        </div>
+      </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-[#17243d] backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-[#17243d]/70">Assessment</a></div></header>
       <div className="mx-auto max-w-4xl px-6 py-10">
 
         <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
 
         <div className="mt-8 flex items-center justify-between">
           <div>
-            <p className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
+            <p className="text-sm font-semibold uppercase tracking-wider text-[#203b68]">
               Pre-opening Hotel
             </p>
             <h1 className="mt-3 text-4xl font-bold md:text-5xl">
@@ -377,21 +393,21 @@ export default function PreOpeningAssessmentPage() {
             </h1>
           </div>
 
-          <span className="rounded-full bg-cyan-400/10 px-4 py-2 text-sm font-semibold text-cyan-400">
+          <span className="rounded-full bg-[#203b68]/10 px-4 py-2 text-sm font-semibold text-[#203b68]">
             {progress}%
           </span>
         </div>
 
-        <div className="mt-8 h-2 overflow-hidden rounded-full bg-slate-800">
+        <div className="mt-8 h-2 overflow-hidden rounded-full bg-[#e4e9f0]">
           <div
-            className="h-full rounded-full bg-cyan-400 transition-all"
+            className="h-full rounded-full bg-[#203b68] transition-all"
             style={{ width: `${progress}%` }}
           />
         </div>
 
-        <section className="mt-8 rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-2xl">
+        <section className="mt-8 rounded-3xl border border-[#dce3ee] bg-white p-7 shadow-2xl">
 
-          <p className="text-sm font-semibold uppercase tracking-wider text-cyan-400">
+          <p className="text-sm font-semibold uppercase tracking-wider text-[#203b68]">
             {question.title}
           </p>
 
@@ -405,7 +421,7 @@ export default function PreOpeningAssessmentPage() {
                 key={option}
                 type="button"
                 onClick={() => selectAnswer(index * 25)}
-                className="w-full rounded-2xl border border-slate-700 bg-slate-950 p-5 text-left transition hover:border-cyan-400 hover:bg-cyan-400/5"
+                className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] p-5 text-left transition hover:border-[#203b68] hover:bg-[#203b68]/5"
               >
                 <div className="font-medium">
                   {option}
@@ -416,12 +432,12 @@ export default function PreOpeningAssessmentPage() {
 
         </section>
 
-        <p className="mt-6 text-center text-sm text-slate-500">
+        <p className="mt-6 text-center text-sm text-[#7b8798]">
           Pertanyaan {current + 1} dari {questions.length}
         </p>
 
       </div>
-    <div className="mt-8 flex items-center justify-between gap-4"><button type="button" onClick={previousQuestion} disabled={current === 0} className="rounded-xl border border-slate-700 px-5 py-3 text-sm font-semibold text-slate-300 disabled:cursor-not-allowed disabled:opacity-40">← Sebelumnya</button><button type="button" onClick={nextQuestion} disabled={current >= questions.length - 1} className="rounded-xl bg-cyan-400 px-6 py-3 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-40">Pertanyaan Berikutnya →</button></div></main>
+    <div className="mt-8 flex items-center justify-between gap-4"><button type="button" onClick={previousQuestion} disabled={current === 0} className="rounded-xl border border-[#d5dde8] px-5 py-3 text-sm font-semibold text-[#4e5d73] disabled:cursor-not-allowed disabled:opacity-40">← Sebelumnya</button><button type="button" onClick={nextQuestion} disabled={current >= questions.length - 1} className="rounded-xl bg-[#203b68] px-6 py-3 text-sm font-semibold text-slate-950 disabled:cursor-not-allowed disabled:opacity-40">Pertanyaan Berikutnya →</button></div></main>
   );
 }
 

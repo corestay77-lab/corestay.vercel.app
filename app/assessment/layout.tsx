@@ -23,6 +23,32 @@ export default function AssessmentLayout({ children }: { children: ReactNode }) 
         .assessment-theme [class*="hover:border-amber"]:hover,.assessment-theme [class*="hover:border-fuchsia"]:hover { border-color:var(--cs-navy)!important; }
         .assessment-theme input,.assessment-theme button { font-family:inherit; }
 
+        /* Result pages: use a light report canvas so all report copy remains readable. */
+        .assessment-theme main[class~="bg-slate-950"] { background:#edf2f8!important; color:#17243d!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-slate-950"] { background:#f7f9fc!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-slate-900"] { background:#ffffff!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-slate-800"] { background:#e2e8f0!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-slate-950/70"] { background:#f7f9fc!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-cyan-400/10"] { background:rgba(32,59,104,.07)!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-cyan-400/5"] { background:rgba(32,59,104,.045)!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-orange-400/5"] { background:rgba(234,88,12,.055)!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="border-white/10"],.assessment-theme main[class~="bg-slate-950"] [class~="border-white/5"] { border-color:#d7e0eb!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="border-cyan-400/20"] { border-color:#cbd8e8!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="border-orange-400/20"] { border-color:#ead8cc!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="text-white"] { color:#17243d!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="text-slate-300"] { color:#40516a!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="text-slate-400"] { color:#5f6e83!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="text-slate-500"] { color:#68778c!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="text-slate-600"] { color:#7b8798!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="text-cyan-400"],.assessment-theme main[class~="bg-slate-950"] [class~="text-cyan-300"] { color:#203b68!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-white/5"] { background:#eef2f7!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="bg-white/10"] { background:#eef2f7!important; }
+        .assessment-theme main[class~="bg-slate-950"] [class~="border-t"] { border-color:#e0e6ee!important; }
+        .assessment-theme main[class~="bg-slate-950"] table thead { background:#f1f5f9!important; color:#17243d!important; }
+        .assessment-theme main[class~="bg-slate-950"] footer { border-color:#d7e0eb!important; color:#7b8798!important; }
+        .assessment-theme main[class~="bg-slate-950"] h1,.assessment-theme main[class~="bg-slate-950"] h2,.assessment-theme main[class~="bg-slate-950"] h3 { color:#17243d!important; }
+
+
         /* CoreStay assessment typography: compact, readable, and proportioned to the content. */
         .assessment-theme main { font-size:15px!important; line-height:1.55!important; }
         .assessment-theme main h1 { font-family:var(--font-geist-sans),Arial,Helvetica,sans-serif!important; font-size:clamp(2rem,3.2vw,2.75rem)!important; line-height:1.12!important; letter-spacing:-.025em!important; font-weight:650!important; }

@@ -7,7 +7,7 @@ import { useEffect, useRef, useState } from "react";
 const assessmentItems = [
   ["Assessment 1", "Hotel Existing", "/assessment/existing"],
   ["Assessment 2", "Pre-opening Hotel", "/assessment/pre-opening"],
-  ["Assessment 3", "Coming Soon", "/assessment"],
+  ["Assessment 3", "Financial Report PDF", "/assessment/financial"],
   ["Semua Assessment", "Lihat semua", "/assessment"],
 ] as const;
 

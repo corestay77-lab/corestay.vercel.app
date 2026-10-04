@@ -3,6 +3,7 @@
 import Image from "next/image";
 
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type AreaResult = {
   category: string;
@@ -53,11 +54,58 @@ export default function PreOpeningResultPage() {
     );
 
     if (storedResult) {
-      setResult(JSON.parse(storedResult));
+      try {
+        const parsedResult = JSON.parse(storedResult) as Result;
+        setResult(parsedResult);
+
+        async function saveAssessment() {
+          const savedKey = "corestay_preopening_report_saved";
+          if (sessionStorage.getItem(savedKey) === "1") return;
+
+          const { data: auth } = await supabase.auth.getSession();
+          if (!auth.session?.user) return;
+
+          let parsedLead: Lead | null = null;
+          if (storedLead) {
+            try {
+              parsedLead = JSON.parse(storedLead) as Lead;
+              setLead(parsedLead);
+            } catch {
+              parsedLead = null;
+            }
+          }
+
+          const hotelLabel = parsedLead?.hotel
+            ? ` — ${parsedLead.hotel}`
+            : "";
+
+          const { error } = await supabase.from("assessment_reports").insert({
+            user_id: auth.session.user.id,
+            assessment_type: "pre-opening",
+            file_name: `Assessment 2 — Pre-opening Hotel${hotelLabel}`,
+            score: Number(parsedResult.overall) || 0,
+            report_json: parsedResult,
+          });
+
+          if (!error) {
+            sessionStorage.setItem(savedKey, "1");
+          } else {
+            console.error("Gagal menyimpan Assessment 2:", error);
+          }
+        }
+
+        void saveAssessment();
+      } catch {
+        setResult(null);
+      }
     }
 
-    if (storedLead) {
-      setLead(JSON.parse(storedLead));
+    if (storedLead && !lead) {
+      try {
+        setLead(JSON.parse(storedLead));
+      } catch {
+        setLead(null);
+      }
     }
   }, []);
 

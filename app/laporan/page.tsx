@@ -100,9 +100,7 @@ export default function LaporanPage() {
                   {new Date(x.created_at).toLocaleString("id-ID")} · Score {x.score ?? "-"}/100
                 </p>
 
-                <div className="mt-4 flex items-center justify-between gap-3">
-                  <div className="flex flex-wrap gap-3">
-                  {x.assessment_type === "financial" ? (
+                <div className="mt-4 flex items-center justify-between gap-3">\n                  {x.assessment_type === "financial" ? (
                     <button
                       onClick={async () => {
                         const { data: { session } } = await supabase.auth.getSession();
@@ -123,9 +121,7 @@ export default function LaporanPage() {
                     >
                       Download PDF
                     </button>
-                  ) : null
-                  </div>
-                  {x.assessment_type === "financial" && (
+                  ) : null}\n                  {x.assessment_type === "financial" && (
                     <button
                       type="button"
                       onClick={() => deleteFinancialReport(x.id)}
@@ -140,5 +136,4 @@ export default function LaporanPage() {
           </div>
         )}
       </div>
-
-    </main>\n  );\n}\n
+\n    </main>\n  );\n}\n

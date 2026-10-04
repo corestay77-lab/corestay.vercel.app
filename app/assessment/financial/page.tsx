@@ -333,32 +333,24 @@ function ReportCard({ eyebrow, title, subtitle, children }: { eyebrow: string; t
 }
 
 function ReportText({ text }: { text: string }) {
-  const normalized = (text || "").replace(/\\n/g, "
-").replace(/
-/g, "
-").trim();
-  const lines = normalized.split("
-").map((x) => x.trim()).filter(Boolean);
-  const chunks: string[] = [];
-  let current: string[] = [];
-  for (const line of lines) {
-    if (/^(assessment|overall assessment|key findings|financial impact|management concern|areas to monitor|main profit drivers|payroll & manpower|operational expenses|utility cost|gross operating profit|margin analysis|potential saving|recommendation|expected impact|0[-–]30 days|31[-–]60 days|61[-–]90 days)$/i.test(line.replace(/[*#:]+/g, "").trim())) {
-      if (current.length) { chunks.push(current.join(" ")); current = []; }
-      chunks.push(line.replace(/[*#]+/g, "").trim());
-    } else {
-      current.push(line);
-    }
-  }
-  if (current.length) chunks.push(current.join(" "));
-  return <div className="space-y-5 text-[15px] leading-7 text-slate-600">
-    {chunks.map((chunk, index) => {
-      const clean = chunk.replace(/^[-•]s*/, "");
-      if (/^(assessment|overall assessment|key findings|financial impact|management concern|areas to monitor|main profit drivers|payroll & manpower|operational expenses|utility cost|gross operating profit|margin analysis|potential saving|recommendation|expected impact|0[-–]30 days|31[-–]60 days|61[-–]90 days)$/i.test(clean)) {
-        return <h3 key={index} className="pt-1 text-sm font-bold uppercase tracking-wider text-[#172a4d]">{clean}</h3>;
-      }
-      return <p key={index}>{clean}</p>;
-    })}
-  </div>;
+  const normalized = (text || "").replace(/\\n/g, "\n").replace(/\r\n/g, "\n").trim();
+  const lines = normalized.split("\n").map((x) => x.trim()).filter(Boolean);
+  const headingPattern = /^(assessment|overall assessment|key findings|financial impact|management concern|areas to monitor|main profit drivers|payroll & manpower|operational expenses|utility cost|gross operating profit|margin analysis|potential saving|recommendation|expected impact|0[-–]30 days|31[-–]60 days|61[-–]90 days)$/i;
+
+  return (
+    <div className="space-y-4 text-[15px] leading-7 text-slate-600">
+      {lines.map((line, index) => {
+        const clean = line.replace(/^[-•*]\s*/, "").replace(/^\d+[.)]\s*/, "").replace(/^#+\s*/, "").trim();
+        if (headingPattern.test(clean)) {
+          return <h3 key={index} className="pt-2 text-sm font-bold uppercase tracking-wider text-[#172a4d]">{clean}</h3>;
+        }
+        if (/^[-•*]\s+/.test(line) || /^\d+[.)]\s+/.test(line)) {
+          return <div key={index} className="flex gap-3"><span className="font-bold text-[#9b7439]">•</span><p>{clean}</p></div>;
+        }
+        return <p key={index}>{clean}</p>;
+      })}
+    </div>
+  );
 }
 
 function BulletList({ items }: { items: string[] }) {
@@ -382,6 +374,4 @@ function PriorityList({ items }: { items: string[] }) {
 function ActionPlan({ items }: { items: string[] }) {
   const buckets = ["0–30 Days", "31–60 Days", "61–90 Days"];
   return <div className="grid gap-4 lg:grid-cols-3">{buckets.map((bucket, index) => <div key={bucket} className="rounded-2xl bg-slate-50 p-5"><h3 className="font-bold text-[#172a4d]">{bucket}</h3><div className="mt-3 space-y-2 text-sm leading-6 text-slate-600">{items.filter((_, i) => i % 3 === index).slice(0, 4).map((item, i) => <p key={i}>• {item}</p>)}</div></div>)}</div>;
-}
-
 }

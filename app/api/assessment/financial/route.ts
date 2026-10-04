@@ -127,25 +127,34 @@ export async function POST(request: Request) {
     }
 
     const formData = await request.formData();
+    const action = String(formData.get("action") || "analyze");
     const file = formData.get("file");
+    const extractedText = String(formData.get("text") || "").trim();
+    const submittedFileName = String(formData.get("fileName") || "Financial-Report.pdf");
 
-    if (!(file instanceof File)) {
+    if (action === "analyze") {
+      if (!extractedText) return NextResponse.json({ error: "Teks laporan belum tersedia." }, { status: 400 });
+      if (extractedText.length < 20) return NextResponse.json({ error: "Teks laporan terlalu pendek untuk dianalisa." }, { status: 422 });
+    } else if (!(file instanceof File)) {
       return NextResponse.json({ error: "File PDF belum dipilih." }, { status: 400 });
     }
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
+    if (action !== "analyze" && file instanceof File && file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
       return NextResponse.json({ error: "File harus berformat PDF." }, { status: 400 });
     }
-    if (file.size > 4 * 1024 * 1024) {
+    if (action !== "analyze" && file instanceof File && file.size > 4 * 1024 * 1024) {
       return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
     if (!process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Gemini API belum aktif pada deployment ini." }, { status: 503 });
     }
 
-    const buffer = await file.arrayBuffer();
-    pdf = await getDocumentProxy(new Uint8Array(buffer));
-    const parsed = await extractText(pdf, { mergePages: true });
-    const text = parsed.text.trim();
+    let text = extractedText;
+    if (action !== "analyze") {
+      const buffer = await (file as File).arrayBuffer();
+      pdf = await getDocumentProxy(new Uint8Array(buffer));
+      const parsed = await extractText(pdf, { mergePages: true });
+      text = parsed.text.trim();
+    }
 
     if (!text) {
       return NextResponse.json(
@@ -168,7 +177,7 @@ export async function POST(request: Request) {
       "\n\n" +
       text.slice(0, 120000) +
       "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, risks, recommendations, action plan, " +
-      "dan angka yang ditemukan. Jangan mengarang angka.";
+      "dan angka yang ditemukan. Jangan mengarang angka. Buat analisa SINGKAT, langsung ke poin, maksimal 3 kalimat per analisis dan maksimal 5 item untuk risiko, rekomendasi, dan action plan.";
 
     let result: Awaited<ReturnType<typeof generateObject<typeof FinancialAssessment>>> | null = null;
     let lastAiError: unknown = null;
@@ -206,7 +215,7 @@ export async function POST(request: Request) {
       .insert({
         user_id: user.id,
         assessment_type: "financial",
-        file_name: file.name,
+        file_name: action === "analyze" ? submittedFileName : (file as File).name,
         score: Math.round(result.object.financialHealthScore),
         report_json: result.object,
         pdf_base64: pdfBase64,

@@ -140,7 +140,8 @@ export async function POST(request: Request) {
 
     const formData = await request.formData();
     const action = String(formData.get("action") || "analyze");
-    const file = formData.get("file");
+    const fileEntry = formData.get("file");
+    const file = fileEntry instanceof File ? fileEntry : null;
     const extractedText = String(formData.get("text") || "").trim();
     const submittedFileName = String(formData.get("fileName") || "Financial-Report.pdf");
 
@@ -192,7 +193,7 @@ export async function POST(request: Request) {
 
     const prompt =
       "Analisa laporan keuangan hotel berikut. Nama file: " +
-      file.name +
+      (file?.name || submittedFileName) +
       "\n\n" +
       text.slice(0, 120000) +
       "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, comparative analysis, ratio analysis, " +
@@ -261,7 +262,7 @@ export async function POST(request: Request) {
       success: true,
       reportId: saved.id,
       createdAt: saved.created_at,
-      fileName: file.name,
+      fileName: file?.name || submittedFileName,
       result: result.object,
     });
   } catch (error) {

@@ -147,9 +147,9 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     page.drawText(number, { x: MARGIN + 12, y: y + 8, size: 8, font: bold, color: GOLD });
     page.drawText(title, { x: MARGIN + 72, y: y + 6, size: 15, font: bold, color: NAVY });
     if (subtitle) page.drawText(subtitle, { x: MARGIN + 72, y: y - 8, size: 7.2, font: regular, color: MUTED });
-    y -= 48;
+    y -= 40;
     page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.6, color: BORDER });
-    y -= 32;
+    y -= 18;
   }
 
   function pill(x: number, topY: number, text: string, bg: any, color: any, width = 92) {

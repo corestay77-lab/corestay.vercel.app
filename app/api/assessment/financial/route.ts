@@ -144,9 +144,9 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     page.drawText(number, { x: MARGIN + 12, y: y + 8, size: 8, font: bold, color: GOLD });
     page.drawText(title, { x: MARGIN + 42, y: y + 6, size: 15, font: bold, color: NAVY });
     if (subtitle) page.drawText(subtitle, { x: MARGIN + 42, y: y - 8, size: 7.2, font: regular, color: MUTED });
-    y -= 34;
+    y -= 40;
     page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.6, color: BORDER });
-    y -= 20;
+    y -= 26;
   }
 
   function pill(x: number, topY: number, text: string, bg: any, color: any, width = 92) {
@@ -193,6 +193,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
         return;
       }
       const size = 9.1;
+      y -= 8;
       const number = String(i + 1).padStart(2, "0");
       const lines = wrap(String(item || ""), size, CONTENT_W - 30);
       ensure(lines.length * (size + 3.4) + 12);
@@ -201,7 +202,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
         page.drawText(line, { x: MARGIN + 30, y, size, font: regular, color: TEXT });
         y -= size + 3.4;
       });
-      y -= 9;
+      y -= 12;
     });
   }
 
@@ -288,17 +289,17 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   section("09", "Priority Recommendations", "Management Priorities");
   const priorityTitles = ["Priority 1 — Strengthen Cost Control", "Priority 2 — Improve Revenue Quality", "Priority 3 — Improve Financial Monitoring"];
   result.recommendations.slice(0, 3).forEach((item, i) => {
-    ensure(76);
-    page.drawRectangle({ x: MARGIN, y: y - 48, width: CONTENT_W, height: 48, color: i === 0 ? GOLD_SOFT : LIGHT_BLUE });
-    page.drawText(priorityTitles[i], { x: MARGIN + 11, y: y - 16, size: 9.2, font: bold, color: NAVY });
+    ensure(88);
+    page.drawRectangle({ x: MARGIN, y: y - 54, width: CONTENT_W, height: 54, color: i === 0 ? GOLD_SOFT : LIGHT_BLUE });
+    page.drawText(priorityTitles[i], { x: MARGIN + 11, y: y - 18, size: 9.2, font: bold, color: NAVY });
     const impact = i === 0
       ? "Expected Impact: Improve operating margin and reduce unnecessary expenses."
       : i === 1
         ? "Expected Impact: Increase revenue quality without relying solely on occupancy growth."
         : "Expected Impact: Identify financial deviations earlier and take corrective action.";
-    page.drawText(impact, { x: MARGIN + 11, y: y - 32, size: 7.2, font: regular, color: TEXT });
-    y -= 58;
-    textBlock(item, 8.8, TEXT, 7);
+    page.drawText(impact, { x: MARGIN + 11, y: y - 38, size: 7.2, font: regular, color: TEXT });
+    y -= 66;
+    textBlock(item, 8.8, TEXT, 12);
   });
 
   section("10", "90-Day Action Plan", "Execution Roadmap");

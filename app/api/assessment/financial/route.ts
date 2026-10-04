@@ -431,17 +431,17 @@ export async function POST(request: Request) {
     }
     if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
 
-    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
+    const sourceKey = stableSourceKey(text);\n    const stableResult = { ...result.object, _sourceKey: sourceKey };\n    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
     const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
       user_id: user.id, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
-      score: Math.round(result.object.financialHealthScore), report_json: result.object, pdf_base64: pdfBase64,
+      score: Math.round(stableResult.financialHealthScore), report_json: stableResult, pdf_base64: pdfBase64,
     }).select("id,created_at").single();
 
     if (saveError) return NextResponse.json({ error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." }, { status: 500 });
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object });
+    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: stableResult });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });

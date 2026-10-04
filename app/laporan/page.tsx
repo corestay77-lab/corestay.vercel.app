@@ -30,7 +30,6 @@ export default function LaporanPage() {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [checking, setChecking] = useState(true);
-  const [preview, setPreview] = useState<Row | null>(null);
 
   useEffect(() => {
     (async () => {
@@ -69,7 +68,6 @@ export default function LaporanPage() {
     }
 
     setRows((current) => current.filter((row) => row.id !== id));
-    if (preview?.id === id) setPreview(null);
   };
 
   if (checking) {
@@ -125,14 +123,7 @@ export default function LaporanPage() {
                     >
                       Download PDF
                     </button>
-                  ) : (
-                    <button
-                      onClick={() => setPreview(x)}
-                      className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white"
-                    >
-                      Preview Hasil
-                    </button>
-                  )}
+                  ) : null
                   </div>
                   {x.assessment_type === "financial" && (
                     <button
@@ -150,84 +141,4 @@ export default function LaporanPage() {
         )}
       </div>
 
-      {preview && (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
-          <div
-            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 text-slate-900 shadow-2xl"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-5">
-              <div>
-                <p className="text-xs font-bold uppercase tracking-wider text-[#6b8a80]">{label(preview.assessment_type)}</p>
-                <h2 className="mt-1 text-2xl font-bold">{preview.file_name}</h2>
-                <p className="mt-1 text-sm text-slate-500">Score {preview.score ?? "-"}/100</p>
-              </div>
-              <button onClick={() => setPreview(null)} className="rounded-full bg-slate-100 px-4 py-2 text-xl leading-none text-slate-600">×</button>
-            </div>
-
-            {preview.assessment_type === "existing" ? (
-              <div className="mt-6 space-y-6">
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Hotel</p><p className="mt-1 font-bold">{text(preview.report_json?.hotelName) || "-"}</p></div>
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Kota</p><p className="mt-1 font-bold">{text(preview.report_json?.city) || "-"}</p></div>
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Overall</p><p className="mt-1 text-3xl font-extrabold text-[#203b68]">{preview.score ?? 0}%</p></div>
-                </div>
-                <div><h3 className="text-lg font-bold">Diagnosis</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.diagnosis) || "-"}</p></div>
-                <div><h3 className="text-lg font-bold">Rekomendasi</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.recommendation) || "-"}</p></div>
-                <div>
-                  <h3 className="text-lg font-bold">Analisis per Area</h3>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    {(preview.report_json?.areaResults || []).map((area: any, i: number) => (
-                      <div key={area.key || area.category || i} className="rounded-2xl border border-slate-200 p-4">
-                        <div className="flex items-center justify-between gap-3"><p className="font-bold">{text(area.title) || "Area"}</p><span className="font-extrabold text-[#203b68]">{Number(area.score) || 0}%</span></div>
-                        <p className="mt-2 text-xs font-bold text-slate-500">{text(area.level) || "-"}</p>
-                        <p className="mt-3 text-sm leading-6 text-slate-600"><b>Diagnosis:</b> {text(area.diagnosis) || "-"}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600"><b>Rekomendasi:</b> {text(area.recommendation) || "-"}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="mt-6 space-y-6">
-                <div className="grid gap-4 sm:grid-cols-4">
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Hotel</p><p className="mt-1 font-bold">{text(preview.report_json?.hotel) || text(preview.file_name).replace("Assessment 2 — Pre-opening Hotel — ", "") || "-"}</p></div>
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Overall</p><p className="mt-1 text-3xl font-extrabold text-[#203b68]">{preview.score ?? 0}</p></div>
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Status</p><p className="mt-1 font-bold">{text(preview.report_json?.status) || "-"}</p></div>
-                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Risk</p><p className="mt-1 font-bold">{text(preview.report_json?.risk) || "-"}</p></div>
-                </div>
-                <div><h3 className="text-lg font-bold">Diagnosis</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.diagnosis) || "-"}</p></div>
-                <div><h3 className="text-lg font-bold">Rekomendasi</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.recommendation) || "-"}</p></div>
-                <div>
-                  <h3 className="text-lg font-bold">Readiness per Area</h3>
-                  <div className="mt-3 grid gap-3 md:grid-cols-2">
-                    {(preview.report_json?.areaResults || []).map((area: any, i: number) => (
-                      <div key={area.category || i} className="rounded-2xl border border-slate-200 p-4">
-                        <div className="flex items-center justify-between gap-3"><p className="font-bold">{text(area.title) || "Area"}</p><span className="font-extrabold text-[#203b68]">{Number(area.score) || 0}%</span></div>
-                        <p className="mt-2 text-xs font-bold text-slate-500">{text(area.level) || "-"}</p>
-                        <p className="mt-3 text-sm leading-6 text-slate-600"><b>Rekomendasi:</b> {text(area.recommendation) || "-"}</p>
-                        <p className="mt-2 text-sm leading-6 text-slate-600"><b>Diagnosis:</b> {text(area.diagnosis) || "-"}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <h3 className="text-lg font-bold">30-Day Priority Action</h3>
-                  <div className="mt-3 space-y-2">
-                    {(preview.report_json?.priorityActions || []).map((action: any, i: number) => (
-                      <div key={i} className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">{text(action)}</div>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            )}
-
-            <div className="mt-7 border-t border-slate-200 pt-5 text-right">
-              <button onClick={() => setPreview(null)} className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white">Tutup Preview</button>
-            </div>
-          </div>
-        </div>
-      )}
-    </main>
-  );
-}
+    </main>\n  );\n}\n

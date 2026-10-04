@@ -6,13 +6,14 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as HandleUploadBody;
+    const body = (await request.json()) as HandleUploadBody & { clientPayload?: string };
     let clientPayload: { accessToken?: string } = {};
     try {
-      clientPayload = body.clientPayload ? JSON.parse(String(body.clientPayload)) : {};
+      clientPayload = body.clientPayload ? JSON.parse(body.clientPayload) : {};
     } catch {
       return NextResponse.json({ error: "Payload upload tidak valid." }, { status: 400 });
     }
+
     const auth = clientPayload.accessToken ? `Bearer ${clientPayload.accessToken}` : "";
     if (!auth) return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
 
@@ -23,6 +24,7 @@ export async function POST(request: NextRequest) {
     );
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
+
     const result = await handleUpload({
       body,
       request,
@@ -41,9 +43,6 @@ export async function POST(request: NextRequest) {
     return NextResponse.json(result);
   } catch (error) {
     console.error("Financial Blob upload handler failed:", error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Upload PDF gagal." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Upload PDF gagal." }, { status: 500 });
   }
 }

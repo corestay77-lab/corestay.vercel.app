@@ -89,7 +89,9 @@ export default function LaporanPage() {
             {rows.map((x) => (
               <div key={x.id} className="rounded-3xl border border-[#dce4ef] bg-white p-6">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#6b8a80]">{label(x.assessment_type)}</p>
-                <h2 className="mt-1 font-semibold">{x.file_name}</h2>
+                <h2 className="mt-1 font-semibold">
+                  {x.assessment_type === "financial" ? "Financial Assessment Report" : "Assessment Report"}
+                </h2>
                 <p className="mt-1 text-sm text-[#66738a]">
                   {new Date(x.created_at).toLocaleString("id-ID")} · Score {x.score ?? "-"}/100
                 </p>
@@ -132,7 +134,6 @@ export default function LaporanPage() {
           </div>
         )}
       </div>
-
     </main>
   );
 }

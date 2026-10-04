@@ -188,19 +188,12 @@ export default function FinancialAssessmentPage() {
               </div>
               <p className="mt-5 max-w-3xl leading-7 text-white/75">{result.executiveSummary}</p>
             </div>
-            {[
-              ["Revenue Analysis", result.revenueAnalysis],
-              ["Cost Analysis", result.costAnalysis],
-              ["Profit Analysis", result.profitAnalysis],
-              ["Comparative Analysis", result.comparativeAnalysis],
-              ["Ratio & Margin Analysis", result.ratioAnalysis],
-              ["Variance Analysis", result.varianceAnalysis],
-            ].map(([title, value]) => (
-              <div key={title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <h2 className="text-xl font-bold">{title}</h2>
-                <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">{value}</p>
-              </div>
-            ))}
+            <ReportSection title="01. Revenue Performance" subtitle="Revenue Analysis" text={result.revenueAnalysis} />
+            <ReportSection title="02. Cost & Expense Analysis" subtitle="Cost Analysis" text={result.costAnalysis} />
+            <ReportSection title="03. Profitability Analysis" subtitle="Profit Analysis" text={result.profitAnalysis} />
+            <ReportSection title="04. Comparative Analysis" subtitle="Financial Comparison" text={result.comparativeAnalysis} />
+            <ReportSection title="05. Ratio & Margin Analysis" subtitle="Financial Ratios" text={result.ratioAnalysis} />
+            <ReportSection title="06. Variance Analysis" subtitle="Budget vs Actual / Period Comparison" text={result.varianceAnalysis} />
             <ResultList title="Auditor-Style Findings" items={result.auditFindings} danger />
             <ResultList title="Risk / Red Flags" items={result.risks} danger />
             <ResultList title="Recommendations" items={result.recommendations} />
@@ -233,6 +226,20 @@ export default function FinancialAssessmentPage() {
         )}
       </div>
     </main>
+  );
+}
+
+function ReportSection({ title, subtitle, text }: { title: string; subtitle: string; text: string }) {
+  const blocks = (text || "").split(/\\n\\s*\\n/).map((x) => x.trim()).filter(Boolean);
+  const paragraphs = blocks.length ? blocks : (text || "").split(/\\n/).map((x) => x.trim()).filter(Boolean);
+  return (
+    <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+      <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9b7439]">{subtitle}</p>
+      <h2 className="mt-2 text-2xl font-bold text-[#172a4d]">{title}</h2>
+      <div className="mt-6 border-t border-slate-100 pt-6 space-y-4 text-[15px] leading-7 text-slate-600">
+        {paragraphs.map((paragraph, index) => <p key={index}>{paragraph}</p>)}
+      </div>
+    </div>
   );
 }
 

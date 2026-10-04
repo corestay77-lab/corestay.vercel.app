@@ -6,6 +6,7 @@ import { extractText, getDocumentProxy } from "unpdf";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { createHash } from "node:crypto";
 
 export const runtime = "nodejs";
 export const maxDuration = 300;
@@ -413,6 +414,45 @@ export async function POST(request: Request) {
     if (!text) return NextResponse.json({ error: "PDF tidak memiliki teks yang dapat dibaca. OCR perlu ditambahkan untuk PDF scan." }, { status: 422 });
     if (action === "extract") return NextResponse.json({ success: true, fileName: (file as File).name, text });
 
+    // Deterministic source fingerprint: same extracted financial data = same analysis/score,
+    // regardless of filename or minor PDF metadata differences.
+    const sourceFingerprint = createHash("sha256")
+      .update(text.replace(/\\s+/g, " ").trim(), "utf8")
+      .digest("hex");
+
+    // Reuse the previously generated result for an identical source. This prevents
+    // Gemini wording/model variance from changing scores or percentages on re-upload.
+    const { data: previousReports, error: previousReportsError } = await supabase
+      .from("assessment_reports")
+      .select("report_json")
+      .eq("user_id", user.id)
+      .eq("assessment_type", "financial")
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    const cachedReport = !previousReportsError
+      ? previousReports?.find((row: any) => row?.report_json?._sourceHash === sourceFingerprint)?.report_json
+      : null;
+
+    if (cachedReport) {
+      const stableResult = FinancialAssessment.parse(cachedReport);
+      const stableReport = { ...stableResult, _sourceHash: sourceFingerprint };
+      const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
+      const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
+        user_id: user.id,
+        assessment_type: "financial",
+        file_name: action === "analyze" ? submittedFileName : (file as File).name,
+        score: Math.round(stableResult.financialHealthScore),
+        report_json: stableReport,
+        pdf_base64: pdfBase64,
+      }).select("id,created_at").single();
+      if (saveError) return NextResponse.json({ error: "Hasil analisa berhasil ditemukan tetapi gagal disimpan." }, { status: 500 });
+      if (blobPath) {
+        try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
+      }
+      return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: stableResult, deterministic: true });
+    }
+
     const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
     const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
     const system = "Anda adalah Senior Hotel Financial Auditor & Hospitality Finance Consultant untuk CoreStay. Anda wajib menganalisis FILE LAPORAN KEUANGAN YANG BENAR-BENAR DIUPLOAD pengguna, bukan membuat ringkasan generik. FILE PROCESSING RULE: file upload adalah sumber utama analisis. Jika file gagal dibaca, kosong, corrupt, tidak memiliki data yang dapat diekstrak, atau data penting tidak dapat diproses, JANGAN membuat Financial Audit Report; keluarkan dataLimitations yang menyatakan FILE/DATA PROCESSING ERROR dan jelaskan bagian yang gagal dibaca serta tindakan yang diperlukan. Jangan mengarang angka, transaksi, periode, mata uang, benchmark, budget, forecast, target, rasio, atau tren. Jika data tidak tersedia, tulis Tidak tersedia – indikator tidak dapat dihitung secara valid. Baca seluruh isi yang berhasil diekstrak dan analisis seluruh bagian yang relevan. Lakukan DATA EXTRACTION -> VALIDATION -> CALCULATION -> COMPARISON -> FINDING -> FINANCIAL IMPACT -> RISK -> ACTION. Periksa subtotal, total, duplikasi, missing data, inkonsistensi, perubahan ekstrem, dan angka negatif yang tidak wajar; tandai DATA INTEGRITY ISSUE. Hitung KPI hanya jika numerator dan denominator valid. Pisahkan FACT, CALCULATION, FINDING, INDICATION, dan ASSUMPTION. Score 0-100 harus dapat dijelaskan berdasarkan data yang tersedia; jika data tidak lengkap, turunkan dataCompletenessScore dan jelaskan keterbatasannya. Jangan membuat benchmark industri sendiri. Jangan menyatakan fraud/kecurangan sebagai fakta atau memberikan opini audit independen tanpa bukti memadai; gunakan 'indikasi yang perlu diperiksa lebih lanjut'. Gunakan prinsip evidence-based, materiality praktis, consistency, variance analysis, risk assessment, dan source traceability. Untuk temuan material, sebutkan sumber yang dapat ditelusuri dari file, minimal nama file, periode, sheet/bagian/akun bila tersedia. Prioritaskan MONEY LOST, MONEY AT RISK, MONEY THAT CAN BE SAVED, MONEY THAT CAN BE RECOVERED, dan MONEY THAT CAN BE GENERATED.";
@@ -432,17 +472,18 @@ export async function POST(request: Request) {
     }
     if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
 
+    const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
     const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
       user_id: user.id, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
-      score: Math.round(result.object.financialHealthScore), report_json: result.object, pdf_base64: pdfBase64,
+      score: Math.round(result.object.financialHealthScore), report_json: stableResult, pdf_base64: pdfBase64,
     }).select("id,created_at").single();
 
     if (saveError) return NextResponse.json({ error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." }, { status: 500 });
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object });
+    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object, deterministic: true });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });

@@ -11,6 +11,6 @@ body { background: var(--background); color: var(--foreground); font-family: Ari
 .assessment-theme > .assessment-sidebar,
 .assessment-theme > .assessment-mobile-nav { display: none !important; }
 @media (min-width: 1024px) {
-  .site-sidebar ~ main { padding-left: 250px !important; }
-  .assessment-theme { margin-left: 0 !important; padding-left: 250px !important; }
+  .site-sidebar ~ main { padding-left: 264px !important; }
+  .assessment-theme { margin-left: 0 !important; padding-left: 264px !important; }
 }

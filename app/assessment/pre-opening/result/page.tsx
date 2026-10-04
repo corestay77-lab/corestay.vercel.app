@@ -85,6 +85,7 @@ export default function PreOpeningResultPage() {
             file_name: `Assessment 2 — Pre-opening Hotel${hotelLabel}`,
             score: Number(parsedResult.overall) || 0,
             report_json: parsedResult,
+            pdf_base64: "",
           });
 
           if (!error) {

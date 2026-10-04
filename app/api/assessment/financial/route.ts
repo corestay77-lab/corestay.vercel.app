@@ -144,9 +144,9 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     page.drawText(number, { x: MARGIN + 12, y: y + 8, size: 8, font: bold, color: GOLD });
     page.drawText(title, { x: MARGIN + 42, y: y + 6, size: 15, font: bold, color: NAVY });
     if (subtitle) page.drawText(subtitle, { x: MARGIN + 42, y: y - 8, size: 7.2, font: regular, color: MUTED });
-    y -= 28;
+    y -= 34;
     page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.6, color: BORDER });
-    y -= 14;
+    y -= 20;
   }
 
   function pill(x: number, topY: number, text: string, bg: any, color: any, width = 92) {
@@ -201,7 +201,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
         page.drawText(line, { x: MARGIN + 30, y, size, font: regular, color: TEXT });
         y -= size + 3.4;
       });
-      y -= 4;
+      y -= 9;
     });
   }
 
@@ -349,7 +349,7 @@ function scoreLabel(score: number) {
   return score >= 80 ? "GOOD" : score >= 60 ? "MODERATE" : "HIGH";
 }
 
-function stableSourceKey(text: string) {\n  let hash = 2166136261;\n  for (const char of text.normalize("NFKC").replace(/\\s+/g, " ").trim()) {\n    hash ^= char.charCodeAt(0);\n    hash = Math.imul(hash, 16777619);\n  }\n  return (hash >>> 0).toString(16);\n}\n\nfunction isRetryableAiError(error: unknown) {
+function isRetryableAiError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return /high demand|overloaded|capacity|temporar|rate.?limit|429|503|service unavailable|internal server error/i.test(message);
 }
@@ -431,17 +431,17 @@ export async function POST(request: Request) {
     }
     if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
 
-    const sourceKey = stableSourceKey(text);\n    const stableResult = { ...result.object, _sourceKey: sourceKey };\n    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
+    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
     const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
       user_id: user.id, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
-      score: Math.round(stableResult.financialHealthScore), report_json: stableResult, pdf_base64: pdfBase64,
+      score: Math.round(result.object.financialHealthScore), report_json: result.object, pdf_base64: pdfBase64,
     }).select("id,created_at").single();
 
     if (saveError) return NextResponse.json({ error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." }, { status: 500 });
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: stableResult });
+    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });

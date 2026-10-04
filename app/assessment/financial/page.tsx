@@ -10,9 +10,15 @@ type AssessmentResult = {
   revenueAnalysis: string;
   costAnalysis: string;
   profitAnalysis: string;
+  comparativeAnalysis: string;
+  ratioAnalysis: string;
+  varianceAnalysis: string;
+  auditFindings: string[];
   risks: string[];
   recommendations: string[];
   actionPlan: string[];
+  dataLimitations: string[];
+  conclusion: string;
   extractedFigures: { label: string; value: string; period: string }[];
 };
 
@@ -214,15 +220,24 @@ export default function FinancialAssessmentPage() {
               ["Revenue Analysis", result.revenueAnalysis],
               ["Cost Analysis", result.costAnalysis],
               ["Profit Analysis", result.profitAnalysis],
+              ["Comparative Analysis", result.comparativeAnalysis],
+              ["Ratio & Margin Analysis", result.ratioAnalysis],
+              ["Variance Analysis", result.varianceAnalysis],
             ].map(([title, value]) => (
               <div key={title} className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                 <h2 className="text-xl font-bold">{title}</h2>
                 <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">{value}</p>
               </div>
             ))}
+            <ResultList title="Auditor-Style Findings" items={result.auditFindings} danger />
             <ResultList title="Risk / Red Flags" items={result.risks} danger />
             <ResultList title="Recommendations" items={result.recommendations} />
             <ResultList title="Action Plan" items={result.actionPlan} />
+            <ResultList title="Data Limitations" items={result.dataLimitations} />
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <h2 className="text-xl font-bold">Overall Conclusion</h2>
+              <p className="mt-3 whitespace-pre-line leading-7 text-slate-600">{result.conclusion}</p>
+            </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
               <h2 className="text-xl font-bold">Angka Keuangan</h2>
               <div className="mt-5 space-y-2">

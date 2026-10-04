@@ -229,7 +229,7 @@ export default function FinancialAssessmentPage() {
   );
 }
 
-function ReportSection({ title, subtitle, text }: { title: string; subtitle: string; text: string }) {
+function getFigure(figures: AssessmentResult["extractedFigures"], labels: string[]) {\n  const found = figures.find((item) => labels.some((label) => item.label.toLowerCase().trim() === label.toLowerCase().trim()));\n  return found || { label: labels[0], value: "Tidak tersedia", period: "—" };\n}\n\nfunction scoreStatus(score: number) {\n  if (score >= 80) return { icon: "🟢", label: "Good", className: "text-emerald-700 bg-emerald-50" };\n  if (score >= 60) return { icon: "🟡", label: "Moderate", className: "text-amber-700 bg-amber-50" };\n  return { icon: "🔴", label: "Needs Attention", className: "text-red-700 bg-red-50" };\n}\n\nfunction ReportSection({ title, subtitle, text }: { title: string; subtitle: string; text: string }) {
   const blocks = (text || "").split(/\\n\\s*\\n/).map((x) => x.trim()).filter(Boolean);
   const paragraphs = blocks.length ? blocks : (text || "").split(/\\n/).map((x) => x.trim()).filter(Boolean);
   return (

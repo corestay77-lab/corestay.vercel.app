@@ -267,7 +267,7 @@ function getFigureForPdf(figures: { label: string; value: string; period: string
 }
 
 function scoreLabel(score: number) {
-  return score >= 80 ? "🟢 Good" : score >= 60 ? "🟡 Moderate" : "🔴 High";
+  return score >= 80 ? "GOOD" : score >= 60 ? "MODERATE" : "HIGH";
 }
 
 function isRetryableAiError(error: unknown) {

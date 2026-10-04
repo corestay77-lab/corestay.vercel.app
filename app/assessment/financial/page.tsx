@@ -1,7 +1,6 @@
 "use client";
 
 import { useRef, useState } from "react";
-import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -71,22 +70,34 @@ export default function FinancialAssessmentPage() {
     setLoading(true);
 
     try {
-      const blob = await upload(
-        `financial-reports/${selected.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
-        selected,
-        {
-          access: "private",
-          handleUploadUrl: "/api/assessment/financial/upload",
-          clientPayload: JSON.stringify({ accessToken: session.access_token }),
-        }
-      );
+      if (selected.size > 4 * 1024 * 1024) {
+        throw new Error("Ukuran PDF maksimal 4 MB.");
+      }
+
+      const uploadForm = new FormData();
+      uploadForm.append("file", selected);
+
+      const uploadResponse = await fetch("/api/assessment/financial/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${session.access_token}` },
+        body: uploadForm,
+      });
+
+      const uploadRaw = await uploadResponse.text();
+      let uploadData: { pathname?: string; error?: string } = {};
+      try { uploadData = uploadRaw ? JSON.parse(uploadRaw) : {}; }
+      catch { throw new Error(`Server upload mengembalikan respons tidak valid (HTTP ${uploadResponse.status}).`); }
+
+      if (!uploadResponse.ok || !uploadData.pathname) {
+        throw new Error(uploadData.error || `Upload gagal (HTTP ${uploadResponse.status}).`);
+      }
 
       setLoading(false);
       setAnalyzing(true);
 
       const formData = new FormData();
       formData.append("action", "analyze");
-      formData.append("blobPath", blob.pathname);
+      formData.append("blobPath", uploadData.pathname);
       formData.append("fileName", selected.name);
 
       const response = await fetch("/api/assessment/financial", {

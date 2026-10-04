@@ -6,10 +6,15 @@ export const runtime = "nodejs";
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = request.headers.get("authorization") || "";
-    if (!auth.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
+    const body = (await request.json()) as HandleUploadBody;
+    let clientPayload: { accessToken?: string } = {};
+    try {
+      clientPayload = body.clientPayload ? JSON.parse(String(body.clientPayload)) : {};
+    } catch {
+      return NextResponse.json({ error: "Payload upload tidak valid." }, { status: 400 });
     }
+    const auth = clientPayload.accessToken ? `Bearer ${clientPayload.accessToken}` : "";
+    if (!auth) return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
 
     const supabase = createClient(
       "https://vkejwklhijophavlosze.supabase.co",
@@ -17,11 +22,7 @@ export async function POST(request: NextRequest) {
       { global: { headers: { Authorization: auth } } }
     );
     const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) {
-      return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
-    }
-
-    const body = (await request.json()) as HandleUploadBody;
+    if (error || !user) return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
     const result = await handleUpload({
       body,
       request,

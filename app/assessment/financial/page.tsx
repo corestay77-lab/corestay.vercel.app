@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -324,7 +324,7 @@ function ReportHeader({ result }: { result: AssessmentResult }) {
   </div>;
 }
 
-function ReportCard({ eyebrow, title, subtitle, children }: { eyebrow: string; title: string; subtitle: string; children: React.ReactNode }) {
+function ReportCard({ eyebrow, title, subtitle, children }: { eyebrow: string; title: string; subtitle: string; children: ReactNode }) {
   return <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
     <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9b7439]">{eyebrow} · {subtitle}</p>
     <h2 className="mt-2 text-2xl font-bold text-[#172a4d]">{title}</h2>

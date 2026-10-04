@@ -7,7 +7,7 @@ import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 const FinancialAssessment = z.object({
   financialHealthScore: z.number().min(0).max(100),

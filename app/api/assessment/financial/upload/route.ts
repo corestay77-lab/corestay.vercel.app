@@ -1,11 +1,10 @@
-import { NextResponse } from "next/server";
-import { put } from "@vercel/blob";
+import { NextRequest, NextResponse } from "next/server";
+import { handleUpload, type HandleUploadBody } from "@vercel/blob/client";
 import { createClient } from "@supabase/supabase-js";
 
 export const runtime = "nodejs";
-export const maxDuration = 60;
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
     const auth = request.headers.get("authorization") || "";
     if (!auth.startsWith("Bearer ")) {
@@ -17,30 +16,30 @@ export async function POST(request: Request) {
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "missing",
       { global: { headers: { Authorization: auth } } }
     );
-
     const { data: { user }, error } = await supabase.auth.getUser();
     if (error || !user) {
       return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
     }
 
-    const form = await request.formData();
-    const entry = form.get("file");
-    if (!(entry instanceof File)) {
-      return NextResponse.json({ error: "File PDF belum dipilih." }, { status: 400 });
-    }
+    const body = (await request.json()) as HandleUploadBody;
+    const result = await handleUpload({
+      body,
+      request,
+      onBeforeGenerateToken: async (pathname) => {
+        const safePath = pathname.replace(/[^a-zA-Z0-9._/-]/g, "_");
+        return {
+          allowedContentTypes: ["application/pdf"],
+          addRandomSuffix: false,
+          tokenPayload: JSON.stringify({ userId: user.id }),
+          pathname: `financial-reports/${user.id}/${Date.now()}-${safePath.split("/").pop() || "report.pdf"}`,
+        };
+      },
+      onUploadCompleted: async () => {},
+    });
 
-    const isPdf = entry.type === "application/pdf" || entry.name.toLowerCase().endsWith(".pdf");
-    if (!isPdf) {
-      return NextResponse.json({ error: "File harus berformat PDF." }, { status: 400 });
-    }
-
-    const safeName = entry.name.replace(/[^a-zA-Z0-9._-]/g, "_");
-    const pathname = `financial-reports/${user.id}/${Date.now()}-${safeName}`;
-    const blob = await put(pathname, entry, { access: "private", addRandomSuffix: false });
-
-    return NextResponse.json({ success: true, pathname: blob.pathname, fileName: entry.name });
+    return NextResponse.json(result);
   } catch (error) {
-    console.error("Financial upload failed:", error);
+    console.error("Financial Blob upload handler failed:", error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : "Upload PDF gagal." },
       { status: 500 }

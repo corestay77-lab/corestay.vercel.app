@@ -145,8 +145,8 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     ensure(96);
     page.drawRectangle({ x: MARGIN, y: y - 4, width: 4, height: 30, color: GOLD });
     page.drawText(number, { x: MARGIN + 12, y: y + 8, size: 8, font: bold, color: GOLD });
-    page.drawText(title, { x: MARGIN + 54, y: y + 6, size: 15, font: bold, color: NAVY });
-    if (subtitle) page.drawText(subtitle, { x: MARGIN + 54, y: y - 8, size: 7.2, font: regular, color: MUTED });
+    page.drawText(title, { x: MARGIN + 72, y: y + 6, size: 15, font: bold, color: NAVY });
+    if (subtitle) page.drawText(subtitle, { x: MARGIN + 72, y: y - 8, size: 7.2, font: regular, color: MUTED });
     y -= 48;
     page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 0.6, color: BORDER });
     y -= 32;

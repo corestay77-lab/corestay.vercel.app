@@ -7,6 +7,13 @@ import { supabase } from "@/lib/supabase";
 
 type AssessmentResult = {
   financialHealthScore: number;
+  dataCompletenessScore: number;
+  revenueHealthScore: number;
+  profitabilityHealthScore: number;
+  costControlScore: number;
+  cashFlowScore: number;
+  internalControlScore: number;
+  revenueIntegrityScore: number;
   executiveSummary: string;
   revenueAnalysis: string;
   costAnalysis: string;
@@ -136,7 +143,7 @@ export default function FinancialAssessmentPage() {
           <b>Upload PDF → Analysis → Hasil</b>. Analisis laporan keuangan hotel secara cepat dan terstruktur untuk melihat kondisi, performa, dan area yang perlu diperhatikan.
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-          <b>Hasil:</b> ringkasan kondisi keuangan, indikator utama, dan temuan penting. <b>Manfaat:</b> membantu manajemen memahami kondisi bisnis dan mengambil keputusan berdasarkan data.
+          <b>Hasil:</b> audit berbasis file dengan validasi data, KPI, variance, red flags, potensi saving/recovery, dan action plan. <b>Rule:</b> file yang gagal dibaca tidak akan menghasilkan audit seolah-olah valid.
         </p>
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
@@ -163,6 +170,11 @@ export default function FinancialAssessmentPage() {
             <div className="rounded-3xl bg-slate-950 p-6 text-white sm:p-8">
               <p className="text-xs font-bold uppercase tracking-[0.2em] text-[#d8b985]">Financial Health Score</p>
               <div className="mt-3 text-6xl font-bold">{result.financialHealthScore}<span className="text-2xl text-white/40">/100</span></div>
+              <p className="mt-2 text-sm text-white/55">Data Completeness: {result.dataCompletenessScore}/100</p>
+              <div className="mt-5 grid grid-cols-2 gap-2 text-xs text-white/75 sm:grid-cols-3">
+                <span>Revenue {result.revenueHealthScore}/100</span><span>Profitability {result.profitabilityHealthScore}/100</span><span>Cost Control {result.costControlScore}/100</span>
+                <span>Cash Flow {result.cashFlowScore}/100</span><span>Internal Control {result.internalControlScore}/100</span><span>Revenue Integrity {result.revenueIntegrityScore}/100</span>
+              </div>
               <p className="mt-5 max-w-3xl leading-7 text-white/75">{result.executiveSummary}</p>
             </div>
             {[

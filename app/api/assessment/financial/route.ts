@@ -57,13 +57,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
         page = doc.addPage([595, 842]);
         y = 800;
       }
-      page.drawText(line, {
-        x: 45,
-        y,
-        size,
-        font: b ? bold : font,
-        color: rgb(0.1, 0.14, 0.22),
-      });
+      page.drawText(line, { x: 45, y, size, font: b ? bold : font, color: rgb(0.1, 0.14, 0.22) });
       y -= size + 6;
     }
   };
@@ -76,30 +70,19 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   y -= 6;
 
   for (const [title, text] of [
-    ["Executive Summary", result.executiveSummary],
-    ["Revenue Analysis", result.revenueAnalysis],
-    ["Cost Analysis", result.costAnalysis],
-    ["Profit Analysis", result.profitAnalysis],
-    ["Comparative Analysis", result.comparativeAnalysis],
-    ["Ratio & Margin Analysis", result.ratioAnalysis],
-    ["Variance Analysis", result.varianceAnalysis],
-    ["Conclusion", result.conclusion],
+    ["Executive Summary", result.executiveSummary], ["Revenue Analysis", result.revenueAnalysis],
+    ["Cost Analysis", result.costAnalysis], ["Profit Analysis", result.profitAnalysis],
+    ["Comparative Analysis", result.comparativeAnalysis], ["Ratio & Margin Analysis", result.ratioAnalysis],
+    ["Variance Analysis", result.varianceAnalysis], ["Conclusion", result.conclusion],
   ] as const) {
-    add(title, 13, true);
-    add(text);
-    y -= 6;
+    add(title, 13, true); add(text); y -= 6;
   }
 
   for (const [title, items] of [
-    ["Auditor-Style Findings", result.auditFindings],
-    ["Risks / Red Flags", result.risks],
-    ["Recommendations", result.recommendations],
-    ["Action Plan", result.actionPlan],
-    ["Data Limitations", result.dataLimitations],
+    ["Auditor-Style Findings", result.auditFindings], ["Risks / Red Flags", result.risks],
+    ["Recommendations", result.recommendations], ["Action Plan", result.actionPlan], ["Data Limitations", result.dataLimitations],
   ] as const) {
-    add(title, 13, true);
-    items.forEach((x, i) => add(i + 1 + ". " + x));
-    y -= 5;
+    add(title, 13, true); items.forEach((x, i) => add(i + 1 + ". " + x)); y -= 5;
   }
 
   add("Extracted Financial Figures", 13, true);
@@ -120,24 +103,15 @@ export async function POST(request: Request) {
 
   try {
     const auth = request.headers.get("authorization") || "";
-    if (!auth.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
-    }
+    if (!auth.startsWith("Bearer ")) return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
 
     const supabase = createClient(
       "https://vkejwklhijophavlosze.supabase.co",
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "missing",
       { global: { headers: { Authorization: auth } } }
     );
-
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-
-    if (userError || !user) {
-      return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
-    }
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
 
     const formData = await request.formData();
     const action = String(formData.get("action") || "analyze");
@@ -160,14 +134,15 @@ export async function POST(request: Request) {
     if (action !== "analyze" && file instanceof File && file.size > 4 * 1024 * 1024) {
       return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
-    if (action === "analyze" && !process.env.GEMINI_API_KEY) {
-      return NextResponse.json({ error: "Gemini API belum aktif pada deployment ini." }, { status: 503 });
-    }
+    if (action === "analyze" && !process.env.GEMINI_API_KEY) return NextResponse.json({ error: "Gemini API belum aktif pada deployment ini." }, { status: 503 });
 
     let text = extractedText;
     if (blobPath) {
-      const { stream } = await get(blobPath, { access: "private" });
-      const buffer = await new Response(stream).arrayBuffer();
+      const blobResult = await get(blobPath, { access: "private" });
+      if (!blobResult || blobResult.statusCode !== 200 || !blobResult.stream) {
+        return NextResponse.json({ error: "File laporan tidak ditemukan atau tidak dapat dibaca." }, { status: 404 });
+      }
+      const buffer = await new Response(blobResult.stream).arrayBuffer();
       pdf = await getDocumentProxy(new Uint8Array(buffer));
       const parsed = await extractText(pdf, { mergePages: true });
       text = parsed.text.trim();
@@ -178,54 +153,19 @@ export async function POST(request: Request) {
       text = parsed.text.trim();
     }
 
-    if (!text) {
-      return NextResponse.json(
-        { error: "PDF tidak memiliki teks yang dapat dibaca. OCR perlu ditambahkan untuk PDF scan." },
-        { status: 422 }
-      );
-    }
-
-    if (action === "extract") {
-      return NextResponse.json({ success: true, fileName: (file as File).name, text });
-    }
+    if (!text) return NextResponse.json({ error: "PDF tidak memiliki teks yang dapat dibaca. OCR perlu ditambahkan untuk PDF scan." }, { status: 422 });
+    if (action === "extract") return NextResponse.json({ success: true, fileName: (file as File).name, text });
 
     const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
     const models = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
-    const system =
-      "Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia. Analisa konservatif berbasis angka. " +
-      "Jangan mengarang angka. Jika tidak tersedia, tulis Tidak tersedia. Kenali Rupiah, juta, ribu, persen, revenue, " +
-      "COGS, payroll, OPEX, GOP/EBITDA dan laba/rugi. Pisahkan fakta, perhitungan, interpretasi, dan rekomendasi. " +
-      "Score 0-100 harus berdasarkan data tersedia dan jangan mengarang benchmark, periode, budget, target, atau rasio. " +
-      "Gunakan prinsip financial review bergaya auditor: evidence-based, materiality, consistency, variance analysis, " +
-      "risk assessment, dan clear audit trail. Jangan menyatakan fraud atau opini audit independen tanpa bukti audit yang memadai. " +
-      "Jika data pembanding tidak tersedia, nyatakan Tidak tersedia dan jelaskan keterbatasannya.";
-
-    const prompt =
-      "Analisa laporan keuangan hotel berikut. Nama file: " +
-      (file?.name || submittedFileName) +
-      "\n\n" +
-      text +
-      "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, comparative analysis, ratio analysis, " +
-      "variance analysis, audit-style findings, risks, recommendations, action plan, data limitations, conclusion, dan angka yang ditemukan. " +
-      "Untuk komparasi, prioritaskan Current vs Previous Period, Actual vs Budget/Target, lalu Same Period Prior Year bila memang ada datanya. " +
-      "Untuk setiap variance material, jelaskan angka sumber, variance nominal/persentase atau percentage points, dampak, risiko, dan interpretasi. " +
-      "Hitung hanya rasio yang memiliki data numerator dan denominator yang valid. Tandai komparasi atau rasio yang tidak dapat divalidasi. " +
-      "Gunakan level materialitas praktis: fokus pada perubahan yang material terhadap revenue, profit, cash/liquidity, atau biaya utama; jangan menetapkan angka materialitas audit formal tanpa dasar. " +
-      "Hasil harus lengkap tetapi tetap ringkas, profesional, dan langsung ke poin. Maksimal 8 audit findings, 8 risks, 8 recommendations, dan 8 action plan items. " +
-      "Jangan mengarang angka atau benchmark industri. Jika hanya satu periode tersedia, jangan membuat tren palsu. " +
-      "Jelaskan apakah perubahan positif/negatif bagi hotel dan mengapa.";
+    const system = "Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia. Analisa konservatif berbasis angka. Jangan mengarang angka. Jika tidak tersedia, tulis Tidak tersedia. Kenali Rupiah, juta, ribu, persen, revenue, COGS, payroll, OPEX, GOP/EBITDA dan laba/rugi. Pisahkan fakta, perhitungan, interpretasi, dan rekomendasi. Score 0-100 harus berdasarkan data tersedia dan jangan mengarang benchmark, periode, budget, target, atau rasio. Gunakan prinsip financial review bergaya auditor: evidence-based, materiality, consistency, variance analysis, risk assessment, dan clear audit trail. Jangan menyatakan fraud atau opini audit independen tanpa bukti audit yang memadai. Jika data pembanding tidak tersedia, nyatakan Tidak tersedia dan jelaskan keterbatasannya.";
+    const prompt = "Analisa laporan keuangan hotel berikut. Nama file: " + (file?.name || submittedFileName) + "\n\n" + text + "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, comparative analysis, ratio analysis, variance analysis, audit-style findings, risks, recommendations, action plan, data limitations, conclusion, dan angka yang ditemukan. Untuk komparasi, prioritaskan Current vs Previous Period, Actual vs Budget/Target, lalu Same Period Prior Year bila memang ada datanya. Untuk setiap variance material, jelaskan angka sumber, variance nominal/persentase atau percentage points, dampak, risiko, dan interpretasi. Hitung hanya rasio yang memiliki data numerator dan denominator yang valid. Tandai komparasi atau rasio yang tidak dapat divalidasi. Gunakan level materialitas praktis: fokus pada perubahan yang material terhadap revenue, profit, cash/liquidity, atau biaya utama; jangan menetapkan angka materialitas audit formal tanpa dasar. Hasil harus lengkap tetapi tetap ringkas, profesional, dan langsung ke poin. Maksimal 8 audit findings, 8 risks, 8 recommendations, dan 8 action plan items. Jangan mengarang angka atau benchmark industri. Jika hanya satu periode tersedia, jangan membuat tren palsu. Jelaskan apakah perubahan positif/negatif bagi hotel dan mengapa.";
 
     let result: Awaited<ReturnType<typeof generateObject<typeof FinancialAssessment>>> | null = null;
     let lastAiError: unknown = null;
-
     for (const modelId of models) {
       try {
-        result = await generateObject({
-          model: google(modelId),
-          schema: FinancialAssessment,
-          system,
-          prompt,
-        });
+        result = await generateObject({ model: google(modelId), schema: FinancialAssessment, system, prompt });
         break;
       } catch (error) {
         lastAiError = error;
@@ -233,64 +173,23 @@ export async function POST(request: Request) {
         if (!isRetryableAiError(error)) throw error;
       }
     }
-
-    if (!result) {
-      console.error("All Gemini fallback models failed:", lastAiError);
-      return NextResponse.json(
-        {
-          error:
-            "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi.",
-        },
-        { status: 503 }
-      );
-    }
+    if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
 
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
-    const { data: saved, error: saveError } = await supabase
-      .from("assessment_reports")
-      .insert({
-        user_id: user.id,
-        assessment_type: "financial",
-        file_name: action === "analyze" ? submittedFileName : (file as File).name,
-        score: Math.round(result.object.financialHealthScore),
-        report_json: result.object,
-        pdf_base64: pdfBase64,
-      })
-      .select("id,created_at")
-      .single();
+    const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
+      user_id: user.id, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
+      score: Math.round(result.object.financialHealthScore), report_json: result.object, pdf_base64: pdfBase64,
+    }).select("id,created_at").single();
 
-    if (saveError) {
-      console.error(saveError);
-      return NextResponse.json(
-        { error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." },
-        { status: 500 }
-      );
-    }
-
+    if (saveError) return NextResponse.json({ error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." }, { status: 500 });
     if (blobPath) {
-      try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) {
-        console.error("Financial source cleanup failed:", cleanupError);
-      }
+      try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-
-    return NextResponse.json({
-      success: true,
-      reportId: saved.id,
-      createdAt: saved.created_at,
-      fileName: file?.name || submittedFileName,
-      result: result.object,
-    });
+    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object });
   } catch (error) {
     console.error(error);
-    return NextResponse.json(
-      { error: error instanceof Error ? error.message : "Server gagal memproses PDF." },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });
   } finally {
-    if (pdf) {
-      try {
-        pdf.cleanup();
-      } catch {}
-    }
+    if (pdf) { try { pdf.cleanup(); } catch {} }
   }
 }

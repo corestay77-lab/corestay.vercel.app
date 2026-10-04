@@ -11,7 +11,7 @@ const assessmentItems = [
   ["Assessment 3", "Financial Report PDF", "/assessment/financial"],
   ["Semua Assessment", "Lihat semua", "/assessment"],
 ] as const;
-const mainItems = [["Dashboard", "/", "⌂"], ["Laporan", "/laporan", "▤"], ["Rekomendasi", "/rekomendasi", "✦"], ["Paket & Harga", "/paket-harga", "◆"]] as const;
+const mainItems = [["Dashboard", "/", "⌂"], ["Hasil Assessment", "/laporan", "▤"], ["Paket & Harga", "/paket-harga", "◆"]] as const;
 
 function MenuIcon({ children }: { children: React.ReactNode }) { return <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm text-white/55 transition group-hover:bg-white/10 group-hover:text-white">{children}</span>; }
 function FooterCard() { return <div className="shrink-0 border-t border-white/10 pt-3"><div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-3.5 shadow-lg"><div className="flex items-center gap-2.5"><div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#d8b985]/15 text-sm text-[#d8b985]">◆</div><div className="min-w-0"><p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[#d8b985]">CoreStay Advisory</p><p className="mt-0.5 text-[10px] text-white/40">Hospitality Business Advisory</p></div></div><a href="https://wa.me/6285109006363" target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-center rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-[#162b4a] transition hover:-translate-y-0.5 hover:bg-[#f4f4f4]">Talk to Us <span className="ml-1.5">↗</span></a></div><p className="mt-2 text-center text-[9px] text-white/20">© CoreStay Advisory</p></div>; }

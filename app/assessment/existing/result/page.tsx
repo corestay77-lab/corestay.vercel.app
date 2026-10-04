@@ -112,6 +112,7 @@ export default function ExistingResultPage() {
             : "Assessment 1 — Hotel Existing",
           score: Number(parsed.overall) || 0,
           report_json: parsed,
+          pdf_base64: "",
         });
 
         if (!error) {

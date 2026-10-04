@@ -2,6 +2,7 @@
 
 import Image from "next/image";
 import { useEffect, useState } from "react";
+import { supabase } from "@/lib/supabase";
 
 type ExistingAreaResult = {
   key?: string;
@@ -90,8 +91,39 @@ export default function ExistingResultPage() {
 
   useEffect(() => {
     const stored = sessionStorage.getItem("corestay_assessment");
-    if (stored) {
-      try { setResult(JSON.parse(stored)); } catch { setResult(null); }
+    if (!stored) return;
+
+    try {
+      const parsed = JSON.parse(stored) as ExistingResult;
+      setResult(parsed);
+
+      async function saveAssessment() {
+        const savedKey = "corestay_existing_report_saved";
+        if (sessionStorage.getItem(savedKey) === "1") return;
+
+        const { data: auth } = await supabase.auth.getSession();
+        if (!auth.session?.user) return;
+
+        const { error } = await supabase.from("assessment_reports").insert({
+          user_id: auth.session.user.id,
+          assessment_type: "existing",
+          file_name: parsed.hotelName
+            ? `Assessment 1 — Hotel Existing — ${parsed.hotelName}`
+            : "Assessment 1 — Hotel Existing",
+          score: Number(parsed.overall) || 0,
+          report_json: parsed,
+        });
+
+        if (!error) {
+          sessionStorage.setItem(savedKey, "1");
+        } else {
+          console.error("Gagal menyimpan Assessment 1:", error);
+        }
+      }
+
+      void saveAssessment();
+    } catch {
+      setResult(null);
     }
   }, []);
 

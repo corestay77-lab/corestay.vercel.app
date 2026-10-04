@@ -188,6 +188,30 @@ export default function FinancialAssessmentPage() {
               </div>
               <p className="mt-5 max-w-3xl leading-7 text-white/75">{result.executiveSummary}</p>
             </div>
+            <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#9b7439]">Management Snapshot</p>
+              <h2 className="mt-2 text-2xl font-bold text-[#172a4d]">Key Financial Indicators</h2>
+              <div className="mt-6 overflow-x-auto rounded-2xl border border-slate-200">
+                <table className="w-full min-w-[620px] text-left text-sm">
+                  <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Indicator</th><th className="px-4 py-3">Result</th><th className="px-4 py-3">Assessment</th><th className="px-4 py-3">Period</th></tr></thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {[
+                      ["Revenue", ["Revenue"], result.revenueHealthScore],
+                      ["GOP", ["GOP", "Gross Operating Profit"], result.profitabilityHealthScore],
+                      ["GOP Margin", ["GOP Margin", "GOP %", "GOP Margin %"], result.profitabilityHealthScore],
+                      ["Operating Cost", ["Operating Cost", "Operating Costs", "Total Operating Cost"], result.costControlScore],
+                      ["Net Profit", ["Net Profit", "Net Profit/Loss", "Net Income"], result.profitabilityHealthScore],
+                      ["Cash Flow", ["Cash Flow", "Operating Cash Flow", "Net Cash Flow"], result.cashFlowScore],
+                    ].map(([label, labels, score], index) => {
+                      const figure = getFigure(result.extractedFigures, labels as string[]);
+                      const status = scoreStatus(Number(score));
+                      return <tr key={index}><td className="px-4 py-4 font-semibold text-slate-800">{label}</td><td className="px-4 py-4 font-medium text-slate-700">{figure.value}</td><td className="px-4 py-4"><span className={`inline-flex rounded-full px-3 py-1 text-xs font-bold ${status.className}`}>{status.icon} {status.label}</span></td><td className="px-4 py-4 text-slate-500">{figure.period}</td></tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <p className="mt-3 text-xs text-slate-400">Nilai hanya berasal dari angka yang berhasil diekstrak dari laporan.</p>
+            </div>
             <ReportSection title="01. Revenue Performance" subtitle="Revenue Analysis" text={result.revenueAnalysis} />
             <ReportSection title="02. Cost & Expense Analysis" subtitle="Cost Analysis" text={result.costAnalysis} />
             <ReportSection title="03. Profitability Analysis" subtitle="Profit Analysis" text={result.profitAnalysis} />
@@ -229,7 +253,18 @@ export default function FinancialAssessmentPage() {
   );
 }
 
-function getFigure(figures: AssessmentResult["extractedFigures"], labels: string[]) {\n  const found = figures.find((item) => labels.some((label) => item.label.toLowerCase().trim() === label.toLowerCase().trim()));\n  return found || { label: labels[0], value: "Tidak tersedia", period: "—" };\n}\n\nfunction scoreStatus(score: number) {\n  if (score >= 80) return { icon: "🟢", label: "Good", className: "text-emerald-700 bg-emerald-50" };\n  if (score >= 60) return { icon: "🟡", label: "Moderate", className: "text-amber-700 bg-amber-50" };\n  return { icon: "🔴", label: "Needs Attention", className: "text-red-700 bg-red-50" };\n}\n\nfunction ReportSection({ title, subtitle, text }: { title: string; subtitle: string; text: string }) {
+function getFigure(figures: AssessmentResult["extractedFigures"], labels: string[]) {\n  const found = figures.find((item) => labels.some((label) => item.label.toLowerCase().trim() === label.toLowerCase().trim()));\n  return found || { label: labels[0], value: "Tidak tersedia", period: "—" };\n}\n\nfunction scoreStatus(score: number) {\n  if (score >= 80) return { icon: "🟢", label: "Good", className: "text-emerald-700 bg-emerald-50" };\n  if (score >= 60) return { icon: "🟡", label: "Moderate", className: "text-amber-700 bg-amber-50" };\n  return { icon: "🔴", label: "Needs Attention", className: "text-red-700 bg-red-50" };\n}\n\nfunction getFigure(figures: AssessmentResult["extractedFigures"], labels: string[]) {
+  const found = figures.find((item) => labels.some((label) => item.label.toLowerCase().trim() === label.toLowerCase().trim()));
+  return found || { label: labels[0], value: "Tidak tersedia", period: "—" };
+}
+
+function scoreStatus(score: number) {
+  if (score >= 80) return { icon: "🟢", label: "Good", className: "text-emerald-700 bg-emerald-50" };
+  if (score >= 60) return { icon: "🟡", label: "Moderate", className: "text-amber-700 bg-amber-50" };
+  return { icon: "🔴", label: "Needs Attention", className: "text-red-700 bg-red-50" };
+}
+
+function ReportSection({ title, subtitle, text }: { title: string; subtitle: string; text: string }) {
   const blocks = (text || "").split(/\\n\\s*\\n/).map((x) => x.trim()).filter(Boolean);
   const paragraphs = blocks.length ? blocks : (text || "").split(/\\n/).map((x) => x.trim()).filter(Boolean);
   return (

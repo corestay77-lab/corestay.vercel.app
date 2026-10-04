@@ -349,7 +349,7 @@ function scoreLabel(score: number) {
   return score >= 80 ? "GOOD" : score >= 60 ? "MODERATE" : "HIGH";
 }
 
-function isRetryableAiError(error: unknown) {
+function stableSourceKey(text: string) {\n  let hash = 2166136261;\n  for (const char of text.normalize("NFKC").replace(/\\s+/g, " ").trim()) {\n    hash ^= char.charCodeAt(0);\n    hash = Math.imul(hash, 16777619);\n  }\n  return (hash >>> 0).toString(16);\n}\n\nfunction isRetryableAiError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return /high demand|overloaded|capacity|temporar|rate.?limit|429|503|service unavailable|internal server error/i.test(message);
 }

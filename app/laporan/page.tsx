@@ -20,12 +20,6 @@ const label = (t: string) =>
       ? "Assessment 2 · Pre-opening Hotel"
       : "Assessment 3 · Financial";
 
-const text = (value: any) => {
-  if (Array.isArray(value)) return value.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join(" ");
-  if (value && typeof value === "object") return JSON.stringify(value);
-  return value == null ? "" : String(value);
-};
-
 export default function LaporanPage() {
   const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
@@ -100,7 +94,8 @@ export default function LaporanPage() {
                   {new Date(x.created_at).toLocaleString("id-ID")} · Score {x.score ?? "-"}/100
                 </p>
 
-                <div className="mt-4 flex items-center justify-between gap-3">\n                  {x.assessment_type === "financial" ? (
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  {x.assessment_type === "financial" ? (
                     <button
                       onClick={async () => {
                         const { data: { session } } = await supabase.auth.getSession();
@@ -121,7 +116,8 @@ export default function LaporanPage() {
                     >
                       Download PDF
                     </button>
-                  ) : null}\n                  {x.assessment_type === "financial" && (
+                  ) : null}
+                  {x.assessment_type === "financial" && (
                     <button
                       type="button"
                       onClick={() => deleteFinancialReport(x.id)}
@@ -136,4 +132,7 @@ export default function LaporanPage() {
           </div>
         )}
       </div>
-\n    </main>\n  );\n}\n
+
+    </main>
+  );
+}

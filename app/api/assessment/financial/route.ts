@@ -209,7 +209,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const pdfBase64 = await makePdf(file.name, result.object);
+    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
     const { data: saved, error: saveError } = await supabase
       .from("assessment_reports")
       .insert({

@@ -122,7 +122,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
       const clean = paragraph.replace(/^[-•*]\\s+/, "").replace(/^\\d+[.)]\\s+/, "");
       const indent = bullet ? 16 : 0;
       const lines = wrap(clean, size, CONTENT_W - indent);
-      ensure(lines.length * (size + 3.4) + gap + 4);
+      ensure(lines.length * (size + 3.4) + gap + 10);
       if (bullet) page.drawText("•", { x: MARGIN, y, size: size + 1, font: bold, color: GOLD });
       for (const line of lines) {
         page.drawText(line, { x: MARGIN + indent, y, size, font: regular, color });
@@ -138,7 +138,8 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   }
 
   function section(number: string, title: string, subtitle?: string) {
-    ensure(58);
+    // Keep section headers together and never let the header enter the footer zone.
+    ensure(82);
     page.drawRectangle({ x: MARGIN, y: y - 4, width: 4, height: 30, color: GOLD });
     page.drawText(number, { x: MARGIN + 12, y: y + 8, size: 8, font: bold, color: GOLD });
     page.drawText(title, { x: MARGIN + 42, y: y + 6, size: 15, font: bold, color: NAVY });
@@ -159,7 +160,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     const w = (CONTENT_W - gap) / cols;
     const h = 72;
     for (let i = 0; i < items.length; i += cols) {
-      ensure(h + 10);
+      ensure(h + 18);
       const row = items.slice(i, i + cols);
       row.forEach(([title, value, status], col) => {
         const x = MARGIN + col * (w + gap);
@@ -177,7 +178,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   function scoreCard(score: number, compact = false) {
     const s = statusFor(score);
     const h = compact ? 70 : 108;
-    ensure(h + 10);
+    ensure(h + 18);
     page.drawRectangle({ x: MARGIN, y: y - h, width: CONTENT_W, height: h, color: NAVY, borderColor: NAVY, borderWidth: 0.5 });
     page.drawText(compact ? "ASSESSMENT SCORE" : "FINANCIAL HEALTH SCORE", { x: MARGIN + 16, y: y - 20, size: 7.5, font: bold, color: GOLD_SOFT });
     page.drawText(score + " / 100", { x: MARGIN + 16, y: y - (compact ? 48 : 60), size: compact ? 20 : 28, font: bold, color: WHITE });
@@ -187,7 +188,20 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
 
   function listBlock(items: string[], numbered = false) {
     items.forEach((item, i) => {
-      textBlock((numbered ? String(i + 1).padStart(2, "0") + " — " : "- ") + item, 9.1, TEXT, 3);
+      if (!numbered) {
+        textBlock("- " + item, 9.1, TEXT, 3);
+        return;
+      }
+      const size = 9.1;
+      const number = String(i + 1).padStart(2, "0");
+      const lines = wrap(String(item || ""), size, CONTENT_W - 30);
+      ensure(lines.length * (size + 3.4) + 12);
+      page.drawText(number, { x: MARGIN, y, size: 8, font: bold, color: GOLD });
+      lines.forEach((line) => {
+        page.drawText(line, { x: MARGIN + 30, y, size, font: regular, color: TEXT });
+        y -= size + 3.4;
+      });
+      y -= 4;
     });
   }
 
@@ -256,7 +270,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   ];
   risks.forEach(([area, score, comment]) => {
     const h = 42;
-    ensure(h + 5);
+    ensure(h + 18);
     const s = statusFor(score);
     page.drawRectangle({ x: MARGIN, y: y - h, width: CONTENT_W, height: h, color: LIGHT, borderColor: BORDER, borderWidth: 0.5 });
     page.drawText(area, { x: MARGIN + 10, y: y - 15, size: 8.4, font: bold, color: NAVY });
@@ -274,7 +288,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   section("09", "Priority Recommendations", "Management Priorities");
   const priorityTitles = ["Priority 1 — Strengthen Cost Control", "Priority 2 — Improve Revenue Quality", "Priority 3 — Improve Financial Monitoring"];
   result.recommendations.slice(0, 3).forEach((item, i) => {
-    ensure(54);
+    ensure(76);
     page.drawRectangle({ x: MARGIN, y: y - 48, width: CONTENT_W, height: 48, color: i === 0 ? GOLD_SOFT : LIGHT_BLUE });
     page.drawText(priorityTitles[i], { x: MARGIN + 11, y: y - 16, size: 9.2, font: bold, color: NAVY });
     const impact = i === 0
@@ -294,7 +308,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     ["61–90 DAYS", result.actionPlan.filter((_, i) => i % 3 === 2).slice(0, 4)],
   ];
   actionGroups.forEach(([period, items]) => {
-    ensure(28);
+    ensure(48);
     page.drawRectangle({ x: MARGIN, y: y - 20, width: 82, height: 20, color: NAVY });
     page.drawText(period, { x: MARGIN + 8, y: y - 14, size: 6.5, font: bold, color: WHITE });
     y -= 28;

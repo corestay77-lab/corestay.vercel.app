@@ -1,11 +1,201 @@
 "use client";
 
-import { useEffect,useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
-type Row={id:string;file_name:string;score:number|null;created_at:string;assessment_type:string};
-const label=(t:string)=>t==="existing"?"Assessment 1 · Hotel Existing":t==="pre-opening"?"Assessment 2 · Pre-opening Hotel":"Assessment 3 · Financial";
-export default function LaporanPage(){const router=useRouter();const[rows,setRows]=useState<Row[]>([]);const[checking,setChecking]=useState(true);
-useEffect(()=>{(async()=>{const{data:auth}=await supabase.auth.getSession();if(!auth.session){router.replace("/login?next=/laporan");return}const{data,error}=await supabase.from("assessment_reports").select("id,file_name,score,created_at,assessment_type").order("created_at",{ascending:false});if(error)console.error("Gagal memuat laporan:",error);setRows((data||[])as Row[]);setChecking(false)})()},[router]);
-if(checking)return <main className="min-h-screen bg-[#f4f7fb] px-6 py-12 lg:pl-[280px]"><p>Memeriksa akun...</p></main>;
-return <main className="min-h-screen bg-[#f4f7fb] px-6 py-12 lg:pl-[280px]"><div className="mx-auto max-w-5xl"><p className="text-xs font-bold uppercase tracking-[0.22em] text-[#6b8a80]">CoreStay</p><h1 className="mt-3 text-4xl font-semibold">Laporan</h1><p className="mt-4 text-[#66738a]">Semua laporan assessment yang tersimpan pada akun Anda.</p>{rows.length===0?<div className="mt-8 rounded-3xl border border-[#dce4ef] bg-white p-8"><h2 className="text-xl font-semibold">Belum ada laporan</h2><p className="mt-2 text-sm text-[#66738a]">Selesaikan assessment untuk menyimpan laporan.</p></div>:<div className="mt-8 space-y-4">{rows.map(x=><div key={x.id} className="rounded-3xl border border-[#dce4ef] bg-white p-6"><p className="text-xs font-bold uppercase tracking-wider text-[#6b8a80]">{label(x.assessment_type)}</p><h2 className="mt-1 font-semibold">{x.file_name}</h2><p className="mt-1 text-sm text-[#66738a]">{new Date(x.created_at).toLocaleString("id-ID")} · Score {x.score??"-"}/100</p>{x.assessment_type==="financial"?<button onClick={async()=>{const{data:{session}}=await supabase.auth.getSession();if(!session){router.replace("/login");return}const r=await fetch("/api/assessment/financial/report/"+x.id,{headers:{Authorization:"Bearer "+session.access_token}});if(!r.ok)return;const b=await r.blob(),u=URL.createObjectURL(b),a=document.createElement("a");a.href=u;a.download="CoreStay-Financial-Assessment.pdf";a.click();URL.revokeObjectURL(u)}} className="mt-4 rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white">Download PDF</button>:<p className="mt-4 text-sm text-[#66738a]">Hasil assessment tersimpan. Detail dapat dilihat pada hasil assessment.</p>}</div>)}</div>}</div></main>}
+
+type Row = {
+  id: string;
+  file_name: string;
+  score: number | null;
+  created_at: string;
+  assessment_type: string;
+  report_json: any;
+};
+
+const label = (t: string) =>
+  t === "existing"
+    ? "Assessment 1 · Hotel Existing"
+    : t === "pre-opening"
+      ? "Assessment 2 · Pre-opening Hotel"
+      : "Assessment 3 · Financial";
+
+const text = (value: any) => {
+  if (Array.isArray(value)) return value.map((x) => typeof x === "string" ? x : JSON.stringify(x)).join(" ");
+  if (value && typeof value === "object") return JSON.stringify(value);
+  return value == null ? "" : String(value);
+};
+
+export default function LaporanPage() {
+  const router = useRouter();
+  const [rows, setRows] = useState<Row[]>([]);
+  const [checking, setChecking] = useState(true);
+  const [preview, setPreview] = useState<Row | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      const { data: auth } = await supabase.auth.getSession();
+      if (!auth.session) {
+        router.replace("/login?next=/laporan");
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from("assessment_reports")
+        .select("id,file_name,score,created_at,assessment_type,report_json")
+        .order("created_at", { ascending: false });
+
+      if (error) console.error("Gagal memuat laporan:", error);
+      setRows((data || []) as Row[]);
+      setChecking(false);
+    })();
+  }, [router]);
+
+  if (checking) {
+    return (
+      <main className="min-h-screen bg-[#f4f7fb] px-6 py-12 lg:pl-[280px]">
+        <p>Memeriksa akun...</p>
+      </main>
+    );
+  }
+
+  return (
+    <main className="min-h-screen bg-[#f4f7fb] px-6 py-12 lg:pl-[280px]">
+      <div className="mx-auto max-w-5xl">
+        <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#6b8a80]">CoreStay</p>
+        <h1 className="mt-3 text-4xl font-semibold">Laporan</h1>
+        <p className="mt-4 text-[#66738a]">Semua laporan assessment yang tersimpan pada akun Anda.</p>
+
+        {rows.length === 0 ? (
+          <div className="mt-8 rounded-3xl border border-[#dce4ef] bg-white p-8">
+            <h2 className="text-xl font-semibold">Belum ada laporan</h2>
+            <p className="mt-2 text-sm text-[#66738a]">Selesaikan assessment untuk menyimpan laporan.</p>
+          </div>
+        ) : (
+          <div className="mt-8 space-y-4">
+            {rows.map((x) => (
+              <div key={x.id} className="rounded-3xl border border-[#dce4ef] bg-white p-6">
+                <p className="text-xs font-bold uppercase tracking-wider text-[#6b8a80]">{label(x.assessment_type)}</p>
+                <h2 className="mt-1 font-semibold">{x.file_name}</h2>
+                <p className="mt-1 text-sm text-[#66738a]">
+                  {new Date(x.created_at).toLocaleString("id-ID")} · Score {x.score ?? "-"}/100
+                </p>
+
+                <div className="mt-4 flex flex-wrap gap-3">
+                  {x.assessment_type === "financial" ? (
+                    <button
+                      onClick={async () => {
+                        const { data: { session } } = await supabase.auth.getSession();
+                        if (!session) { router.replace("/login"); return; }
+                        const r = await fetch("/api/assessment/financial/report/" + x.id, {
+                          headers: { Authorization: "Bearer " + session.access_token },
+                        });
+                        if (!r.ok) return;
+                        const b = await r.blob();
+                        const u = URL.createObjectURL(b);
+                        const a = document.createElement("a");
+                        a.href = u;
+                        a.download = "CoreStay-Financial-Assessment.pdf";
+                        a.click();
+                        URL.revokeObjectURL(u);
+                      }}
+                      className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white"
+                    >
+                      Download PDF
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => setPreview(x)}
+                      className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white"
+                    >
+                      Preview Hasil
+                    </button>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {preview && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm" onClick={() => setPreview(null)}>
+          <div
+            className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white p-6 text-slate-900 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between gap-4 border-b border-slate-200 pb-5">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-wider text-[#6b8a80]">{label(preview.assessment_type)}</p>
+                <h2 className="mt-1 text-2xl font-bold">{preview.file_name}</h2>
+                <p className="mt-1 text-sm text-slate-500">Score {preview.score ?? "-"}/100</p>
+              </div>
+              <button onClick={() => setPreview(null)} className="rounded-full bg-slate-100 px-4 py-2 text-xl leading-none text-slate-600">×</button>
+            </div>
+
+            {preview.assessment_type === "existing" ? (
+              <div className="mt-6 space-y-6">
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Hotel</p><p className="mt-1 font-bold">{text(preview.report_json?.hotelName) || "-"}</p></div>
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Kota</p><p className="mt-1 font-bold">{text(preview.report_json?.city) || "-"}</p></div>
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Overall</p><p className="mt-1 text-3xl font-extrabold text-[#203b68]">{preview.score ?? 0}%</p></div>
+                </div>
+                <div><h3 className="text-lg font-bold">Diagnosis</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.diagnosis) || "-"}</p></div>
+                <div><h3 className="text-lg font-bold">Rekomendasi</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.recommendation) || "-"}</p></div>
+                <div>
+                  <h3 className="text-lg font-bold">Analisis per Area</h3>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {(preview.report_json?.areaResults || []).map((area: any, i: number) => (
+                      <div key={area.key || area.category || i} className="rounded-2xl border border-slate-200 p-4">
+                        <div className="flex items-center justify-between gap-3"><p className="font-bold">{text(area.title) || "Area"}</p><span className="font-extrabold text-[#203b68]">{Number(area.score) || 0}%</span></div>
+                        <p className="mt-2 text-xs font-bold text-slate-500">{text(area.level) || "-"}</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600"><b>Diagnosis:</b> {text(area.diagnosis) || "-"}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600"><b>Rekomendasi:</b> {text(area.recommendation) || "-"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="mt-6 space-y-6">
+                <div className="grid gap-4 sm:grid-cols-4">
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Hotel</p><p className="mt-1 font-bold">{text(preview.report_json?.hotel) || text(preview.file_name).replace("Assessment 2 — Pre-opening Hotel — ", "") || "-"}</p></div>
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Overall</p><p className="mt-1 text-3xl font-extrabold text-[#203b68]">{preview.score ?? 0}</p></div>
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Status</p><p className="mt-1 font-bold">{text(preview.report_json?.status) || "-"}</p></div>
+                  <div className="rounded-2xl bg-slate-50 p-5"><p className="text-xs text-slate-500">Risk</p><p className="mt-1 font-bold">{text(preview.report_json?.risk) || "-"}</p></div>
+                </div>
+                <div><h3 className="text-lg font-bold">Diagnosis</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.diagnosis) || "-"}</p></div>
+                <div><h3 className="text-lg font-bold">Rekomendasi</h3><p className="mt-2 whitespace-pre-wrap leading-7 text-slate-600">{text(preview.report_json?.recommendation) || "-"}</p></div>
+                <div>
+                  <h3 className="text-lg font-bold">Readiness per Area</h3>
+                  <div className="mt-3 grid gap-3 md:grid-cols-2">
+                    {(preview.report_json?.areaResults || []).map((area: any, i: number) => (
+                      <div key={area.category || i} className="rounded-2xl border border-slate-200 p-4">
+                        <div className="flex items-center justify-between gap-3"><p className="font-bold">{text(area.title) || "Area"}</p><span className="font-extrabold text-[#203b68]">{Number(area.score) || 0}%</span></div>
+                        <p className="mt-2 text-xs font-bold text-slate-500">{text(area.level) || "-"}</p>
+                        <p className="mt-3 text-sm leading-6 text-slate-600"><b>Rekomendasi:</b> {text(area.recommendation) || "-"}</p>
+                        <p className="mt-2 text-sm leading-6 text-slate-600"><b>Diagnosis:</b> {text(area.diagnosis) || "-"}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold">30-Day Priority Action</h3>
+                  <div className="mt-3 space-y-2">
+                    {(preview.report_json?.priorityActions || []).map((action: any, i: number) => (
+                      <div key={i} className="rounded-xl bg-slate-50 p-4 text-sm leading-6 text-slate-600">{text(action)}</div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-7 border-t border-slate-200 pt-5 text-right">
+              <button onClick={() => setPreview(null)} className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white">Tutup Preview</button>
+            </div>
+          </div>
+        </div>
+      )}
+    </main>
+  );
+}

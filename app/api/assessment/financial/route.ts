@@ -141,7 +141,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   function section(number: string, title: string, subtitle?: string) {
     // Give every section header clear breathing room from the preceding content.
     // Keep the number, title, and subtitle aligned while maintaining a luxury layout.
-    y -= 18;
+    y -= 34;
     ensure(96);
     page.drawRectangle({ x: MARGIN, y: y - 4, width: 4, height: 30, color: GOLD });
     page.drawText(number, { x: MARGIN + 12, y: y + 8, size: 8, font: bold, color: GOLD });

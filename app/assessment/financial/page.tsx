@@ -296,6 +296,15 @@ export default function FinancialAssessmentPage() {
   );
 }
 
+function MetricBox({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+      <p className="text-xs font-bold uppercase tracking-wider text-slate-400">{label}</p>
+      <p className="mt-3 break-words text-xl font-bold text-[#172a4d]">{value}</p>
+    </div>
+  );
+}
+
 function financialStatus(score: number) {
   if (score >= 80) return "Good";
   if (score >= 60) return "Needs Improvement";

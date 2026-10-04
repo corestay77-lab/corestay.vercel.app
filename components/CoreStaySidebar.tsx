@@ -11,37 +11,10 @@ const assessmentItems = [
   ["Assessment 3", "Financial Report PDF", "/assessment/financial"],
   ["Semua Assessment", "Lihat semua", "/assessment"],
 ] as const;
+const mainItems = [["Dashboard", "/", "⌂"], ["Laporan", "/laporan", "▤"], ["Rekomendasi", "/rekomendasi", "✦"], ["Paket & Harga", "/paket-harga", "◆"]] as const;
 
-const mainItems = [
-  ["Dashboard", "/", "⌂"],
-  ["Laporan", "/laporan", "▤"],
-  ["Rekomendasi", "/rekomendasi", "✦"],
-  ["Paket & Harga", "/paket-harga", "◆"],
-] as const;
-
-function MenuIcon({ children }: { children: React.ReactNode }) {
-  return <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm text-white/55 transition group-hover:bg-white/10 group-hover:text-white">{children}</span>;
-}
-
-function FooterCard() {
-  return (
-    <div className="shrink-0 border-t border-white/10 pt-3">
-      <div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-3.5 shadow-lg">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#d8b985]/15 text-sm text-[#d8b985]">◆</div>
-          <div className="min-w-0">
-            <p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[#d8b985]">CoreStay Advisory</p>
-            <p className="mt-0.5 text-[10px] text-white/40">Hospitality Business Advisory</p>
-          </div>
-        </div>
-        <a href="https://wa.me/6285109006363" target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-center rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-[#162b4a] transition hover:-translate-y-0.5 hover:bg-[#f4f4f4]">
-          Talk to Us <span className="ml-1.5">↗</span>
-        </a>
-      </div>
-      <p className="mt-2 text-center text-[9px] text-white/20">© CoreStay Advisory</p>
-    </div>
-  );
-}
+function MenuIcon({ children }: { children: React.ReactNode }) { return <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-white/[0.06] text-sm text-white/55 transition group-hover:bg-white/10 group-hover:text-white">{children}</span>; }
+function FooterCard() { return <div className="shrink-0 border-t border-white/10 pt-3"><div className="rounded-2xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-3.5 shadow-lg"><div className="flex items-center gap-2.5"><div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#d8b985]/15 text-sm text-[#d8b985]">◆</div><div className="min-w-0"><p className="truncate text-[10px] font-bold uppercase tracking-[0.16em] text-[#d8b985]">CoreStay Advisory</p><p className="mt-0.5 text-[10px] text-white/40">Hospitality Business Advisory</p></div></div><a href="https://wa.me/6285109006363" target="_blank" rel="noopener noreferrer" className="mt-3 flex items-center justify-center rounded-xl bg-white px-3 py-2.5 text-xs font-bold text-[#162b4a] transition hover:-translate-y-0.5 hover:bg-[#f4f4f4]">Talk to Us <span className="ml-1.5">↗</span></a></div><p className="mt-2 text-center text-[9px] text-white/20">© CoreStay Advisory</p></div>; }
 
 export default function CoreStaySidebar() {
   const pathname = usePathname();
@@ -49,108 +22,23 @@ export default function CoreStaySidebar() {
   const [assessmentOpen, setAssessmentOpen] = useState(true);
   const [loggedIn, setLoggedIn] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  if (pathname.startsWith("/admin") || pathname.startsWith("/pms")) return null;
+  const hidden = pathname.startsWith("/admin") || pathname.startsWith("/pms");
   const activeAssessment = pathname === "/assessment" || pathname.startsWith("/assessment/");
   const close = () => setOpen(false);
 
-  useEffect(() => {
-    if (activeAssessment) setAssessmentOpen(true);
-  }, [activeAssessment]);
+  useEffect(() => { if (activeAssessment) setAssessmentOpen(true); }, [activeAssessment]);
+  useEffect(() => { let mounted = true; supabase.auth.getSession().then(({ data }) => { if (mounted) setLoggedIn(!!data.session); }); const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => { if (mounted) setLoggedIn(!!session); }); return () => { mounted = false; listener.subscription.unsubscribe(); }; }, []);
+  useEffect(() => { requestAnimationFrame(() => { const el = menuRef.current?.querySelector<HTMLElement>('[aria-current="page"]'); el?.scrollIntoView({ block: "nearest", behavior: "smooth" }); }); }, [pathname]);
 
-  useEffect(() => {
-    let mounted = true;
-    supabase.auth.getSession().then(({ data }) => {
-      if (mounted) setLoggedIn(!!data.session);
-    });
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (mounted) setLoggedIn(!!session);
-    });
-    return () => {
-      mounted = false;
-      listener.subscription.unsubscribe();
-    };
-  }, []);
+  async function logout() { await supabase.auth.signOut(); setLoggedIn(false); setOpen(false); window.location.href = "/"; }
 
-  async function logout() {
-    await supabase.auth.signOut();
-    setLoggedIn(false);
-    setOpen(false);
-    window.location.href = "/";
-  }
+  if (hidden) return null;
 
-  useEffect(() => {
-    requestAnimationFrame(() => {
-      const el = menuRef.current?.querySelector<HTMLElement>('[aria-current="page"]');
-      el?.scrollIntoView({ block: "nearest", behavior: "smooth" });
-    });
-  }, [pathname]);
+  const nav = <div ref={menuRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1 pb-3 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,.2)_transparent]"><p className="px-2 text-[9px] font-bold uppercase tracking-[0.25em] text-white/30">Workspace</p><nav className="mt-2 space-y-1">
+    {mainItems.slice(0, 1).map(([label, href, icon]) => <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition ${pathname === href ? "bg-white/[0.10] text-white shadow-inner" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}><MenuIcon>{icon}</MenuIcon><span>{label}</span>{pathname === href && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#d8b985]" />}</Link>)}
+    <div className={`rounded-2xl ${activeAssessment ? "bg-white/[0.035]" : ""}`}><button type="button" onClick={() => setAssessmentOpen(v => !v)} aria-expanded={assessmentOpen} className={`group flex w-full items-center justify-between rounded-2xl px-2.5 py-2 text-left text-sm font-medium transition ${activeAssessment ? "text-white" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}><span className="flex items-center gap-3"><MenuIcon>◎</MenuIcon>Assessment</span><span className={`text-xs text-white/35 transition-transform duration-200 ${assessmentOpen ? "rotate-90" : ""}`}>›</span></button><div className={`overflow-hidden transition-[max-height,opacity] duration-300 ${assessmentOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}`}><div className="ml-6 mt-0.5 space-y-0.5 border-l border-white/10 pl-2 pb-1">{assessmentItems.map(([label, desc, href]) => <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`block rounded-xl px-3 py-2 transition ${pathname === href ? "bg-white/10 text-white" : "text-white/45 hover:bg-white/[0.06] hover:text-white/80"}`}><span className="block text-xs font-medium">{label}</span><span className="mt-0.5 block text-[9px] text-white/25">{desc}</span></Link>)}</div></div></div>
+    {mainItems.slice(1).map(([label, href, icon]) => <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition ${pathname === href ? "bg-white/[0.10] text-white shadow-inner" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}><MenuIcon>{icon}</MenuIcon><span>{label}</span>{pathname === href && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#d8b985]" />}</Link>)}
+  </nav><p className="mt-6 px-2 text-[9px] font-bold uppercase tracking-[0.25em] text-white/30">Account</p><nav className="mt-2 space-y-1">{loggedIn ? <><Link aria-current={pathname === "/profil" ? "page" : undefined} href="/profil" onClick={close} className={`group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition ${pathname === "/profil" ? "bg-white/[0.10] text-white" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}><MenuIcon>◉</MenuIcon>Profil</Link><button type="button" onClick={logout} className="group flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white"><MenuIcon>↪</MenuIcon>Logout</button></> : <><Link href="/login" onClick={close} className="group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white"><MenuIcon>→</MenuIcon>Login</Link><Link href="/signup" onClick={close} className="group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white"><MenuIcon>+</MenuIcon>Sign Up</Link></>}</nav></div>;
 
-  const nav = (
-    <div ref={menuRef} className="flex min-h-0 flex-1 flex-col overflow-y-auto overscroll-contain pr-1 pb-3 [scrollbar-width:thin] [scrollbar-color:rgba(255,255,255,.2)_transparent]">
-      <p className="px-2 text-[9px] font-bold uppercase tracking-[0.25em] text-white/30">Workspace</p>
-      <nav className="mt-2 space-y-1">
-        {mainItems.slice(0, 1).map(([label, href, icon]) => (
-          <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition ${pathname === href ? "bg-white/[0.10] text-white shadow-inner" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}>
-            <MenuIcon>{icon}</MenuIcon><span>{label}</span>{pathname === href && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#d8b985]" />}
-          </Link>
-        ))}
-
-        <div className={`rounded-2xl ${activeAssessment ? "bg-white/[0.035]" : ""}`}>
-          <button type="button" onClick={() => setAssessmentOpen(v => !v)} aria-expanded={assessmentOpen} className={`group flex w-full items-center justify-between rounded-2xl px-2.5 py-2 text-left text-sm font-medium transition ${activeAssessment ? "text-white" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}>
-            <span className="flex items-center gap-3"><MenuIcon>◎</MenuIcon>Assessment</span>
-            <span className={`text-xs text-white/35 transition-transform duration-200 ${assessmentOpen ? "rotate-90" : ""}`}>›</span>
-          </button>
-          <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ${assessmentOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}`}>
-            <div className="ml-6 mt-0.5 space-y-0.5 border-l border-white/10 pl-2 pb-1">
-              {assessmentItems.map(([label, desc, href]) => <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`block rounded-xl px-3 py-2 transition ${pathname === href ? "bg-white/10 text-white" : "text-white/45 hover:bg-white/[0.06] hover:text-white/80"}`}><span className="block text-xs font-medium">{label}</span><span className="mt-0.5 block text-[9px] text-white/25">{desc}</span></Link>)}
-            </div>
-          </div>
-        </div>
-
-        {mainItems.slice(1).map(([label, href, icon]) => (
-          <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition ${pathname === href ? "bg-white/[0.10] text-white shadow-inner" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}>
-            <MenuIcon>{icon}</MenuIcon><span>{label}</span>{pathname === href && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#d8b985]" />}
-          </Link>
-        ))}
-      </nav>
-
-      <p className="mt-6 px-2 text-[9px] font-bold uppercase tracking-[0.25em] text-white/30">Account</p>
-      <nav className="mt-2 space-y-1">
-        {loggedIn ? (
-          <>
-            <Link aria-current={pathname === "/profil" ? "page" : undefined} href="/profil" onClick={close} className={`group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium transition ${pathname === "/profil" ? "bg-white/[0.10] text-white" : "text-white/60 hover:bg-white/[0.06] hover:text-white"}`}><MenuIcon>◉</MenuIcon>Profil</Link>
-            <button type="button" onClick={logout} className="group flex w-full items-center gap-3 rounded-2xl px-2.5 py-2 text-left text-sm font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white"><MenuIcon>↪</MenuIcon>Logout</button>
-          </>
-        ) : (
-          <>
-            <Link href="/login" onClick={close} className="group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white"><MenuIcon>→</MenuIcon>Login</Link>
-            <Link href="/signup" onClick={close} className="group flex items-center gap-3 rounded-2xl px-2.5 py-2 text-sm font-medium text-white/60 transition hover:bg-white/[0.06] hover:text-white"><MenuIcon>+</MenuIcon>Sign Up</Link>
-          </>
-        )}
-      </nav>
-    </div>
-  );
-
-  return <>
-    <aside className="site-sidebar fixed inset-y-0 left-0 z-[100] hidden w-[258px] border-r border-white/10 bg-[#080b10] text-white lg:flex lg:flex-col">
-      <div className="flex h-full min-h-0 flex-col px-4 py-4">
-        <Link href="/" className="flex shrink-0 items-center rounded-2xl px-2 py-2 hover:opacity-80"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[150px] object-contain mix-blend-screen" priority /></Link>
-        <div className="my-3 h-px bg-white/10" />
-        <div className="flex min-h-0 flex-1 flex-col">{nav}</div>
-        <FooterCard />
-      </div>
-    </aside>
-
-    <div className="site-sidebar-mobile lg:hidden">
-      <button type="button" onClick={() => setOpen(true)} aria-label="Open menu" className="fixed left-0 top-0 z-[120] flex h-12 w-12 items-center justify-center rounded-br-2xl bg-[#080b10] text-white shadow-lg"><span className="flex w-5 flex-col gap-1"><i className="h-0.5 w-full bg-white" /><i className="h-0.5 w-full bg-white" /><i className="h-0.5 w-full bg-white" /></span></button>
-      <div onClick={close} className={`fixed inset-0 z-[110] bg-black/50 backdrop-blur-[2px] transition-opacity ${open ? "opacity-100" : "pointer-events-none opacity-0"}`} />
-      <aside className={`fixed inset-y-0 left-0 z-[115] flex w-[292px] flex-col bg-[#080b10] px-4 py-4 text-white shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="flex shrink-0 items-center justify-between"><Link href="/" onClick={close}><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[145px] object-contain mix-blend-screen" /></Link><button type="button" onClick={close} aria-label="Close menu" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-xl text-white/70 transition hover:bg-white/15 hover:text-white">×</button></div>
-        <div className="my-3 h-px bg-white/10" />
-        <div className="flex min-h-0 flex-1 flex-col">{nav}</div>
-        <FooterCard />
-      </aside>
-    </div>
-  </>;
+  return <><aside className="site-sidebar fixed inset-y-0 left-0 z-[100] hidden w-[258px] border-r border-white/10 bg-[#080b10] text-white lg:flex lg:flex-col"><div className="flex h-full min-h-0 flex-col px-4 py-4"><Link href="/" className="flex shrink-0 items-center rounded-2xl px-2 py-2 hover:opacity-80"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[150px] object-contain mix-blend-screen" priority /></Link><div className="my-3 h-px bg-white/10" /><div className="flex min-h-0 flex-1 flex-col">{nav}</div><FooterCard /></div></aside><div className="site-sidebar-mobile lg:hidden"><button type="button" onClick={() => setOpen(true)} aria-label="Open menu" className="fixed left-0 top-0 z-[120] flex h-12 w-12 items-center justify-center rounded-br-2xl bg-[#080b10] text-white shadow-lg"><span className="flex w-5 flex-col gap-1"><i className="h-0.5 w-full bg-white" /><i className="h-0.5 w-full bg-white" /><i className="h-0.5 w-full bg-white" /></span></button><div onClick={close} className={`fixed inset-0 z-[110] bg-black/50 backdrop-blur-[2px] transition-opacity ${open ? "opacity-100" : "pointer-events-none opacity-0"}`} /><aside className={`fixed inset-y-0 left-0 z-[115] flex w-[292px] flex-col bg-[#080b10] px-4 py-4 text-white shadow-2xl transition-transform duration-300 ${open ? "translate-x-0" : "-translate-x-full"}`}><div className="flex shrink-0 items-center justify-between"><Link href="/" onClick={close}><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[145px] object-contain mix-blend-screen" /></Link><button type="button" onClick={close} aria-label="Close menu" className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-xl text-white/70 transition hover:bg-white/15 hover:text-white">×</button></div><div className="my-3 h-px bg-white/10" /><div className="flex min-h-0 flex-1 flex-col">{nav}</div><FooterCard /></aside></div></>;
 }

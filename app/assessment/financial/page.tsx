@@ -124,6 +124,33 @@ export default function FinancialAssessmentPage() {
     }
   }
 
+  async function deleteAssessment() {
+    if (!reportId) return;
+    const confirmed = window.confirm("Hapus hasil assessment ini? Data hasil assessment dan PDF tersimpan akan dihapus permanen.");
+    if (!confirmed) return;
+
+    const session = await getSession();
+    if (!session) return;
+
+    const response = await fetch(`/api/assessment/financial/report/${reportId}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${session.access_token}` },
+    });
+
+    if (!response.ok) {
+      setError("Data assessment tidak dapat dihapus.");
+      return;
+    }
+
+    setResult(null);
+    setReportId("");
+    setFile(null);
+    setFileName("");
+    setText("");
+    setError("");
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
   async function downloadPdf() {
     if (!reportId) return;
     const session = await getSession();
@@ -178,6 +205,15 @@ export default function FinancialAssessmentPage() {
 
         {result && (
           <section className="mt-8 space-y-6">
+            <div className="flex justify-end">
+              <button
+                type="button"
+                onClick={deleteAssessment}
+                className="rounded-xl border border-red-200 bg-white px-4 py-2 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50"
+              >
+                🗑 Hapus Data
+              </button>
+            </div>
             <ReportHeader result={result} />
 
             <ReportCard eyebrow="01" title="Executive Financial Summary" subtitle="Overall Financial Condition">

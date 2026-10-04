@@ -3,6 +3,16 @@ import { createClient } from "@supabase/supabase-js";
 
 export const runtime="nodejs";
 
+export async function DELETE(request:Request,{params}:{params:Promise<{id:string}>}){
+ const auth=request.headers.get("authorization")||""; if(!auth.startsWith("Bearer "))return new NextResponse("Login diperlukan.",{status:401});
+ const supabase=createClient("https://vkejwklhijophavlosze.supabase.co",process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||"missing",{global:{headers:{Authorization:auth}}});
+ const {data:{user}}=await supabase.auth.getUser(); if(!user)return new NextResponse("Session tidak valid.",{status:401});
+ const {id}=await params;
+ const {error}=await supabase.from("assessment_reports").delete().eq("id",id).eq("user_id",user.id);
+ if(error)return new NextResponse("Data assessment gagal dihapus.",{status:500});
+ return NextResponse.json({success:true});
+}
+
 export async function GET(request:Request,{params}:{params:Promise<{id:string}>}){
  const auth=request.headers.get("authorization")||""; if(!auth.startsWith("Bearer "))return new NextResponse("Login diperlukan.",{status:401});
  const supabase=createClient("https://vkejwklhijophavlosze.supabase.co",process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY||"missing",{global:{headers:{Authorization:auth}}});

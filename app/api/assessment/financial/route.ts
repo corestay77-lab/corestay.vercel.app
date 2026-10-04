@@ -144,7 +144,7 @@ export async function POST(request: Request) {
     if (action !== "analyze" && file instanceof File && file.size > 4 * 1024 * 1024) {
       return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
     }
-    if (!process.env.GEMINI_API_KEY) {
+    if (action === "analyze" && !process.env.GEMINI_API_KEY) {
       return NextResponse.json({ error: "Gemini API belum aktif pada deployment ini." }, { status: 503 });
     }
 
@@ -161,6 +161,10 @@ export async function POST(request: Request) {
         { error: "PDF tidak memiliki teks yang dapat dibaca. OCR perlu ditambahkan untuk PDF scan." },
         { status: 422 }
       );
+    }
+
+    if (action === "extract") {
+      return NextResponse.json({ success: true, fileName: (file as File).name, text });
     }
 
     const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });

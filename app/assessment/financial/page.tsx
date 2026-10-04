@@ -189,21 +189,15 @@ export default function FinancialAssessmentPage() {
 
         {text && (
           <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl font-bold">Teks PDF</h2>
-                <p className="mt-1 text-sm text-slate-500">Periksa teks hasil ekstraksi. Anda dapat menyalin seluruh teks sebelum analisa.</p>
+                <h2 className="text-xl font-bold">Analisa Laporan Keuangan</h2>
+                <p className="mt-1 text-sm text-slate-500">PDF berhasil dibaca dan siap dianalisa.</p>
               </div>
-              <div className="flex gap-2">
-                <button type="button" onClick={copyAllText} className="rounded-xl border border-slate-300 px-4 py-3 text-sm font-bold">
-                  {copied ? "✓ Tersalin" : "Copy All Text"}
-                </button>
-                <button type="button" onClick={analyze} disabled={analyzing} className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white disabled:opacity-60">
-                  {analyzing ? "Menganalisa…" : "Analysis"}
-                </button>
-              </div>
+              <button type="button" onClick={analyze} disabled={analyzing} className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white disabled:opacity-60">
+                {analyzing ? "Menganalisa…" : "Analysis"}
+              </button>
             </div>
-            <textarea value={text} onChange={(e) => setText(e.target.value)} className="mt-5 h-80 w-full rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 outline-none focus:border-[#203b68]" />
           </section>
         )}
 

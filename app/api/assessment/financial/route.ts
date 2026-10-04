@@ -329,7 +329,6 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
 
   section("12", "Assessment Score", "Financial Health Score");
   scoreCard(result.financialHealthScore, true);
-  textBlock("This report is generated from the financial data successfully extracted from the submitted report. Where data is unavailable, the assessment does not invent or estimate figures.", 7.8, MUTED, 2);
 
   // Consistent footer on every page.
   const pages = doc.getPages();

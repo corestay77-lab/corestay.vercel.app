@@ -1,6 +1,7 @@
 "use client";
 
 import { useRef, useState } from "react";
+import { upload } from "@vercel/blob/client";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 
@@ -21,8 +22,6 @@ type AssessmentResult = {
   conclusion: string;
   extractedFigures: { label: string; value: string; period: string }[];
 };
-
-const MAX_FILE_SIZE = 4 * 1024 * 1024;
 
 export default function FinancialAssessmentPage() {
   const inputRef = useRef<HTMLInputElement>(null);
@@ -51,15 +50,9 @@ export default function FinancialAssessmentPage() {
     setError("");
     setResult(null);
     setReportId("");
-    setText("");
 
     if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
       setError("Silakan upload laporan dalam format PDF.");
-      return;
-    }
-    if (selected.size > MAX_FILE_SIZE) {
-      setError("Ukuran PDF maksimal 4 MB.");
-      if (inputRef.current) inputRef.current.value = "";
       return;
     }
 
@@ -71,45 +64,23 @@ export default function FinancialAssessmentPage() {
     setLoading(true);
 
     try {
-      const formData = new FormData();
-      formData.append("action", "extract");
-      formData.append("file", selected);
+      const blob = await upload(
+        `financial-reports/${selected.name.replace(/[^a-zA-Z0-9._-]/g, "_")}`,
+        selected,
+        {
+          access: "private",
+          handleUploadUrl: "/api/assessment/financial/upload",
+          clientPayload: JSON.stringify({ accessToken: session.access_token }),
+        }
+      );
 
-      const response = await fetch("/api/assessment/financial", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
-        body: formData,
-      });
-
-      const raw = await response.text();
-      let data: { text?: string; error?: string } = {};
-      try { data = raw ? JSON.parse(raw) : {}; }
-      catch { throw new Error(`Server mengembalikan respons tidak valid (HTTP ${response.status}).`); }
-
-      if (!response.ok) throw new Error(data.error || `Ekstraksi gagal (HTTP ${response.status}).`);
-      setText(data.text || "");
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "PDF gagal dibaca.");
-    } finally {
       setLoading(false);
-    }
-  }
+      setAnalyzing(true);
 
-  async function analyze() {
-    if (!text.trim()) return;
-    const session = await getSession();
-    if (!session) return;
-
-    setAnalyzing(true);
-    setError("");
-    setResult(null);
-    setReportId("");
-
-    try {
       const formData = new FormData();
       formData.append("action", "analyze");
-      formData.append("text", text);
-      formData.append("fileName", fileName || "Financial-Report.pdf");
+      formData.append("blobPath", blob.pathname);
+      formData.append("fileName", selected.name);
 
       const response = await fetch("/api/assessment/financial", {
         method: "POST",
@@ -128,16 +99,11 @@ export default function FinancialAssessmentPage() {
       setResult(data.result);
       setReportId(data.reportId || "");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Analisa gagal diproses.");
+      setError(err instanceof Error ? err.message : "PDF gagal diproses.");
     } finally {
+      setLoading(false);
       setAnalyzing(false);
     }
-  }
-
-  async function copyAllText() {
-    await navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 1800);
   }
 
   async function downloadPdf() {
@@ -167,7 +133,7 @@ export default function FinancialAssessmentPage() {
         <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#203b68]">Assessment 3</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Financial Report Assessment</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-500">
-          Alur sederhana: <b>Upload → Copy All Text → Analysis → Hasil</b>.
+          Alur sederhana: <b>Upload PDF → Analysis → Hasil</b>.
         </p>
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
@@ -178,28 +144,14 @@ export default function FinancialAssessmentPage() {
             className="w-full rounded-3xl border-2 border-dashed border-[#203b68]/25 bg-[#203b68]/[0.03] p-8 text-center transition hover:border-[#203b68]/50 disabled:opacity-60 sm:p-12"
           >
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#203b68] text-2xl text-white">
-              {loading ? "…" : "↑"}
+              {loading || analyzing ? "…" : "↑"}
             </div>
-            <h2 className="mt-5 text-xl font-bold">{loading ? "Membaca PDF…" : "Upload Laporan Keuangan PDF"}</h2>
-            <p className="mt-2 text-sm text-slate-500">PDF saja • Maksimal 4 MB</p>
+            <h2 className="mt-5 text-xl font-bold">{loading ? "Mengupload PDF…" : analyzing ? "Menganalisa PDF…" : "Upload Laporan Keuangan PDF"}</h2>
+            <p className="mt-2 text-sm text-slate-500">PDF saja • Upload langsung ke secure storage</p>
             {fileName && <p className="mx-auto mt-5 max-w-full truncate rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">✓ {fileName}</p>}
           </button>
           <input ref={inputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
         </section>
-
-        {text && (
-          <section className="mt-6 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
-            <div className="flex items-center justify-between gap-4">
-              <div>
-                <h2 className="text-xl font-bold">Analisa Laporan Keuangan</h2>
-                <p className="mt-1 text-sm text-slate-500">PDF berhasil dibaca dan siap dianalisa.</p>
-              </div>
-              <button type="button" onClick={analyze} disabled={analyzing} className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white disabled:opacity-60">
-                {analyzing ? "Menganalisa…" : "Analysis"}
-              </button>
-            </div>
-          </section>
-        )}
 
         {error && <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}
 
@@ -246,7 +198,7 @@ export default function FinancialAssessmentPage() {
             </div>
             <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-6">
               <p className="font-bold text-emerald-900">✓ Analisa selesai & laporan tersimpan</p>
-              <p className="mt-2 text-sm text-emerald-800">Hasil tersedia di Hasil Saya dan Laporan.</p>
+              <p className="mt-2 text-sm text-emerald-800">Hasil tersedia di Laporan.</p>
               <button type="button" onClick={downloadPdf} className="mt-4 rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white">
                 Download Financial Assessment PDF
               </button>

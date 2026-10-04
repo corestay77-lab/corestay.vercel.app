@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { get, del } from "@vercel/blob";
 import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { extractText, getDocumentProxy } from "unpdf";
@@ -143,11 +144,13 @@ export async function POST(request: Request) {
     const fileEntry = formData.get("file");
     const file = fileEntry instanceof File ? fileEntry : null;
     const extractedText = String(formData.get("text") || "").trim();
+    const blobPath = String(formData.get("blobPath") || "").trim();
     const submittedFileName = String(formData.get("fileName") || "Financial-Report.pdf");
 
     if (action === "analyze") {
-      if (!extractedText) return NextResponse.json({ error: "Teks laporan belum tersedia." }, { status: 400 });
-      if (extractedText.length < 20) return NextResponse.json({ error: "Teks laporan terlalu pendek untuk dianalisa." }, { status: 422 });
+      if (!blobPath && !extractedText) return NextResponse.json({ error: "File laporan belum tersedia." }, { status: 400 });
+      if (blobPath && !blobPath.startsWith("financial-reports/")) return NextResponse.json({ error: "Lokasi file tidak valid." }, { status: 400 });
+      if (extractedText && extractedText.length < 20) return NextResponse.json({ error: "Teks laporan terlalu pendek untuk dianalisa." }, { status: 422 });
     } else if (!(file instanceof File)) {
       return NextResponse.json({ error: "File PDF belum dipilih." }, { status: 400 });
     }
@@ -162,7 +165,13 @@ export async function POST(request: Request) {
     }
 
     let text = extractedText;
-    if (action !== "analyze") {
+    if (blobPath) {
+      const { stream } = await get(blobPath, { access: "private" });
+      const buffer = await new Response(stream).arrayBuffer();
+      pdf = await getDocumentProxy(new Uint8Array(buffer));
+      const parsed = await extractText(pdf, { mergePages: true });
+      text = parsed.text.trim();
+    } else if (action !== "analyze") {
       const buffer = await (file as File).arrayBuffer();
       pdf = await getDocumentProxy(new Uint8Array(buffer));
       const parsed = await extractText(pdf, { mergePages: true });
@@ -195,7 +204,7 @@ export async function POST(request: Request) {
       "Analisa laporan keuangan hotel berikut. Nama file: " +
       (file?.name || submittedFileName) +
       "\n\n" +
-      text.slice(0, 120000) +
+      text +
       "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, comparative analysis, ratio analysis, " +
       "variance analysis, audit-style findings, risks, recommendations, action plan, data limitations, conclusion, dan angka yang ditemukan. " +
       "Untuk komparasi, prioritaskan Current vs Previous Period, Actual vs Budget/Target, lalu Same Period Prior Year bila memang ada datanya. " +
@@ -256,6 +265,12 @@ export async function POST(request: Request) {
         { error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." },
         { status: 500 }
       );
+    }
+
+    if (blobPath) {
+      try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) {
+        console.error("Financial source cleanup failed:", cleanupError);
+      }
     }
 
     return NextResponse.json({

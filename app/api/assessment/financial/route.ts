@@ -15,9 +15,15 @@ const FinancialAssessment = z.object({
   revenueAnalysis: z.string(),
   costAnalysis: z.string(),
   profitAnalysis: z.string(),
+  comparativeAnalysis: z.string(),
+  ratioAnalysis: z.string(),
+  varianceAnalysis: z.string(),
+  auditFindings: z.array(z.string()).max(8),
   risks: z.array(z.string()).max(8),
   recommendations: z.array(z.string()).max(8),
   actionPlan: z.array(z.string()).max(8),
+  dataLimitations: z.array(z.string()).max(6),
+  conclusion: z.string(),
   extractedFigures: z.array(z.object({ label: z.string(), value: z.string(), period: z.string() })).max(40),
 });
 
@@ -73,6 +79,10 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
     ["Revenue Analysis", result.revenueAnalysis],
     ["Cost Analysis", result.costAnalysis],
     ["Profit Analysis", result.profitAnalysis],
+    ["Comparative Analysis", result.comparativeAnalysis],
+    ["Ratio & Margin Analysis", result.ratioAnalysis],
+    ["Variance Analysis", result.varianceAnalysis],
+    ["Conclusion", result.conclusion],
   ] as const) {
     add(title, 13, true);
     add(text);
@@ -80,9 +90,11 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   }
 
   for (const [title, items] of [
+    ["Auditor-Style Findings", result.auditFindings],
     ["Risks / Red Flags", result.risks],
     ["Recommendations", result.recommendations],
     ["Action Plan", result.actionPlan],
+    ["Data Limitations", result.dataLimitations],
   ] as const) {
     add(title, 13, true);
     items.forEach((x, i) => add(i + 1 + ". " + x));
@@ -172,16 +184,26 @@ export async function POST(request: Request) {
     const system =
       "Anda adalah CoreStay Financial Assessment Engine untuk hotel di Indonesia. Analisa konservatif berbasis angka. " +
       "Jangan mengarang angka. Jika tidak tersedia, tulis Tidak tersedia. Kenali Rupiah, juta, ribu, persen, revenue, " +
-      "COGS, payroll, OPEX, GOP/EBITDA dan laba/rugi. Pisahkan fakta dan interpretasi. Score 0-100 harus berdasarkan " +
-      "data tersedia. Berikan rekomendasi praktis dan action plan konkret.";
+      "COGS, payroll, OPEX, GOP/EBITDA dan laba/rugi. Pisahkan fakta, perhitungan, interpretasi, dan rekomendasi. " +
+      "Score 0-100 harus berdasarkan data tersedia dan jangan mengarang benchmark, periode, budget, target, atau rasio. " +
+      "Gunakan prinsip financial review bergaya auditor: evidence-based, materiality, consistency, variance analysis, " +
+      "risk assessment, dan clear audit trail. Jangan menyatakan fraud atau opini audit independen tanpa bukti audit yang memadai. " +
+      "Jika data pembanding tidak tersedia, nyatakan Tidak tersedia dan jelaskan keterbatasannya.";
 
     const prompt =
       "Analisa laporan keuangan hotel berikut. Nama file: " +
       file.name +
       "\n\n" +
       text.slice(0, 120000) +
-      "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, risks, recommendations, action plan, " +
-      "dan angka yang ditemukan. Jangan mengarang angka. Buat analisa SINGKAT, langsung ke poin, maksimal 3 kalimat per analisis dan maksimal 5 item untuk risiko, rekomendasi, dan action plan.";
+      "\n\nKeluarkan score, executive summary, revenue/cost/profit analysis, comparative analysis, ratio analysis, " +
+      "variance analysis, audit-style findings, risks, recommendations, action plan, data limitations, conclusion, dan angka yang ditemukan. " +
+      "Untuk komparasi, prioritaskan Current vs Previous Period, Actual vs Budget/Target, lalu Same Period Prior Year bila memang ada datanya. " +
+      "Untuk setiap variance material, jelaskan angka sumber, variance nominal/persentase atau percentage points, dampak, risiko, dan interpretasi. " +
+      "Hitung hanya rasio yang memiliki data numerator dan denominator yang valid. Tandai komparasi atau rasio yang tidak dapat divalidasi. " +
+      "Gunakan level materialitas praktis: fokus pada perubahan yang material terhadap revenue, profit, cash/liquidity, atau biaya utama; jangan menetapkan angka materialitas audit formal tanpa dasar. " +
+      "Hasil harus lengkap tetapi tetap ringkas, profesional, dan langsung ke poin. Maksimal 8 audit findings, 8 risks, 8 recommendations, dan 8 action plan items. " +
+      "Jangan mengarang angka atau benchmark industri. Jika hanya satu periode tersedia, jangan membuat tren palsu. " +
+      "Jelaskan apakah perubahan positif/negatif bagi hotel dan mengapa.";
 
     let result: Awaited<ReturnType<typeof generateObject<typeof FinancialAssessment>>> | null = null;
     let lastAiError: unknown = null;

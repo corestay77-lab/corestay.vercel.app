@@ -51,6 +51,27 @@ export default function LaporanPage() {
     })();
   }, [router]);
 
+  const deleteFinancialReport = async (id: string) => {
+    const confirmed = window.confirm("Hapus hasil assessment ini? Data hasil assessment dan PDF tersimpan akan dihapus permanen.");
+    if (!confirmed) return;
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) { router.replace("/login"); return; }
+
+    const response = await fetch("/api/assessment/financial/report/" + id, {
+      method: "DELETE",
+      headers: { Authorization: "Bearer " + session.access_token },
+    });
+
+    if (!response.ok) {
+      window.alert("Data assessment gagal dihapus.");
+      return;
+    }
+
+    setRows((current) => current.filter((row) => row.id !== id));
+    if (preview?.id === id) setPreview(null);
+  };
+
   if (checking) {
     return (
       <main className="min-h-screen bg-[#f4f7fb] px-6 py-12 lg:pl-[280px]">
@@ -81,7 +102,8 @@ export default function LaporanPage() {
                   {new Date(x.created_at).toLocaleString("id-ID")} · Score {x.score ?? "-"}/100
                 </p>
 
-                <div className="mt-4 flex flex-wrap gap-3">
+                <div className="mt-4 flex items-center justify-between gap-3">
+                  <div className="flex flex-wrap gap-3">
                   {x.assessment_type === "financial" ? (
                     <button
                       onClick={async () => {
@@ -109,6 +131,16 @@ export default function LaporanPage() {
                       className="rounded-xl bg-[#203b68] px-5 py-3 text-sm font-bold text-white"
                     >
                       Preview Hasil
+                    </button>
+                  )}
+                  </div>
+                  {x.assessment_type === "financial" && (
+                    <button
+                      type="button"
+                      onClick={() => deleteFinancialReport(x.id)}
+                      className="shrink-0 rounded-xl border border-red-200 bg-white px-4 py-2.5 text-sm font-semibold text-red-600 shadow-sm transition hover:bg-red-50"
+                    >
+                      🗑 Hapus Data
                     </button>
                   )}
                 </div>

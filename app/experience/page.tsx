@@ -68,7 +68,7 @@ export default function ExperiencePage() {
         <div className="grid gap-8 lg:grid-cols-[.9fr_1.1fr]">
           <div className="overflow-hidden rounded-[28px] border border-slate-200 bg-white shadow-[0_18px_55px_rgba(23,45,69,.08)]">
             <div className="relative aspect-[4/5] bg-slate-100">
-              <Image src="/experience/project-2.jpg" alt="CoreStay Advisory project handover" fill className="object-cover" />
+              <Image src="/experience/project-2.svg" alt="CoreStay Advisory project handover" fill className="object-cover" />
             </div>
           </div>
           <div className="flex flex-col justify-center rounded-[28px] bg-[#173f65] p-8 text-white shadow-[0_18px_55px_rgba(23,45,69,.12)] md:p-10">

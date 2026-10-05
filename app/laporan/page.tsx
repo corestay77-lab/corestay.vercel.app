@@ -73,14 +73,20 @@ export default function LaporanPage() {
       }
     );
 
-    if (!response.ok) {
-      const message = await response.text().catch(() => "");
+    const raw = await response.text().catch(() => "");
+    let result: { success?: boolean; error?: string; message?: string } = {};
+    try { result = raw ? JSON.parse(raw) : {}; } catch {}
+
+    if (!response.ok || result.success !== true) {
       window.alert(
-        message || "Data assessment gagal dihapus. Silakan coba lagi."
+        result.error ||
+          result.message ||
+          "Data assessment gagal dihapus. Tidak ada perubahan pada laporan."
       );
       return;
     }
 
+    // Remove it immediately from the visible list, then re-query the database.
     setRows((current) => current.filter((row) => row.id !== id));
     await loadReports();
     router.refresh();

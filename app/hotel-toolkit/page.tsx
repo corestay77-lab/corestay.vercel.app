@@ -34,7 +34,7 @@ function FileViewer({ title, pdfFile, excelFile }: { title: string; pdfFile: str
 
 const templates = [
   { title: "Hotel Budget Template", category: "Finance", price: "Rp49.000", desc: "Template budget hotel yang siap digunakan untuk menyusun dan memonitor anggaran.", slides: ["Budget Dashboard", "Department Budget", "Monthly Summary"], preview: ["Revenue • Cost • GOP • Margin", "Rooms • F&B • HK • Engineering", "Budget • Actual • Variance"] },
-  { title: "Hotel P&L Template", category: "Finance", price: "Rp59.000", desc: "Template Profit & Loss untuk memantau revenue, cost, GOP, dan margin hotel.", slides: ["P&L Overview", "Department P&L", "Monthly Analysis"], preview: ["Revenue → GOP → Net Profit", "Rooms • F&B • Other Revenue", "Actual • Budget • Variance"] },
+  { title: "Hotel P&L Template", category: "Finance", price: "Rp59.000", desc: "FORMAT PL — template Profit & Loss hotel untuk memantau revenue, cost, GOP, dan margin.", slides: ["P&L Overview", "Department P&L", "Monthly Analysis"], preview: ["Revenue → GOP → Net Profit", "Rooms • F&B • Other Revenue", "Actual • Budget • Variance"] },
   { title: "Front Office SOP", category: "Operations", price: "Rp79.000", desc: "Template SOP front office untuk membantu membangun proses kerja yang konsisten.", slides: ["SOP Structure", "Check-in Flow", "Daily Checklist"], preview: ["Purpose • Scope • Responsibility", "Reservation → Arrival → Check-in", "Shift Handover • Cashier • Reports"] },
   { title: "Housekeeping SOP", category: "Operations", price: "Rp79.000", desc: "Template SOP housekeeping untuk room cleaning, inspection, dan kontrol operasional.", slides: ["Room Cleaning SOP", "Inspection Checklist", "Daily Control"], preview: ["Preparation → Cleaning → Final Check", "Bedroom • Bathroom • Amenities", "Room Status • Productivity • Issues"] },
   { title: "Hotel Pre-Opening Checklist", category: "Pre-Opening", price: "Rp89.000", desc: "Checklist praktis untuk memantau kesiapan hotel sebelum opening.", slides: ["Opening Roadmap", "Department Readiness", "Go-Live Checklist"], preview: ["T-90 → T-60 → T-30 → Opening", "FO • HK • F&B • Engineering", "People • SOP • System • Facility"] },
@@ -93,7 +93,7 @@ export default function HotelToolkitPage() {
               <FileViewer
   title={item.title}
   pdfFile={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`}
-  excelFile={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.xlsx`}
+  excelFile={item.title === "Hotel P&L Template" ? "/toolkit/format-pl.xlsx" : `/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.xlsx`}
 />
               <div className="mt-6 border-t border-[#edf1f6] pt-5">
                 <p className="text-2xl font-bold text-[#203b68]">{item.price}</p>

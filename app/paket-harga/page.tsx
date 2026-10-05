@@ -1,15 +1,6 @@
 export default function PaketHargaPage() {
   const packages = [
     {
-      code: "FREE",
-      title: "Free Check",
-      subtitle: "Gratis",
-      description: "Untuk owner yang baru mengenal CoreStay dan ingin mendapatkan gambaran awal kondisi bisnis hotel.",
-      items: ["Quick Hotel Health Check", "Beberapa indikator dasar", "Rekomendasi awal"],
-      price: "Gratis",
-      note: "Untuk owner yang baru mengenal CoreStay",
-    },
-    {
       code: "A",
       title: "Hotel Assessment",
       subtitle: "For Existing Hotels",

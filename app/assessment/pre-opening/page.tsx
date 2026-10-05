@@ -365,9 +365,9 @@ export default function PreOpeningAssessmentPage() {
         <div className="flex h-full flex-col px-6 py-7">
           <a href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" /></a>
           <div className="mt-10">
-            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#17243d]/35">Assessment</p>
+            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#17243d]/35">Pre-Opening Check</p>
             <nav className="mt-4 space-y-1.5">
-              <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-white">Hotel Assessment</a>
+              <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-white">Pre-Opening Check</a>
               <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-[#17243d]">Hotel Existing</a>
               <a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Pre-opening Hotel</a>
             </nav>
@@ -377,7 +377,7 @@ export default function PreOpeningAssessmentPage() {
             <p className="mt-2 text-xs leading-5 text-white/50">Hotel Business Health Assessment</p>
           </div>
         </div>
-      </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-white backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-white/70">Assessment</a></div></header>
+      </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-white backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-white/70">Pre-Opening Check</a></div></header>
       <div className="mx-auto max-w-4xl px-6 py-10">
 
         <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
@@ -385,10 +385,10 @@ export default function PreOpeningAssessmentPage() {
         <div className="mt-8 flex items-center justify-between">
           <div>
             <p className="text-sm font-semibold uppercase tracking-wider text-[#203b68]">
-              Pre-opening Hotel
+              Pre-Opening Check
             </p>
             <h1 className="mt-3 text-4xl font-bold md:text-5xl">
-              Pre-opening Readiness Assessment
+              Pre-Opening Check
             </h1>
           </div>
 

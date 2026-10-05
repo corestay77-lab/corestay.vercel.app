@@ -569,7 +569,6 @@ export default function ExistingAssessmentPage() {
                 {ASSESSMENT_VERSION}
               </span>
             </div>
-          </div>
 
           <h1 className="mt-8 text-center text-4xl font-bold md:text-5xl">
             Hotel Check-Up

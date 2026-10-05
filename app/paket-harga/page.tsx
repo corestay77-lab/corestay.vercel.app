@@ -17,6 +17,8 @@ export default function PaketHargaPage() {
       items: ["Hotel Business Assessment", "Business Health Score", "Operational Review", "Revenue Review", "Risk & Red Flag", "Priority Recommendations"],
       price: "Rp499.000",
       note: "Assessment Project",
+      delivery: "Tersedia On-Site & Online",
+      deliveryDescription: "Assessment dapat dilakukan langsung di lokasi hotel (On-Site) atau secara online (Online), disesuaikan dengan kebutuhan dan kondisi hotel.",
     },
     {
       code: "B",
@@ -76,6 +78,12 @@ export default function PaketHargaPage() {
               <div className="mt-6 border-t border-[#edf1f6] pt-5">
                 <p className="text-2xl font-bold text-[#203b68]">{pkg.price}</p>
                 <p className="mt-1 text-xs leading-5 text-[#66738a]">{pkg.note}</p>
+                {pkg.delivery && (
+                  <div className="mt-4 rounded-2xl border border-[#dce4ef] bg-[#f8fafc] px-4 py-3">
+                    <p className="text-sm font-semibold text-[#203b68]">{pkg.delivery}</p>
+                    <p className="mt-1 text-xs leading-5 text-[#66738a]">{pkg.deliveryDescription}</p>
+                  </div>
+                )}
               </div>
             </section>
           ))}

@@ -1,4 +1,5 @@
 export default function PaketHargaPage() {
+  const whatsappNumber = "6285109006363";
   const packages = [
     {
       code: "A",
@@ -10,6 +11,8 @@ export default function PaketHargaPage() {
       note: "Assessment Project",
       delivery: "Tersedia On-Site & Online",
       deliveryDescription: "Assessment dapat dilakukan langsung di lokasi hotel (On-Site) atau secara online (Online), disesuaikan dengan kebutuhan dan kondisi hotel.",
+      cta: "Mulai Assessment →",
+      message: "Halo CoreStay, saya tertarik dengan Package A - Hotel Assessment."
     },
     {
       code: "B",
@@ -19,6 +22,8 @@ export default function PaketHargaPage() {
       items: ["Revenue Improvement", "Market Positioning", "Operational Enhancement", "Cost Efficiency", "Guest Experience Improvement", "Sustainable Growth Strategy"],
       price: "Rp2.500.000",
       note: "Base Fee / bulan + Success Fee 5%–10% dari incremental GOP",
+      cta: "Konsultasikan Program →",
+      message: "Halo CoreStay, saya tertarik dengan Package B - Hotel Performance Acceleration Program."
     },
     {
       code: "C",
@@ -28,6 +33,8 @@ export default function PaketHargaPage() {
       items: ["Business Strategy", "Operational Transformation", "Team Development", "Revenue Optimization", "Cost & Profitability Management", "Guest Experience", "Performance Management", "Long-Term Growth Planning"],
       price: "Rp7.500.000",
       note: "CoreStay Team Fee / bulan + Success Fee 5% dari GOP bila GOP Margin ≥ 30%",
+      cta: "Jadwalkan Konsultasi →",
+      message: "Halo CoreStay, saya tertarik dengan Package C - Hotel Business Transformation Program."
     },
     {
       code: "D",
@@ -37,6 +44,8 @@ export default function PaketHargaPage() {
       items: ["Concept Review", "Feasibility Summary", "Business Plan", "Budget & Financial Forecast", "Organization Structure", "SOP Framework", "Pre-Opening Checklist", "Operational Readiness Support"],
       price: "Rp35.000.000",
       note: "Fixed Project Fee",
+      cta: "Konsultasikan Proyek →",
+      message: "Halo CoreStay, saya tertarik dengan Package D - Hospitality Development & Pre-Opening Advisory."
     },
   ];
 
@@ -75,6 +84,14 @@ export default function PaketHargaPage() {
                     <p className="mt-1 text-xs leading-5 text-[#66738a]">{pkg.deliveryDescription}</p>
                   </div>
                 )}
+                <a
+                  href={`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(pkg.message)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="mt-5 flex w-full items-center justify-center rounded-2xl bg-[#203b68] px-5 py-3.5 text-sm font-bold text-white shadow-sm transition hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  {pkg.cta}
+                </a>
               </div>
             </section>
           ))}

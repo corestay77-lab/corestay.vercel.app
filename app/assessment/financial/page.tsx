@@ -178,10 +178,10 @@ export default function FinancialAssessmentPage() {
         <p className="text-xs font-bold uppercase tracking-[0.28em] text-[#203b68]">Assessment 3</p>
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Financial Report Assessment</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-500">
-          <b>Upload PDF → Analysis → Hasil</b>. Analisis laporan keuangan hotel secara cepat dan terstruktur untuk melihat kondisi, performa, dan area yang perlu diperhatikan.
+          <b>Upload laporan keuangan → Analisis → Hasil Assessment.</b> Dapatkan gambaran kondisi keuangan hotel, kinerja pendapatan dan biaya, profitabilitas, risiko keuangan, serta area yang perlu diperbaiki.
         </p>
         <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-500">
-          <b>Hasil:</b> audit berbasis file dengan validasi data, KPI, variance, red flags, potensi saving/recovery, dan action plan. <b>Rule:</b> file yang gagal dibaca tidak akan menghasilkan audit seolah-olah valid.
+          <b>Hasil Assessment:</b> ringkasan kondisi keuangan, indikator utama, temuan penting, risiko, rekomendasi prioritas, dan rencana tindakan 90 hari.
         </p>
 
         <section className="mt-5 rounded-2xl border border-[#d8b985]/35 bg-[#fbf8f2] px-5 py-4 sm:px-6">

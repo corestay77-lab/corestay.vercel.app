@@ -75,7 +75,8 @@ export default function HotelToolkitPage() {
               </div>
               <h2 className="mt-5 text-xl font-semibold text-[#17243d]">{item.title}</h2>
               <p className="mt-3 text-sm leading-6 text-[#66738a]">{item.desc}</p>
-              <Preview item={item} />\n              <PdfViewer title={item.title} file={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`} />
+              <Preview item={item} />
+              <PdfViewer title={item.title} file={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`} />
               <div className="mt-6 border-t border-[#edf1f6] pt-5">
                 <p className="text-2xl font-bold text-[#203b68]">{item.price}</p>
                 <a href={`${wa}?text=${encodeURIComponent(`Halo CoreStay, saya ingin membeli ${item.title} seharga ${item.price}.`)}`} target="_blank" rel="noopener noreferrer" className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#17243d] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#203b68]">Beli & Dapatkan Template ↗</a>

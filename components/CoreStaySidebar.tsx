@@ -29,8 +29,6 @@ function MenuIcon({ name }: { name: "dashboard" | "clipboard" | "hotel" | "const
   };
   return <span className="relative flex h-8 w-8 shrink-0 items-center justify-center text-slate-600 transition duration-200 group-hover:-translate-y-0.5 group-hover:text-slate-800"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-[19px] w-[19px]">{paths[name]}</svg></span>;
 }
-function FooterCard() { return <div className="shrink-0 border-t border-slate-200 pt-2"><div className="rounded-xl border border-white/20 bg-white/10/12 p-2.5 shadow-[0_8px_24px_rgba(23,50,77,.08)] backdrop-blur-md"><div className="flex items-center gap-2"><div className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#b99a5b]/15 text-xs text-[#9a793f]">◆</div><div className="min-w-0"><p className="truncate text-[9px] font-bold uppercase tracking-[0.12em] text-slate-800">CoreStay Advisory</p><p className="mt-0.5 truncate text-[8px] text-slate-500">Hospitality Business Advisory</p></div></div><a href="https://wa.me/6285109006363" target="_blank" rel="noopener noreferrer" className="mt-2 flex items-center justify-center rounded-lg bg-black px-2.5 py-2 text-[10px] font-bold text-slate-800 shadow-sm transition hover:-translate-y-0.5 hover:bg-white">Talk to Us <span className="ml-1">↗</span></a></div><p className="mt-1.5 text-center text-[8px] text-slate-400">© CoreStay Advisory</p></div>; }
-
 export default function CoreStaySidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);

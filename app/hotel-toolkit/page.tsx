@@ -92,7 +92,7 @@ export default function HotelToolkitPage() {
               <Preview item={item} />
               <FileViewer
   title={item.title}
-  pdfFile={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`}
+  pdfFile={item.title === "Hotel P&L Template" ? "/toolkit/FORMAT%20PL%20.pdf" : `/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`}
   excelFile={item.title === "Hotel P&L Template" ? "/toolkit/format-pl.xlsx" : `/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.xlsx`}
 />
               <div className="mt-6 border-t border-[#edf1f6] pt-5">

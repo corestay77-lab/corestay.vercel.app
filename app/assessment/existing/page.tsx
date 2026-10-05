@@ -512,8 +512,10 @@ export default function ExistingAssessmentPage() {
       </aside><header className="sticky top-0 z-50 border-b border-white/10 bg-black/95 px-5 py-3.5 text-white backdrop-blur-xl lg:hidden"><div className="flex items-center justify-between"><a href="/"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={150} height={55} className="h-[40px] w-[125px] object-contain mix-blend-screen" /></a><a href="/assessment" className="text-xs font-semibold text-white/70">Hotel Check-Up</a></div></header>
         <div className="mx-auto max-w-4xl px-6 py-10">
           <header>
-            <div className="flex items-center justify-between">
-              <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
+            <div className="flex items-center justify-center">
+              <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={220} height={70} priority className="h-[56px] w-auto object-contain" />
+            </div>
+            <div className="mt-5 flex justify-center">
               <span className="rounded-full border border-[#203b68]/20 bg-[#203b68]/10 px-4 py-2 text-xs text-[#203b68]">Hotel Existing</span>
             </div>
             <h1 className="mt-8 text-3xl font-bold md:text-4xl">Identitas Pengisi Assessment</h1>
@@ -555,10 +557,11 @@ export default function ExistingAssessmentPage() {
       <div className="mx-auto max-w-4xl px-6 py-10">
 
         <header>
-          <div className="flex items-center justify-between">
-            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} priority className="h-[46px] w-[151px] object-contain" />
+          <div className="flex items-center justify-center">
+            <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={220} height={70} priority className="h-[56px] w-auto object-contain" />
+          </div>
 
-            <div className="flex items-center gap-2">
+          <div className="mt-5 flex items-center justify-center gap-2">
               <span className="rounded-full border border-[#203b68]/20 bg-[#203b68]/10 px-4 py-2 text-xs text-[#203b68]">
                 Hotel Existing
               </span>
@@ -568,11 +571,11 @@ export default function ExistingAssessmentPage() {
             </div>
           </div>
 
-          <h1 className="mt-8 text-4xl font-bold md:text-5xl">
+          <h1 className="mt-8 text-center text-4xl font-bold md:text-5xl">
             Hotel Check-Up
           </h1>
 
-          <p className="mt-4 text-[#66738a]">
+          <p className="mt-4 text-center text-[#66738a]">
             Evaluasi kondisi hotel yang sedang beroperasi berdasarkan area utama bisnis, revenue, operasional, people, dan profitability.
           </p>
         </header>

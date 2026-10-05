@@ -184,6 +184,13 @@ export default function FinancialAssessmentPage() {
           <b>Hasil:</b> audit berbasis file dengan validasi data, KPI, variance, red flags, potensi saving/recovery, dan action plan. <b>Rule:</b> file yang gagal dibaca tidak akan menghasilkan audit seolah-olah valid.
         </p>
 
+        <section className="mt-5 rounded-2xl border border-[#d8b985]/35 bg-[#fbf8f2] px-5 py-4 sm:px-6">
+          <p className="text-sm font-bold text-[#172a4d]">🔐 Data Anda Tetap Rahasia</p>
+          <p className="mt-1.5 text-sm leading-6 text-slate-600">
+            Kami menjaga kerahasiaan data Anda. <b>File laporan keuangan yang diupload dan hasil assessment hanya dapat diakses melalui akun Anda setelah login.</b> Informasi tersebut tidak ditampilkan secara publik dan tidak dapat diakses oleh pengguna lain.
+          </p>
+        </section>
+
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">
           <button
             type="button"

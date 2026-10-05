@@ -59,19 +59,6 @@ export default function PaketHargaPage() {
           business transformation, hingga hotel development dan pre-opening.
         </p>
 
-        <section className="mt-8 overflow-hidden rounded-3xl border border-[#dce4ef] bg-white shadow-sm">
-          <div className="border-b border-[#edf1f6] px-6 py-5">
-            <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#6b8a80]">CoreStay Advisory</p>
-            <h2 className="mt-1 text-xl font-semibold text-[#17243d]">Company Profile & Advisory Guide</h2>
-            <p className="mt-1 text-sm text-[#66738a]">Lihat dokumen advisory langsung di halaman Paket & Harga.</p>
-          </div>
-          <iframe
-            src="/corestay-advisory.pdf"
-            className="h-[680px] w-full"
-            title="CoreStay Advisory PDF"
-          />
-        </section>
-
         <div className="mt-8 grid gap-5 md:grid-cols-2">
           {packages.map((pkg) => (
             <section key={pkg.code} className="rounded-3xl border border-[#dce4ef] bg-white p-7 shadow-sm">

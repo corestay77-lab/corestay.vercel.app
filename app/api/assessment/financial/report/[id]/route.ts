@@ -59,15 +59,29 @@ export async function DELETE(
       return new NextResponse("Laporan sudah tidak tersedia atau bukan milik akun ini.", { status: 404 });
     }
 
-    const { error: deleteError } = await supabase
+    // Ask Supabase to return the deleted row. This is intentional: a DELETE
+    // request must never report success when zero rows were actually removed.
+    const { data: deletedRows, error: deleteError } = await supabase
       .from("assessment_reports")
       .delete()
       .eq("id", id)
-      .eq("user_id", authUser.user.id);
+      .eq("user_id", authUser.user.id)
+      .select("id");
 
     if (deleteError) {
       console.error("Gagal menghapus assessment:", deleteError);
-      return new NextResponse("Data assessment gagal dihapus.", { status: 500 });
+      return NextResponse.json(
+        { success: false, error: "Data assessment gagal dihapus.", detail: deleteError.message },
+        { status: 500, headers: { "Cache-Control": "no-store" } }
+      );
+    }
+
+    if (!deletedRows || deletedRows.length !== 1 || deletedRows[0]?.id !== id) {
+      console.error("DELETE tidak menghapus row:", { id, userId: authUser.user.id, deletedRows });
+      return NextResponse.json(
+        { success: false, error: "Laporan tidak benar-benar terhapus dari database." },
+        { status: 409, headers: { "Cache-Control": "no-store" } }
+      );
     }
 
     return NextResponse.json(

@@ -15,7 +15,7 @@ export default function PaketHargaPage() {
       subtitle: "For Existing Hotels",
       description: "Diagnosis untuk menemukan masalah, peluang, dan prioritas perbaikan bisnis hotel.",
       items: ["Hotel Business Assessment", "Business Health Score", "Operational Review", "Revenue Review", "Risk & Red Flag", "Priority Recommendations"],
-      price: "Rp499.000",
+      price: "Free",
       note: "Assessment Project",
       delivery: "Tersedia On-Site & Online",
       deliveryDescription: "Assessment dapat dilakukan langsung di lokasi hotel (On-Site) atau secara online (Online), disesuaikan dengan kebutuhan dan kondisi hotel.",

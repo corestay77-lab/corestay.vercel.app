@@ -2,18 +2,32 @@
 
 import { useState } from "react";
 
-function PdfViewer({ title, file }: { title: string; file: string }) {
+function FileViewer({ title, pdfFile, excelFile }: { title: string; pdfFile: string; excelFile: string }) {
+  const [type, setType] = useState<"pdf" | "excel">("pdf");
   const [loaded, setLoaded] = useState(false);
+
+  const excelUrl = typeof window !== "undefined"
+    ? `https://docs.google.com/gview?embedded=1&url=${encodeURIComponent(window.location.origin + excelFile)}`
+    : "";
+
   return (
     <div className="mt-5 overflow-hidden rounded-2xl border border-[#dce4ef] bg-white">
       <div className="flex items-center justify-between border-b border-[#e7ecf3] px-4 py-3">
-        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#66738a]">PDF Viewer</span>
+        <div className="flex gap-1.5">
+          <button type="button" onClick={() => { setType("pdf"); setLoaded(false); }} className={`rounded-lg px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] ${type === "pdf" ? "bg-[#17243d] text-white" : "bg-[#f1f4f8] text-[#66738a]"}`}>PDF</button>
+          <button type="button" onClick={() => { setType("excel"); setLoaded(false); }} className={`rounded-lg px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.12em] ${type === "excel" ? "bg-[#55756b] text-white" : "bg-[#f1f4f8] text-[#66738a]"}`}>Excel</button>
+        </div>
         <span className="text-[9px] text-[#8a6b35]">{title}</span>
       </div>
       <div className="relative h-[280px] bg-[#f7f9fc]">
-        <iframe src={`${file}#toolbar=0&navpanes=0&scrollbar=1`} title={`${title} PDF preview`} className="h-full w-full border-0" onLoad={() => setLoaded(true)} />
-        {!loaded && <div className="absolute inset-0 flex items-center justify-center bg-[#f7f9fc] text-xs text-[#66738a]">Memuat preview PDF…</div>}
+        {type === "pdf" ? (
+          <iframe src={`${pdfFile}#toolbar=0&navpanes=0&scrollbar=1`} title={`${title} PDF preview`} className="h-full w-full border-0" onLoad={() => setLoaded(true)} />
+        ) : excelUrl ? (
+          <iframe src={excelUrl} title={`${title} Excel preview`} className="h-full w-full border-0" onLoad={() => setLoaded(true)} />
+        ) : null}
+        {!loaded && <div className="absolute inset-0 flex items-center justify-center bg-[#f7f9fc] text-xs text-[#66738a]">Memuat preview {type === "pdf" ? "PDF" : "Excel"}…</div>}
       </div>
+      <div className="border-t border-[#edf1f6] px-4 py-2 text-[9px] text-[#8a95a5]">Preview {type === "pdf" ? "PDF" : "Excel"} • File lengkap diberikan setelah pembelian.</div>
     </div>
   );
 }
@@ -76,7 +90,11 @@ export default function HotelToolkitPage() {
               <h2 className="mt-5 text-xl font-semibold text-[#17243d]">{item.title}</h2>
               <p className="mt-3 text-sm leading-6 text-[#66738a]">{item.desc}</p>
               <Preview item={item} />
-              <PdfViewer title={item.title} file={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`} />
+              <FileViewer
+  title={item.title}
+  pdfFile={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.pdf`}
+  excelFile={`/toolkit/${item.title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "")}.xlsx`}
+/>
               <div className="mt-6 border-t border-[#edf1f6] pt-5">
                 <p className="text-2xl font-bold text-[#203b68]">{item.price}</p>
                 <a href={`${wa}?text=${encodeURIComponent(`Halo CoreStay, saya ingin membeli ${item.title} seharga ${item.price}.`)}`} target="_blank" rel="noopener noreferrer" className="mt-4 flex w-full items-center justify-center rounded-xl bg-[#17243d] px-4 py-3 text-sm font-bold text-white transition hover:bg-[#203b68]">Beli & Dapatkan Template ↗</a>

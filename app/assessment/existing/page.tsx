@@ -12,6 +12,7 @@ const categories=["business","revenue","operations","people","profitability"];
 const weights:Record<string,number>={"business":20,"revenue":25,"operations":20,"people":15,"profitability":20};
 const categoryTitles:Record<string,string>={"business":"Business & Commercial Performance","revenue":"Revenue & Financial Performance","operations":"Operations & Guest Experience","people":"People & Organization","profitability":"Profitability & Cost Efficiency"};
 const ASSESSMENT_VERSION="v3.0 — HOSPITALITY BUSINESS AUDITOR";
+// The audit-rule notice is intentionally not displayed on the Hotel Existing assessment page.
 
 export default function ExistingAssessmentPage(){
  const router=useRouter();

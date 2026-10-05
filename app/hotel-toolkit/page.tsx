@@ -2,6 +2,22 @@
 
 import { useState } from "react";
 
+function PdfViewer({ title, file }: { title: string; file: string }) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="mt-5 overflow-hidden rounded-2xl border border-[#dce4ef] bg-white">
+      <div className="flex items-center justify-between border-b border-[#e7ecf3] px-4 py-3">
+        <span className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#66738a]">PDF Viewer</span>
+        <span className="text-[9px] text-[#8a6b35]">{title}</span>
+      </div>
+      <div className="relative h-[280px] bg-[#f7f9fc]">
+        <iframe src={`${file}#toolbar=0&navpanes=0&scrollbar=1`} title={`${title} PDF preview`} className="h-full w-full border-0" onLoad={() => setLoaded(true)} />
+        {!loaded && <div className="absolute inset-0 flex items-center justify-center bg-[#f7f9fc] text-xs text-[#66738a]">Memuat preview PDF…</div>}
+      </div>
+    </div>
+  );
+}
+
 const templates = [
   { title: "Hotel Budget Template", category: "Finance", price: "Rp49.000", desc: "Template budget hotel yang siap digunakan untuk menyusun dan memonitor anggaran.", slides: ["Budget Dashboard", "Department Budget", "Monthly Summary"], preview: ["Revenue • Cost • GOP • Margin", "Rooms • F&B • HK • Engineering", "Budget • Actual • Variance"] },
   { title: "Hotel P&L Template", category: "Finance", price: "Rp59.000", desc: "Template Profit & Loss untuk memantau revenue, cost, GOP, dan margin hotel.", slides: ["P&L Overview", "Department P&L", "Monthly Analysis"], preview: ["Revenue → GOP → Net Profit", "Rooms • F&B • Other Revenue", "Actual • Budget • Variance"] },

@@ -23,3 +23,8 @@ to authenticated with check (auth.uid() = user_id);
 
 create index if not exists assessment_reports_user_id_created_at_idx
 on public.assessment_reports(user_id, created_at desc);
+
+drop policy if exists "Users can delete own assessment reports" on public.assessment_reports;
+create policy "Users can delete own assessment reports"
+on public.assessment_reports for delete
+to authenticated using (auth.uid() = user_id);

@@ -132,23 +132,36 @@ export default function FinancialAssessmentPage() {
     const session = await getSession();
     if (!session) return;
 
-    const response = await fetch(`/api/assessment/financial/report/${reportId}`, {
-      method: "DELETE",
-      headers: { Authorization: `Bearer ${session.access_token}` },
-    });
+    try {
+      const response = await fetch(`/api/assessment/financial/report/${reportId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+          "Cache-Control": "no-store",
+        },
+        cache: "no-store",
+      });
 
-    if (!response.ok) {
-      setError("Data assessment tidak dapat dihapus.");
-      return;
+      const raw = await response.text();
+      let data: { success?: boolean; error?: string; message?: string } = {};
+      try { data = raw ? JSON.parse(raw) : {}; } catch {}
+
+      if (!response.ok || data.success !== true) {
+        throw new Error(data.error || data.message || `Penghapusan gagal (HTTP ${response.status}).`);
+      }
+
+      // Clear the rendered report only after the server confirms the database
+      // row was actually deleted.
+      setResult(null);
+      setReportId("");
+      setFile(null);
+      setFileName("");
+      setText("");
+      setError("");
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Data assessment tidak dapat dihapus.");
     }
-
-    setResult(null);
-    setReportId("");
-    setFile(null);
-    setFileName("");
-    setText("");
-    setError("");
-    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   async function downloadPdf() {

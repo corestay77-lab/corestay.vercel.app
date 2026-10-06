@@ -16,10 +16,9 @@ const mainItems = [
   ["Hasil Assessment", "/laporan", "chart"],
   ["Paket & Harga", "/paket-harga", "package"],
   ["CoreStay Hotel Toolkit", "/hotel-toolkit", "toolkit"],
-  ["Experience", "/experience", "experience"],
 ] as const;
 
-function MenuIcon({ name }: { name: "dashboard" | "clipboard" | "hotel" | "construction" | "money" | "chart" | "package" | "toolkit" | "experience" | "profile" | "login" | "signup" | "logout" }) {
+function MenuIcon({ name }: { name: "dashboard" | "clipboard" | "hotel" | "construction" | "money" | "chart" | "package" | "toolkit" | "profile" | "login" | "signup" | "logout" }) {
   const paths: Record<string, React.ReactNode> = {
     dashboard: <><path d="M3 12 12 4l9 8"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></>,
     clipboard: <><rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4.5V3h6v1.5M8 9h8M8 13h6M8 17h4"/></>,
@@ -29,7 +28,6 @@ function MenuIcon({ name }: { name: "dashboard" | "clipboard" | "hotel" | "const
     chart: <><path d="M4 19V5M4 19h16"/><path d="m7 15 4-4 3 2 5-6"/></>,
     package: <><path d="m12 3 8 4-8 4-8-4 8-4Z"/><path d="m4 7 8 4 8-4M4 7v10l8 4 8-4V7M12 11v10"/></>,
     toolkit: <><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.2 2.2-2.1-.7-.7-2.1z"/></>,
-    experience: <><path d="M4 19.5V7.8a2 2 0 0 1 2-2h5v13.7"/><path d="M12 6h4a2 2 0 0 1 2 2v11.5"/><path d="M4 19.5c2-1 4-1 8 0 4-1 6-1 8 0"/><path d="M8 10h2M8 13h2M14 10h2M14 13h2"/></>,
     profile: <><circle cx="12" cy="8" r="3.5"/><path d="M5 21a7 7 0 0 1 14 0"/></>,
     login: <><path d="M10 17l5-5-5-5"/><path d="M15 12H3M12 3h7v18h-7"/></>,
     signup: <><circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/></>,

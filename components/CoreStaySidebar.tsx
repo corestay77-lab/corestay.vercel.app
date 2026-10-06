@@ -39,14 +39,14 @@ function MenuIcon({ name }: { name: "dashboard" | "clipboard" | "hotel" | "const
 export default function CoreStaySidebar() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
-  const [assessmentOpen, setAssessmentOpen] = useState(true);
+  const [assessmentOpen, setAssessmentOpen] = useState(false);
   const [loggedIn, setLoggedIn] = useState(false);
   const menuRef = useRef<HTMLDivElement>(null);
   const hidden = pathname.startsWith("/admin") || pathname.startsWith("/pms");
   const activeAssessment = pathname === "/assessment" || pathname.startsWith("/assessment/");
   const close = () => setOpen(false);
 
-  useEffect(() => { if (activeAssessment) setAssessmentOpen(true); }, [activeAssessment]);
+  useEffect(() => { setAssessmentOpen(activeAssessment); }, [activeAssessment]);
   useEffect(() => {
     let mounted = true;
     supabase.auth.getSession().then(({ data }) => { if (mounted) setLoggedIn(!!data.session); });
@@ -78,17 +78,17 @@ export default function CoreStaySidebar() {
           </Link>
         ))}
 
-        <div className={`rounded-2xl ${activeAssessment ? "bg-transparent" : ""}`}>
-          <button type="button" onClick={() => setAssessmentOpen(v => !v)} aria-expanded={assessmentOpen} className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${activeAssessment ? "text-slate-900" : "text-white font-bold hover:bg-transparent hover:text-white"}`}>
+        <div className="rounded-2xl">
+          <button type="button" onClick={() => setAssessmentOpen(v => !v)} aria-expanded={assessmentOpen} className={`group flex w-full items-center justify-between rounded-xl px-3 py-2.5 text-left text-sm font-bold transition ${activeAssessment ? "text-white" : "text-white hover:bg-transparent"}`}>
             <span className="flex items-center gap-3"><MenuIcon name="clipboard" />Assessment</span>
-            <span className={`text-xs text-slate-400 transition-transform duration-200 ${assessmentOpen ? "rotate-90" : ""}`}>›</span>
+            <span className={`text-xs text-white/60 transition-transform duration-200 ${assessmentOpen ? "rotate-90" : ""}`}>›</span>
           </button>
           <div className={`overflow-hidden transition-[max-height,opacity] duration-300 ${assessmentOpen ? "max-h-72 opacity-100" : "max-h-0 opacity-0"}`}>
             <div className="ml-6 mt-0.5 space-y-0.5 pl-2 pb-1">
               {assessmentItems.map(([label, desc, href], index) => (
-                <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`group flex items-center gap-2 rounded-lg px-2.5 py-2 transition ${pathname === href ? "bg-transparent text-slate-900" : "text-white font-bold hover:bg-transparent hover:text-white"}`}>
+                <Link aria-current={pathname === href ? "page" : undefined} key={label} href={href} onClick={close} className={`group flex items-center gap-2 rounded-lg px-2.5 py-2 transition ${pathname === href ? "text-white" : "text-white hover:bg-transparent hover:text-white"}`}>
                   <MenuIcon name={(["hotel", "construction", "money"] as const)[index]} />
-                  <span className="min-w-0 block"><span className="block text-xs font-semibold tracking-[0.005em]">{label}</span><span className="mt-0.5 block text-[9px] text-white">{desc}</span></span>
+                  <span className="min-w-0 block"><span className="block text-xs font-semibold tracking-[0.005em]">{label}</span><span className="mt-0.5 block text-[9px] text-white/80">{desc}</span></span>
                 </Link>
               ))}
             </div>

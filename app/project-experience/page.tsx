@@ -27,7 +27,7 @@ function Icon({type}:{type:string}) {
 }
 
 export default function ProjectExperiencePage(){
-  return <main className="min-h-screen w-full overflow-x-hidden bg-[#f8f8f6] text-[#102f5b] lg:ml-[240px] lg:w-[calc(100%-240px)]">
+  return <main className="min-h-screen w-full overflow-x-hidden bg-[#f8f8f6] text-[#102f5b] lg:ml-[220px] lg:w-[calc(100%-220px)]">
     <section className="relative overflow-hidden bg-white">
       <div className="relative min-h-[540px] md:min-h-[500px] lg:min-h-[520px]"><Image src="/experience/project-1.jpg" alt="CoreStay Project Experience" fill priority sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, calc(100vw - 264px)" className="object-cover object-center opacity-95 md:object-[100%_center] lg:object-[100%_center]"/></div>
       <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 to-white/15 md:bg-gradient-to-r md:from-white md:via-white/85 md:to-white/10"/>

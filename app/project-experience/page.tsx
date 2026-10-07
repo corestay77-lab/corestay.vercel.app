@@ -27,50 +27,50 @@ function Icon({type}:{type:string}) {
 }
 
 export default function ProjectExperiencePage(){
-  return <main className="min-h-screen bg-[#f8f8f6] text-[#102f5b] lg:ml-[264px]">
-    <section className="relative min-h-[380px] overflow-hidden bg-white">
-      <Image src="/experience/project-1.jpg" alt="CoreStay Project Experience" fill priority className="object-cover object-center opacity-95"/>
-      <div className="absolute inset-0 bg-gradient-to-r from-white via-white/90 to-white/10"/>
-      <div className="relative z-10 mx-auto flex min-h-[380px] max-w-[1180px] items-center px-6 py-16 lg:px-10">
+  return <main className="min-h-screen w-full overflow-x-hidden bg-[#f8f8f6] text-[#102f5b] lg:ml-[264px] lg:w-[calc(100%-264px)]">
+    <section className="relative overflow-hidden bg-white">
+      <div className="relative min-h-[540px] md:min-h-[500px] lg:min-h-[520px]"><Image src="/experience/project-1.jpg" alt="CoreStay Project Experience" fill priority sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, calc(100vw - 264px)" className="object-cover object-center opacity-95 md:object-[65%_center] lg:object-[70%_center]"/></div>
+      <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 to-white/15 md:bg-gradient-to-r md:from-white md:via-white/85 md:to-white/10"/>
+      <div className="absolute inset-0 z-10 mx-auto flex max-w-[1180px] items-center px-5 py-12 sm:px-6 md:py-14 lg:px-10">
         <div className="max-w-[560px]">
           <div className="mb-5 flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.35em] text-[#b47d12]"><span className="h-px w-10 bg-[#b47d12]"/>Project Experience</div>
-          <h1 className="font-serif text-5xl font-bold leading-[1.02] text-[#10284b] md:text-6xl">Transforming<br/>Hotels into<br/>Stronger Businesses</h1>
-          <p className="mt-6 max-w-[470px] text-lg leading-7 text-[#214b82]">Pengalaman nyata dalam membantu hotel meningkatkan operasional, pendapatan, layanan, dan sistem manajemen.</p>
+          <h1 className="max-w-[620px] font-serif text-[2.35rem] font-bold leading-[1.04] text-[#10284b] sm:text-5xl md:text-6xl">Transforming<br/>Hotels into<br/>Stronger Businesses</h1>
+          <p className="mt-5 max-w-[470px] text-base leading-7 text-[#214b82] sm:text-lg">Pengalaman nyata dalam membantu hotel meningkatkan operasional, pendapatan, layanan, dan sistem manajemen.</p>
         </div>
       </div>
     </section>
 
-    <section className="mx-auto max-w-[1180px] px-6 py-10 lg:px-10">
-      <div className="grid gap-8 lg:grid-cols-[1fr_1.02fr] lg:items-center">
+    <section className="mx-auto w-full max-w-[1180px] px-5 py-8 sm:px-6 sm:py-10 lg:px-10">
+      <div className="grid gap-7 lg:grid-cols-[1fr_1.02fr] lg:items-center lg:gap-10">
         <div>
           <div className="mb-3 h-px w-10 bg-[#b47d12]"/>
-          <h2 className="font-serif text-3xl font-bold text-[#102f5b]">Tentang Project Experience</h2>
-          <p className="mt-5 text-lg leading-8 text-[#214b82]">Sebuah inisiatif transformasi strategis di bidang perhotelan yang berfokus pada penguatan operasional hotel, kinerja pendapatan, standar layanan, dan sistem manajemen.</p>
+          <h2 className="font-serif text-2xl font-bold leading-tight text-[#102f5b] sm:text-3xl">Tentang Project Experience</h2>
+          <p className="mt-4 text-base leading-7 text-[#214b82] sm:mt-5 sm:text-lg sm:leading-8">Sebuah inisiatif transformasi strategis di bidang perhotelan yang berfokus pada penguatan operasional hotel, kinerja pendapatan, standar layanan, dan sistem manajemen.</p>
           <p className="mt-5 text-lg leading-8 text-[#214b82]">Melalui pendekatan <strong>CoreStay Advisory</strong>, proyek ini mengintegrasikan:</p>
         </div>
-        <div className="relative h-[260px] overflow-hidden rounded-2xl shadow-sm">
+        <div className="relative aspect-[16/10] w-full overflow-hidden rounded-2xl shadow-sm sm:aspect-[16/9] lg:aspect-[16/10]">
           <Image src="/experience/project-1.jpg" alt="Project experience" fill className="object-cover object-center"/>
         </div>
       </div>
 
-      <div className="mt-8 grid grid-cols-1 border-t border-[#eadfca] md:grid-cols-2 lg:grid-cols-4">
-        {pillars.map(([title,type],i)=><div key={title} className="min-h-[150px] border-b border-[#eadfca] px-5 py-6 lg:border-r lg:last:border-r-0">
+      <div className="mt-7 grid grid-cols-1 border-t border-[#eadfca] sm:grid-cols-2 lg:mt-8 lg:grid-cols-4">
+        {pillars.map(([title,type],i)=><div key={title} className="min-h-0 border-b border-[#eadfca] px-4 py-5 sm:min-h-[150px] sm:px-5 sm:py-6 lg:border-r lg:last:border-r-0">
           <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[#f3ead8] text-[#102f5b]"><Icon type={type}/></div>
-          <p className="text-[15px] font-medium leading-6 text-[#173f78]">{title}</p>
+          <p className="text-sm font-medium leading-6 text-[#173f78] sm:text-[15px]">{title}</p>
         </div>)}
       </div>
 
-      <div className="mt-6 rounded-xl bg-[#f2eadc] px-6 py-5 md:flex md:items-center md:gap-7">
+      <div className="mt-5 rounded-xl bg-[#f2eadc] px-4 py-4 sm:px-6 sm:py-5 md:flex md:items-center md:gap-7">
         <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full text-[#b47d12]"><svg viewBox="0 0 24 24" className="h-12 w-12" fill="none" stroke="currentColor" strokeWidth="1.6"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2"/><path d="m13.5 10.5 5-5M18.5 5.5h-3M18.5 5.5v3"/></svg></div>
-        <div className="border-l border-[#b47d12] pl-6"><strong className="text-lg">Tujuannya sederhana:</strong><p className="text-base leading-6 text-[#173f78]">mentransformasikan operasional hotel menjadi bisnis yang lebih terstruktur, terukur, efisien, dan menguntungkan.</p></div>
+        <div className="mt-3 border-l border-[#b47d12] pl-4 sm:mt-0 sm:pl-6"><strong className="text-lg">Tujuannya sederhana:</strong><p className="text-base leading-6 text-[#173f78]">mentransformasikan operasional hotel menjadi bisnis yang lebih terstruktur, terukur, efisien, dan menguntungkan.</p></div>
       </div>
 
-      <div className="relative mt-4 min-h-[135px] overflow-hidden rounded-xl bg-[#071a3d] text-white">
+      <div className="relative mt-4 min-h-[170px] overflow-hidden rounded-xl bg-[#071a3d] text-white sm:min-h-[135px]">
         <Image src="/experience/project-2.svg" alt="" fill className="object-cover object-center opacity-55"/>
         <div className="absolute inset-0 bg-gradient-to-r from-[#071a3d] via-[#071a3d]/80 to-transparent"/>
-        <div className="relative z-10 flex min-h-[135px] items-center gap-6 px-7 py-6">
+        <div className="relative z-10 flex min-h-[170px] items-center gap-4 px-5 py-6 sm:min-h-[135px] sm:gap-6 sm:px-7">
           <div className="hidden h-16 w-16 shrink-0 items-center justify-center border-r border-[#c79b42] pr-6 sm:flex"><svg viewBox="0 0 24 24" className="h-12 w-12 text-[#c79b42]" fill="none" stroke="currentColor" strokeWidth="1.4"><path d="M4 21V7l8-4 8 4v14M7 21v-8h10v8M9 9h2M13 9h2M9 12h2M13 12h2M9 15h2M13 15h2"/></svg></div>
-          <p className="max-w-[760px] text-base leading-6 text-white/95">Proyek ini mencerminkan pendekatan <strong>CoreStay Advisory</strong> dalam membantu pemilik hotel beralih dari ketergantungan pada operasional harian menuju sistem manajemen hotel yang sistematis.</p>
+          <p className="max-w-[760px] text-sm leading-6 text-white/95 sm:text-base">Proyek ini mencerminkan pendekatan <strong>CoreStay Advisory</strong> dalam membantu pemilik hotel beralih dari ketergantungan pada operasional harian menuju sistem manajemen hotel yang sistematis.</p>
         </div>
       </div>
     </section>

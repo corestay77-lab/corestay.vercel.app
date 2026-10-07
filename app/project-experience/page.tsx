@@ -34,7 +34,7 @@ export default function ProjectExperiencePage(){
       <div className="absolute inset-0 z-10 mx-auto flex w-full items-center px-5 py-12 sm:px-6 md:py-14 lg:px-0">
         <div className="max-w-[560px]">
           <div className="mb-5 flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.35em] text-[#b47d12]"><span className="h-px w-10 bg-[#b47d12]"/>Project Experience</div>
-          <h1 className="max-w-[620px] font-serif text-[2.35rem] font-bold leading-[1.04] text-[#10284b] sm:text-5xl md:text-6xl">Transforming<br/>Hotels into<br/>Stronger Businesses</h1>
+          <h1 className="max-w-[620px] font-serif text-[2rem] font-bold leading-[1.06] text-[#10284b] sm:text-4xl md:text-5xl">Transforming<br/>Hotels into<br/>Stronger Businesses</h1>
           <p className="mt-5 max-w-[470px] text-base leading-7 text-[#214b82] sm:text-lg">Pengalaman nyata dalam membantu hotel meningkatkan operasional, pendapatan, layanan, dan sistem manajemen.</p>
         </div>
       </div>

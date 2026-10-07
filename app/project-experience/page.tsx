@@ -40,7 +40,7 @@ export default function ProjectExperiencePage(){
       </div>
     </section>
 
-    <section className="mx-auto w-full max-w-[1180px] px-5 py-8 sm:px-6 sm:py-10 lg:px-10">
+    <section className="w-full px-0 py-8 sm:py-10">
       <div className="grid gap-7 lg:grid-cols-[1fr_1.02fr] lg:items-center lg:gap-10">
         <div>
           <div className="mb-3 h-px w-10 bg-[#b47d12]"/>

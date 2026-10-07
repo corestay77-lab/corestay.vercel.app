@@ -31,7 +31,7 @@ export default function ProjectExperiencePage(){
     <section className="relative overflow-hidden bg-white">
       <div className="relative min-h-[540px] md:min-h-[500px] lg:min-h-[520px]"><Image src="/experience/project-1.jpg" alt="CoreStay Project Experience" fill priority sizes="(max-width: 768px) 100vw, (max-width: 1200px) 100vw, calc(100vw - 264px)" className="object-cover object-center opacity-95 md:object-[100%_center] lg:object-[100%_center]"/></div>
       <div className="absolute inset-0 bg-gradient-to-b from-white/95 via-white/80 to-white/15 md:bg-gradient-to-r md:from-white md:via-white/85 md:to-white/10"/>
-      <div className="absolute inset-0 z-10 mx-auto flex w-full items-center px-5 py-12 sm:px-6 md:py-14 lg:px-10">
+      <div className="absolute inset-0 z-10 mx-auto flex w-full items-center px-5 py-12 sm:px-6 md:py-14 lg:px-0">
         <div className="max-w-[560px]">
           <div className="mb-5 flex items-center gap-3 text-[12px] font-semibold uppercase tracking-[0.35em] text-[#b47d12]"><span className="h-px w-10 bg-[#b47d12]"/>Project Experience</div>
           <h1 className="max-w-[620px] font-serif text-[2.35rem] font-bold leading-[1.04] text-[#10284b] sm:text-5xl md:text-6xl">Transforming<br/>Hotels into<br/>Stronger Businesses</h1>

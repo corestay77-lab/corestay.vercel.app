@@ -431,7 +431,7 @@ export async function POST(request: Request) {
       ? await supabase
       .from("assessment_reports")
       .select("report_json")
-      .eq("user_id", user.id)
+      .eq("user_id", userId)
       .eq("assessment_type", "financial")
       .order("created_at", { ascending: false })
       .limit(100)
@@ -446,7 +446,7 @@ export async function POST(request: Request) {
       const stableReport = { ...stableResult, _sourceHash: sourceFingerprint };
       const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
       const { data: saved, error: saveError } = userId && supabase ? await supabase.from("assessment_reports").insert({
-        user_id: user.id,
+        user_id: userId,
         assessment_type: "financial",
         file_name: action === "analyze" ? submittedFileName : (file as File).name,
         score: Math.round(stableResult.financialHealthScore),
@@ -482,7 +482,7 @@ export async function POST(request: Request) {
     const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
     const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
-      user_id: user.id, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
+      user_id: userId, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
       score: Math.round(result.object.financialHealthScore), report_json: stableResult, pdf_base64: pdfBase64,
     }).select("id,created_at").single() : { data: null, error: null };
 

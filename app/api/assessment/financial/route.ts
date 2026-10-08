@@ -362,15 +362,19 @@ export async function POST(request: Request) {
 
   try {
     const auth = request.headers.get("authorization") || "";
-    if (!auth.startsWith("Bearer ")) return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
-
-    const supabase = createClient(
-      "https://vkejwklhijophavlosze.supabase.co",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "missing",
-      { global: { headers: { Authorization: auth } } }
-    );
-    const { data: { user }, error: userError } = await supabase.auth.getUser();
-    if (userError || !user) return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
+    let supabase: ReturnType<typeof createClient> | null = null;
+    let userId = "";
+    if (auth.startsWith("Bearer ")) {
+      try {
+        supabase = createClient(
+          "https://vkejwklhijophavlosze.supabase.co",
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "missing",
+          { global: { headers: { Authorization: auth } } }
+        );
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id || "";
+      } catch {}
+    }
 
     const formData = await request.formData();
     const action = String(formData.get("action") || "analyze");
@@ -423,15 +427,17 @@ export async function POST(request: Request) {
 
     // Reuse the previously generated result for an identical source. This prevents
     // Gemini wording/model variance from changing scores or percentages on re-upload.
-    const { data: previousReports, error: previousReportsError } = await supabase
+    const { data: previousReports, error: previousReportsError } = userId && supabase
+      ? await supabase
       .from("assessment_reports")
       .select("report_json")
       .eq("user_id", user.id)
       .eq("assessment_type", "financial")
       .order("created_at", { ascending: false })
-      .limit(100);
+      .limit(100)
+      : { data: null, error: null };
 
-    const cachedReport = !previousReportsError
+    const cachedReport = userId && supabase && !previousReportsError
       ? previousReports?.find((row: any) => row?.report_json?._sourceHash === sourceFingerprint)?.report_json
       : null;
 
@@ -439,7 +445,7 @@ export async function POST(request: Request) {
       const stableResult = FinancialAssessment.parse(cachedReport);
       const stableReport = { ...stableResult, _sourceHash: sourceFingerprint };
       const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
-      const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
+      const { data: saved, error: saveError } = userId && supabase ? await supabase.from("assessment_reports").insert({
         user_id: user.id,
         assessment_type: "financial",
         file_name: action === "analyze" ? submittedFileName : (file as File).name,
@@ -451,7 +457,7 @@ export async function POST(request: Request) {
       if (blobPath) {
         try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
       }
-      return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: stableResult, deterministic: true });
+      return NextResponse.json({ success: true, reportId: saved?.id || null, createdAt: saved?.created_at || null, fileName: file?.name || submittedFileName, result: stableResult, pdfBase64, deterministic: true });
     }
 
     const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
@@ -478,13 +484,13 @@ export async function POST(request: Request) {
     const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
       user_id: user.id, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
       score: Math.round(result.object.financialHealthScore), report_json: stableResult, pdf_base64: pdfBase64,
-    }).select("id,created_at").single();
+    }).select("id,created_at").single() : { data: null, error: null };
 
     if (saveError) return NextResponse.json({ error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." }, { status: 500 });
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object, deterministic: true });
+    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object, pdfBase64, deterministic: true });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });

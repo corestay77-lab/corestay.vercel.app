@@ -31,8 +31,7 @@ type AssessmentResult = {
 
 export default function FinancialAssessmentPage() {
   const inputRef = useRef<HTMLInputElement>(null);
-  const router = useRouter();
-  const [file, setFile] = useState<File | null>(null);
+    const [file, setFile] = useState<File | null>(null);
   const [fileName, setFileName] = useState("");
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
@@ -98,7 +97,7 @@ export default function FinancialAssessmentPage() {
       });
 
       const raw = await response.text();
-      let data: { result?: AssessmentResult; reportId?: string; error?: string } = {};
+      let data: { result?: AssessmentResult; reportId?: string; pdfBase64?: string; error?: string } = {};
       try { data = raw ? JSON.parse(raw) : {}; }
       catch { throw new Error(`Server mengembalikan respons tidak valid (HTTP ${response.status}).`); }
 
@@ -121,7 +120,7 @@ export default function FinancialAssessmentPage() {
     const confirmed = window.confirm("Hapus hasil assessment ini? Data hasil assessment dan PDF tersimpan akan dihapus permanen.");
     if (!confirmed) return;
 
-    const session = await getSession();
+    const { data: { session } } = await supabase.auth.getSession();
     if (!session) return;
 
     try {

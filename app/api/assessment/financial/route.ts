@@ -448,8 +448,9 @@ export async function POST(request: Request) {
       const stableReport = { ...stableResult, _sourceHash: sourceFingerprint };
       const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
       let saved: { id?: string; created_at?: string } | null = null;
+      const db: any = supabase;
       if (userId && supabase) {
-        const { data, error: saveError } = await supabase.from("assessment_reports").insert({
+        const { data, error: saveError } = await db.from("assessment_reports").insert({
           user_id: userId,
           assessment_type: "financial",
           file_name: action === "analyze" ? submittedFileName : (file as File).name,
@@ -490,6 +491,7 @@ export async function POST(request: Request) {
     const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
     let saved: { id?: string; created_at?: string } | null = null;
+    const db: any = supabase;
     if (userId && supabase) {
       const { data, error: saveError } = await supabase.from("assessment_reports").insert({
         user_id: userId,

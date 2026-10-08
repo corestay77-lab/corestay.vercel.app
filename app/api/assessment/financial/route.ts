@@ -427,18 +427,20 @@ export async function POST(request: Request) {
 
     // Reuse the previously generated result for an identical source. This prevents
     // Gemini wording/model variance from changing scores or percentages on re-upload.
-    const previousReports: Array<{ report_json?: any }> = userId && supabase
-      ? ((await supabase
-          .from("assessment_reports")
-          .select("report_json")
-          .eq("user_id", userId)
-          .eq("assessment_type", "financial")
-          .order("created_at", { ascending: false })
-          .limit(100)).data || [])
-      : [];
+    const previousReports: Array<{ report_json?: any }> = [];
+    if (userId && supabase) {
+      const { data } = await supabase
+        .from("assessment_reports")
+        .select("report_json")
+        .eq("user_id", userId)
+        .eq("assessment_type", "financial")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (data) previousReports.push(...(data as Array<{ report_json?: any }>));
+    }
 
-    const cachedReport = userId && supabase && !previousReportsError
-      ? previousReports?.find((row: any) => row?.report_json?._sourceHash === sourceFingerprint)?.report_json
+    const cachedReport = userId && supabase
+      ? previousReports.find((row) => row?.report_json?._sourceHash === sourceFingerprint)?.report_json
       : null;
 
     if (cachedReport) {

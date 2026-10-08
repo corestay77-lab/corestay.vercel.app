@@ -447,7 +447,7 @@ export async function POST(request: Request) {
       const stableResult = FinancialAssessment.parse(cachedReport);
       const stableReport = { ...stableResult, _sourceHash: sourceFingerprint };
       const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
-      let saved: { id?: string; created_at?: string } | null = null;
+      let saved: any = null;
       const db: any = supabase;
       if (userId && supabase) {
         const { data, error: saveError } = await db.from("assessment_reports").insert({
@@ -490,10 +490,11 @@ export async function POST(request: Request) {
 
     const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
-    let saved: { id?: string; created_at?: string } | null = null;
+    let saved: any = null;
     const db: any = supabase;
     if (userId && supabase) {
-      const { data, error: saveError } = await supabase.from("assessment_reports").insert({
+      const db: any = supabase;
+      const insertResult: any = await db.from("assessment_reports").insert({
         user_id: userId,
         assessment_type: "financial",
         file_name: action === "analyze" ? submittedFileName : (file as File).name,
@@ -501,10 +502,10 @@ export async function POST(request: Request) {
         report_json: stableResult,
         pdf_base64: pdfBase64,
       }).select("id,created_at").single();
-      if (saveError) {
+      if (insertResult.error) {
         return NextResponse.json({ error: "Hasil analisa berhasil dibuat tetapi gagal disimpan. Jalankan migration Supabase assessment_reports terlebih dahulu." }, { status: 500 });
       }
-      saved = data;
+      saved = insertResult.data;
     }
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }

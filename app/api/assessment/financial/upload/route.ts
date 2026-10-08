@@ -8,18 +8,17 @@ export const maxDuration = 60;
 export async function POST(request: NextRequest) {
   try {
     const auth = request.headers.get("authorization") || "";
-    if (!auth.startsWith("Bearer ")) {
-      return NextResponse.json({ error: "Login diperlukan." }, { status: 401 });
-    }
-
-    const supabase = createClient(
-      "https://vkejwklhijophavlosze.supabase.co",
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "missing",
-      { global: { headers: { Authorization: auth } } }
-    );
-    const { data: { user }, error } = await supabase.auth.getUser();
-    if (error || !user) {
-      return NextResponse.json({ error: "Session login tidak valid." }, { status: 401 });
+    let userId = "";
+    if (auth.startsWith("Bearer ")) {
+      try {
+        const supabase = createClient(
+          "https://vkejwklhijophavlosze.supabase.co",
+          process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "missing",
+          { global: { headers: { Authorization: auth } } }
+        );
+        const { data: { user } } = await supabase.auth.getUser();
+        userId = user?.id || "";
+      } catch {}
     }
 
     const formData = await request.formData();
@@ -37,7 +36,7 @@ export async function POST(request: NextRequest) {
     }
 
     const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180) || "report.pdf";
-    const pathname = `financial-reports/${user.id}/${Date.now()}-${safeName}`;
+    const pathname = `financial-reports/${userId || "anonymous"}/${crypto.randomUUID()}-${safeName}`;
 
     const blob = await put(pathname, file, {
       access: "private",

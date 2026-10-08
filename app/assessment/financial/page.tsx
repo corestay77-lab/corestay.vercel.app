@@ -41,30 +41,21 @@ export default function FinancialAssessmentPage() {
   const [error, setError] = useState("");
   const [result, setResult] = useState<AssessmentResult | null>(null);
   const [reportId, setReportId] = useState("");
-
-  async function getSession() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) {
-      router.replace("/login?next=/assessment/financial");
-      return null;
-    }
-    return session;
-  }
+  const [pdfBase64, setPdfBase64] = useState("");
 
   async function handleFile(selected?: File) {
     if (!selected) return;
     setError("");
     setResult(null);
     setReportId("");
+    setPdfBase64("");
 
     if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
       setError("Silakan upload laporan dalam format PDF.");
       return;
     }
 
-    const session = await getSession();
-    if (!session) return;
-
+    const { data: { session } } = await supabase.auth.getSession();
     setFile(selected);
     setFileName(selected.name);
     setLoading(true);
@@ -79,7 +70,7 @@ export default function FinancialAssessmentPage() {
 
       const uploadResponse = await fetch("/api/assessment/financial/upload", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        ...(session ? { headers: { Authorization: `Bearer ${session.access_token}` } } : {}),
         body: uploadForm,
       });
 
@@ -102,7 +93,7 @@ export default function FinancialAssessmentPage() {
 
       const response = await fetch("/api/assessment/financial", {
         method: "POST",
-        headers: { Authorization: `Bearer ${session.access_token}` },
+        ...(session ? { headers: { Authorization: `Bearer ${session.access_token}` } } : {}),
         body: formData,
       });
 
@@ -116,6 +107,7 @@ export default function FinancialAssessmentPage() {
 
       setResult(data.result);
       setReportId(data.reportId || "");
+      setPdfBase64(data.pdfBase64 || "");
     } catch (err) {
       setError(err instanceof Error ? err.message : "PDF gagal diproses.");
     } finally {
@@ -170,7 +162,7 @@ export default function FinancialAssessmentPage() {
     if (!session) return;
 
     const response = await fetch(`/api/assessment/financial/report/${reportId}`, {
-      headers: { Authorization: `Bearer ${session.access_token}` },
+      ...(session ? { headers: { Authorization: `Bearer ${session.access_token}` } } : {}),
     });
     if (!response.ok) {
       setError("PDF tidak dapat diunduh.");
@@ -200,7 +192,7 @@ export default function FinancialAssessmentPage() {
         <section className="mt-5 rounded-2xl border border-[#d8b985]/35 bg-[#fbf8f2] px-5 py-4 sm:px-6">
           <p className="text-sm font-bold text-[#172a4d]">🔐 Data Anda Tetap Rahasia</p>
           <p className="mt-1.5 text-sm leading-6 text-slate-600">
-            Kami menjaga kerahasiaan data Anda. <b>File laporan keuangan yang diupload dan hasil assessment hanya dapat diakses melalui akun Anda setelah login.</b> Informasi tersebut tidak ditampilkan secara publik dan tidak dapat diakses oleh pengguna lain.
+            Tidak perlu login untuk upload dan mendapatkan analisis. File diproses sementara untuk menghasilkan assessment dan sumber file dihapus setelah pemrosesan selesai.
           </p>
         </section>
 

@@ -31,9 +31,17 @@ export default function LaporanPage() {
       return;
     }
 
+    const { data: userData } = await supabase.auth.getUser();
+    const user = userData.user;
+    if (!user) {
+      router.replace("/login?next=/laporan");
+      return;
+    }
+
     const { data, error } = await supabase
       .from("assessment_reports")
       .select("id,score,created_at,assessment_type,report_json")
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false });
 
     if (error) {

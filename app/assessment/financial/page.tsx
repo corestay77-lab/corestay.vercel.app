@@ -115,12 +115,29 @@ export default function FinancialAssessmentPage() {
   }
 
   async function deleteAssessment() {
-    if (!reportId) return;
-    const confirmed = window.confirm("Hapus hasil assessment ini? Data hasil assessment dan PDF tersimpan akan dihapus permanen.");
+    const confirmed = window.confirm(
+      reportId
+        ? "Hapus hasil assessment ini? Data hasil assessment dan PDF tersimpan akan dihapus permanen."
+        : "Hapus hasil assessment yang sedang tampil?"
+    );
     if (!confirmed) return;
 
+    // Anonymous results are only held in the current page and are not stored
+    // in Hasil Assessment. Clearing them requires no login.
+    if (!reportId) {
+      setResult(null);
+      setPdfBase64("");
+      setFile(null);
+      setFileName("");
+      setError("");
+      return;
+    }
+
     const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return;
+    if (!session) {
+      setError("Silakan login untuk menghapus laporan yang tersimpan.");
+      return;
+    }
 
     try {
       const response = await fetch(`/api/assessment/financial/report/${reportId}`, {
@@ -155,12 +172,35 @@ export default function FinancialAssessmentPage() {
   }
 
   async function downloadPdf() {
-    if (!reportId) return;
-    const session = await getSession();
-    if (!session) return;
+    // Anonymous users receive the generated PDF directly in the response.
+    // They must not need a login just to view/download their current result.
+    if (!reportId) {
+      if (!pdfBase64) {
+        setError("PDF tidak tersedia.");
+        return;
+      }
+      const binary = atob(pdfBase64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      const blob = new Blob([bytes], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement("a");
+      anchor.href = url;
+      anchor.download = "CoreStay-Financial-Assessment.pdf";
+      anchor.click();
+      URL.revokeObjectURL(url);
+      return;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      setError("Silakan login untuk membuka laporan yang tersimpan.");
+      return;
+    }
 
     const response = await fetch(`/api/assessment/financial/report/${reportId}`, {
-      ...(session ? { headers: { Authorization: `Bearer ${session.access_token}` } } : {}),
+      headers: { Authorization: `Bearer ${session.access_token}` },
+      cache: "no-store",
     });
     if (!response.ok) {
       setError("PDF tidak dapat diunduh.");

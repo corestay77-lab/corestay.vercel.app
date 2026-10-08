@@ -481,7 +481,7 @@ export async function POST(request: Request) {
 
     const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
-    const { data: saved, error: saveError } = await supabase.from("assessment_reports").insert({
+    const { data: saved, error: saveError } = userId && supabase ? await supabase.from("assessment_reports").insert({
       user_id: userId, assessment_type: "financial", file_name: action === "analyze" ? submittedFileName : (file as File).name,
       score: Math.round(result.object.financialHealthScore), report_json: stableResult, pdf_base64: pdfBase64,
     }).select("id,created_at").single() : { data: null, error: null };
@@ -490,7 +490,7 @@ export async function POST(request: Request) {
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-    return NextResponse.json({ success: true, reportId: saved.id, createdAt: saved.created_at, fileName: file?.name || submittedFileName, result: result.object, pdfBase64, deterministic: true });
+    return NextResponse.json({ success: true, reportId: saved?.id || null, createdAt: saved?.created_at || null, fileName: file?.name || submittedFileName, result: result.object, pdfBase64, deterministic: true });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });

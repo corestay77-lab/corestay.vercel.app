@@ -227,11 +227,21 @@ export default function FinancialAssessmentPage() {
           <b>Hasil Assessment:</b> ringkasan kondisi keuangan, indikator utama, temuan penting, risiko, rekomendasi prioritas, dan rencana tindakan 90 hari.
         </p>
 
-        <section className="mt-5 rounded-2xl border border-[#d8b985]/35 bg-[#fbf8f2] px-5 py-4 sm:px-6">
-          <p className="text-sm font-bold text-[#172a4d]">Kerahasiaan & Pengelolaan Data</p>
-          <p className="mt-1.5 text-sm leading-6 text-slate-600">
-            Layanan Financial Check dapat digunakan tanpa login. Dokumen keuangan digunakan untuk keperluan analisis assessment, dan file sumber dihapus setelah proses pemrosesan selesai. Untuk mendukung tata kelola informasi yang baik, unggah hanya dokumen yang relevan dengan tujuan evaluasi.
-          </p>
+        <section className="relative mt-5 overflow-hidden rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 via-white to-violet-50 px-5 py-5 shadow-sm sm:px-6">
+          <div className="absolute inset-y-0 left-0 w-1.5 bg-gradient-to-b from-sky-500 via-indigo-500 to-violet-500" />
+          <div className="flex items-start gap-4 pl-1">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br from-sky-500 to-indigo-600 text-2xl shadow-md shadow-indigo-200" aria-hidden="true">🔐</div>
+            <div>
+              <p className="text-base font-bold text-[#172a4d]">Kerahasiaan Data, Prioritas Kami</p>
+              <p className="mt-1.5 text-sm leading-6 text-slate-600">
+                Gunakan Financial Check tanpa perlu login. Dokumen Anda dipakai untuk menyusun analisis kondisi keuangan hotel, lalu file sumber dihapus setelah proses pemrosesan selesai. Untuk menjaga pengelolaan informasi tetap bijak, unggah hanya dokumen yang relevan dengan evaluasi.
+              </p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <span className="rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold text-sky-800">✓ Tanpa login</span>
+                <span className="rounded-full bg-indigo-100 px-3 py-1 text-xs font-semibold text-indigo-800">✓ File sumber dihapus setelah diproses</span>
+              </div>
+            </div>
+          </div>
         </section>
 
         <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-5 shadow-sm sm:p-8">

@@ -17,15 +17,15 @@ export default function AssessmentPage() {
   }
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]"><aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-[#17243d] lg:flex lg:flex-col">
+    <main className="relative min-h-screen overflow-hidden bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]"><aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-white lg:flex lg:flex-col">
         <div className="flex h-full flex-col px-6 py-7">
           <a href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" /></a>
           <div className="mt-10">
-            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-[#17243d]/35">Assessment</p>
+            <p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/45">Assessment</p>
             <nav className="mt-4 space-y-1.5">
               <a href="/assessment" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-white">Hotel Assessment</a>
-              <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-[#17243d]">Hotel Existing</a>
-              <a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm font-medium text-[#17243d]/60 transition hover:bg-white/10 hover:text-[#17243d]">Pre-opening Hotel</a>
+              <a href="/assessment/existing" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/60 transition hover:bg-white/10 hover:text-white">Hotel Existing</a>
+              <a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm font-medium text-white/65 transition hover:bg-white/10 hover:text-white">Pre-opening Hotel</a>
             </nav>
           </div>
           <div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4">
@@ -83,7 +83,7 @@ export default function AssessmentPage() {
               <h2 className="relative mt-8 font-serif text-3xl font-medium sm:text-4xl">
                 Hotel Existing
               </h2>
-              <p className="relative mt-4 max-w-lg text-sm leading-7 text-[#17243d]/60 sm:text-base">
+              <p className="relative mt-4 max-w-lg text-sm leading-7 text-white/75 sm:text-base">
                 Untuk hotel yang sudah beroperasi dan ingin mengevaluasi revenue,
                 pricing, operational efficiency, people, guest experience dan profitability.
               </p>
@@ -120,7 +120,7 @@ export default function AssessmentPage() {
               <h2 className="relative mt-8 font-serif text-3xl font-medium sm:text-4xl">
                 Pre-opening Hotel
               </h2>
-              <p className="relative mt-4 max-w-lg text-sm leading-7 text-[#17243d]/60 sm:text-base">
+              <p className="relative mt-4 max-w-lg text-sm leading-7 text-white/75 sm:text-base">
                 Untuk hotel yang sedang dibangun, renovasi atau mempersiapkan opening pertama—concept, market, pricing, SOP, SDM, system, sales dan financial readiness.
               </p>
               <p className="relative mt-8 flex items-center justify-between border-t border-white/10 pt-5 text-sm font-semibold text-fuchsia-200">

@@ -48,8 +48,13 @@ export default function FinancialAssessmentPage() {
     setReportId("");
     setPdfBase64("");
 
-    if (selected.type !== "application/pdf" && !selected.name.toLowerCase().endsWith(".pdf")) {
-      setError("Silakan upload laporan dalam format PDF.");
+    const selectedName = selected.name.toLowerCase();
+    const isPdf = selected.type === "application/pdf" || selectedName.endsWith(".pdf");
+    const isExcel = selectedName.endsWith(".xlsx") || selectedName.endsWith(".xls") ||
+      selected.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      selected.type === "application/vnd.ms-excel";
+    if (!isPdf && !isExcel) {
+      setError("Silakan upload laporan dalam format PDF atau Excel (.xlsx, .xls).");
       return;
     }
 
@@ -59,8 +64,8 @@ export default function FinancialAssessmentPage() {
     setLoading(true);
 
     try {
-      if (selected.size > 4 * 1024 * 1024) {
-        throw new Error("Ukuran PDF maksimal 4 MB.");
+      if (selected.size > 5 * 1024 * 1024) {
+        throw new Error("Ukuran file maksimal 5 MB.");
       }
 
       const uploadForm = new FormData();
@@ -254,11 +259,11 @@ export default function FinancialAssessmentPage() {
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-[#203b68] text-2xl text-white">
               {loading || analyzing ? "…" : "↑"}
             </div>
-            <h2 className="mt-5 text-xl font-bold">{loading ? "Mengupload PDF…" : analyzing ? "Menganalisa PDF…" : "Upload Laporan Keuangan PDF"}</h2>
-            <p className="mt-2 text-sm text-slate-500">PDF saja • Upload langsung ke secure storage</p>
+            <h2 className="mt-5 text-xl font-bold">{loading ? "Mengupload laporan…" : analyzing ? "Menganalisis laporan…" : "Upload Laporan Keuangan PDF / Excel"}</h2>
+            <p className="mt-2 text-sm text-slate-500">PDF, Excel (.xlsx, .xls) • Maksimal 5 MB • Upload langsung ke secure storage</p>
             {fileName && <p className="mx-auto mt-5 max-w-full truncate rounded-xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-700">✓ {fileName}</p>}
           </button>
-          <input ref={inputRef} type="file" accept="application/pdf,.pdf" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
+          <input ref={inputRef} type="file" accept="application/pdf,.pdf,.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel" className="hidden" onChange={(e) => handleFile(e.target.files?.[0])} />
         </section>
 
         {error && <div className="mt-6 rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{error}</div>}

@@ -76,15 +76,45 @@ export async function POST(request: Request) {
     const schema = OrchestratorReview;
     const system = "Anda adalah CoreStay AI Orchestrator, reviewer independen untuk Hospitality Business Auditor pada hotel yang sedang beroperasi. Analisis hanya jawaban self-assessment yang disediakan. Jangan mengklaim bahwa kondisi telah diverifikasi di lapangan. Pisahkan evidence (apa yang benar-benar dinyatakan dalam jawaban), gap, root-cause hypothesis (hipotesis, bukan fakta), business impact (potensi dampak, jangan mengarang angka), dan tindakan. Jangan menambahkan data, nilai KPI, benchmark industri, besaran kerugian, atau fakta spesifik yang tidak diberikan. Jika jawaban rendah, jelaskan kontrol/proses yang menurut jawaban belum ada atau belum matang; jika jawaban tinggi, sebutkan sebagai praktik yang dinyatakan telah berjalan, tetap perlu sampling evidence. Gunakan bahasa Indonesia profesional, spesifik, actionable, dan tidak repetitif. Prioritaskan temuan berdasarkan nilai jawaban, materialitas bisnis yang masuk akal, serta potensi risiko; jangan menyimpulkan fraud. Setiap finding harus memiliki bukti yang dapat ditelusuri ke jawaban, langkah validasi evidence, PIC/aksi yang jelas, horizon waktu, dan KPI yang relevan. Jangan mengubah atau menghitung ulang skor.";
     const prompt = "Lakukan review tahap pertama dan susun laporan diagnosis lengkap. Skor area yang sudah dihitung secara deterministik (jangan diubah): " + JSON.stringify(scores) + ". Bobot tetap: " + JSON.stringify(WEIGHTS) + ". Overall tetap: " + submittedOverall + "/100.\n\nJAWABAN ASSESSMENT (sumber evidence satu-satunya):\n" + JSON.stringify(source) + "\n\nHasilkan 8–15 temuan yang paling bermakna, jika didukung jawaban; jangan mengisi kuota dengan temuan generik. Temuan harus mencakup area berbeda sesuai evidence dan memuat evidence, gap, hipotesis akar masalah, potensi dampak, prioritas, rekomendasi, action plan, KPI monitoring, dan evidence yang perlu dikumpulkan. Buat review untuk kelima area business, revenue, operations, people, profitability. Berikan validasi notes tentang keterbatasan self-assessment, jawaban yang perlu diperiksa, dan data yang perlu diminta. Jangan menyatakan laporan audit lapangan atau verifikasi independen telah dilakukan.";
-    const first = await generateObject({ model: google("gemini-3.8-flash"), schema, system, prompt, maxRetries: 0, abortSignal: AbortSignal.timeout(35_000) });
+    const modelIds = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
+    let first: Awaited<ReturnType<typeof generateObject<typeof schema>>> | null = null;
+    let firstPassError: unknown = null;
+    for (const modelId of modelIds) {
+      try {
+        first = await generateObject({ model: google(modelId), schema, system, prompt, maxRetries: 0, abortSignal: AbortSignal.timeout(32_000) });
+        break;
+      } catch (error) {
+        firstPassError = error;
+        console.error("CoreStay Existing Orchestrator first pass failed:", modelId, error);
+      }
+    }
+    if (!first) {
+      return NextResponse.json({
+        error: "Tahap analisis AI belum berhasil. Skor assessment tetap aman; coba kembali beberapa saat lagi.",
+        stage: "analysis",
+        retryable: true,
+      }, { status: 503 });
+    }
 
     const reviewSystem = "Anda adalah tahap kedua CoreStay AI Orchestrator, reviewer quality assurance independen. Bandingkan draft tahap pertama dengan jawaban sumber. Hapus atau perbaiki klaim yang tidak didukung, fakta yang dinyatakan terlalu pasti, rekomendasi generik, prioritas yang tidak konsisten, dan potensi angka/benchmark rekaan. Evidence harus mencerminkan jawaban pengguna; root cause harus diberi label hipotesis; impact bersifat potensial kecuali ada data kuantitatif. Pertahankan skor dan bobot sebagai informasi tetap, jangan pernah mengubahnya. Laporan harus berguna untuk manajemen hotel dan tidak boleh berpura-pura sebagai audit lapangan.";
     const reviewPrompt = "JAWABAN SUMBER:\n" + JSON.stringify(source) + "\n\nSKOR TETAP:\n" + JSON.stringify({ scores, weights: WEIGHTS, overall: submittedOverall }) + "\n\nDRAFT TAHAP PERTAMA:\n" + JSON.stringify(first.object) + "\n\nLakukan validasi ketat dan keluarkan hasil final sesuai schema. Buang temuan tanpa dukungan jawaban; lebih baik lebih sedikit dan kuat daripada banyak namun generik.";
-    let finalReview;
-    try {
-      finalReview = await generateObject({ model: google("gemini-3.8-flash"), schema, system: reviewSystem, prompt: reviewPrompt, maxRetries: 0, abortSignal: AbortSignal.timeout(35_000) });
-    } catch {
-      finalReview = await generateObject({ model: google("gemini-3.5-flash-lite"), schema, system: reviewSystem, prompt: reviewPrompt, maxRetries: 0, abortSignal: AbortSignal.timeout(35_000) });
+    let finalReview: Awaited<ReturnType<typeof generateObject<typeof schema>>> | null = null;
+    let reviewPassError: unknown = null;
+    for (const modelId of modelIds) {
+      try {
+        finalReview = await generateObject({ model: google(modelId), schema, system: reviewSystem, prompt: reviewPrompt, maxRetries: 0, abortSignal: AbortSignal.timeout(32_000) });
+        break;
+      } catch (error) {
+        reviewPassError = error;
+        console.error("CoreStay Existing Orchestrator review pass failed:", modelId, error);
+      }
+    }
+    if (!finalReview) {
+      return NextResponse.json({
+        error: "Tahap validasi kedua AI belum berhasil. Hasil belum diterbitkan; jawaban Anda tidak hilang, silakan coba kembali.",
+        stage: "review",
+        retryable: true,
+      }, { status: 503 });
     }
     const review = finalReview.object;
     if (review.areaReviews.length !== 5 || review.findings.length < 1) {
@@ -104,6 +134,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: true, result: validated, scores, overall: submittedOverall, weights: WEIGHTS });
   } catch (error) {
     console.error("CoreStay Existing AI Orchestrator failed:", error);
-    return NextResponse.json({ error: "AI Orchestrator belum menyelesaikan dua tahap validasi. Hasil belum dapat diterbitkan; silakan coba kembali." }, { status: 503 });
+    const message = error instanceof Error ? error.message : "Unknown AI provider error";
+    const isConfigurationError = /api.?key|unauthorized|forbidden|permission|not found|model/i.test(message);
+    return NextResponse.json({
+      error: isConfigurationError
+        ? "Layanan AI Orchestrator belum dapat diakses. Periksa konfigurasi GEMINI_API_KEY dan model AI di Vercel."
+        : "AI Orchestrator mengalami gangguan saat memproses hasil. Jawaban Anda tidak hilang; silakan coba kembali.",
+      stage: "processing",
+      retryable: !isConfigurationError,
+    }, { status: 503 });
   }
 }

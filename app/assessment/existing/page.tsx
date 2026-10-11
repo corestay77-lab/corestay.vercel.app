@@ -23,6 +23,8 @@ export default function ExistingAssessmentPage(){
  const [hotelName,setHotelName]=useState("");
  const [city,setCity]=useState("");
  const [phone,setPhone]=useState("");
+ const [isSubmitting,setIsSubmitting]=useState(false);
+ const [submitError,setSubmitError]=useState("");
  const question=questions[current];
  const selectedAnswer=answers[current];
  const progress=Math.round(((current+1)/questions.length)*100);
@@ -38,7 +40,25 @@ export default function ExistingAssessmentPage(){
   return {respondentName,hotelName,city,phone,hotelType:"existing",overall,status,risk,business:categoryScores.business,revenue:categoryScores.revenue,operations:categoryScores.operations,people:categoryScores.people,profitability:categoryScores.profitability,weights,assessmentVersion:ASSESSMENT_VERSION,areaResults,methodology:"Evidence → Finding → Gap → Root Cause → Business Impact → Recommendation → Priority → Action Plan",dataRule:"Data yang tidak tersedia harus ditandai Data Gap / perlu diverifikasi; tidak boleh mengarang angka atau fakta.",diagnosis:overall>=80?"Hotel menunjukkan fondasi bisnis yang relatif kuat berdasarkan jawaban assessment. Tetap validasi evidence sebelum keputusan investasi atau turnaround.":overall>=70?"Hotel berada pada kondisi relatif stabil tetapi memiliki beberapa gap yang perlu ditutup agar performance lebih konsisten.":overall>=60?"Hotel membutuhkan improvement plan yang terukur pada area dengan gap terbesar.":overall>=50?"Hotel berada pada kondisi at risk dan membutuhkan corrective action prioritas.":"Hotel berada pada kondisi critical berdasarkan self-assessment dan memerlukan diagnostic audit lebih lanjut sebelum keputusan besar.",recommendation:"Gunakan hasil ini sebagai screening awal. Temuan final harus divalidasi dengan P&L, PMS, channel production, payroll, inventory, guest reviews, SOP, audit trail dan bukti operasional."};
  }
  function notifyAssessmentCompleted(result:ReturnType<typeof calculateResult>){fetch("/api/notify-assessment",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({hotelType:"existing",hotelName:result.hotelName,respondentName:result.respondentName,phone:result.phone,overall:result.overall,status:result.status,risk:result.risk,diagnosis:result.diagnosis,areas:result.areaResults,priorities:[...result.areaResults].sort((a,b)=>a.score-b.score).slice(0,3),recommendation:result.recommendation})}).catch(err=>console.error("Gagal mengirim notifikasi assessment:",err));}
- function submitAssessment(){if(!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim())return;const result=calculateResult(answers);sessionStorage.setItem("corestay_assessment",JSON.stringify(result));notifyAssessmentCompleted(result);router.push("/assessment/existing/result");}
+ async function submitAssessment(){
+  if(!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim()||isSubmitting)return;
+  setIsSubmitting(true);setSubmitError("");
+  try{
+   const baseResult=calculateResult(answers);
+   const orchestratorResponse=await fetch("/api/assessment/existing/orchestrator",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
+    overall:baseResult.overall,
+    areaScores:{business:baseResult.business,revenue:baseResult.revenue,operations:baseResult.operations,people:baseResult.people,profitability:baseResult.profitability},
+    answers:questions.map((q,i)=>({area:categoryTitles[q.category],question:q.title+" — "+q.question,selectedAnswer:q.options.find(o=>o.score===answers[i])?.label||"",selectedScore:answers[i]??null}))
+   })});
+   const orchestratorPayload=await orchestratorResponse.json();
+   if(!orchestratorResponse.ok||!orchestratorPayload.success||orchestratorPayload.result?.validation?.status!=="PASSED")throw new Error(orchestratorPayload.error||"Validasi AI Orchestrator belum berhasil. Hasil belum diterbitkan.");
+   const result={...baseResult,orchestrator:orchestratorPayload.result};
+   sessionStorage.setItem("corestay_assessment",JSON.stringify(result));
+   notifyAssessmentCompleted(result);
+   router.push("/assessment/existing/result");
+  }catch(error){setSubmitError(error instanceof Error?error.message:"AI Orchestrator gagal memvalidasi hasil. Silakan coba kembali.");}
+  finally{setIsSubmitting(false);}
+ }
 
  if(showIdentity)return <main className="existing-assessment-page min-h-screen bg-white text-[#17243d]">
   <aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black lg:flex lg:flex-col"><div className="flex h-full flex-col px-6 py-7"><a href="/" className="flex items-center justify-center"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen"/></a><div className="mt-10"><p className="px-3 text-[10px] font-bold uppercase tracking-[0.24em] text-white/35">Hotel Check-Up</p><nav className="mt-4 space-y-1.5"><a href="/assessment" className="block rounded-xl px-3 py-3 text-sm text-white/70 hover:bg-white/10">Hotel Check-Up</a><a href="/assessment/existing" className="block rounded-xl bg-white/10 px-3 py-3 text-sm font-medium text-white">Hotel Existing</a><a href="/assessment/pre-opening" className="block rounded-xl px-3 py-3 text-sm text-white/70 hover:bg-white/10">Pre-opening Hotel</a></nav></div><div className="mt-auto rounded-2xl border border-white/10 bg-white/[0.04] p-4"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8b985]">CoreStay Advisory</p><p className="mt-2 text-xs leading-5 text-white/50">Hospitality Business Auditor</p></div></div></aside>
@@ -49,7 +69,7 @@ export default function ExistingAssessmentPage(){
     <div><label className="mb-2 block text-sm font-semibold">Nama Hotel</label><input value={hotelName} onChange={e=>setHotelName(e.target.value)} placeholder="Nama hotel" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 outline-none"/></div>
     <div><label className="mb-2 block text-sm font-semibold">Kota / Lokasi</label><input value={city} onChange={e=>setCity(e.target.value)} placeholder="Kota / lokasi hotel" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 outline-none"/></div>
     <div><label className="mb-2 block text-sm font-semibold">No. Tlp</label><input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 outline-none"/></div>
-   </div><div className="mt-8 flex justify-between"><button onClick={()=>setShowIdentity(false)} className="rounded-xl border border-[#d5dde8] px-5 py-3 text-sm font-semibold">← Kembali</button><button onClick={submitAssessment} disabled={!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim()} className="rounded-xl bg-[#203b68] px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e4e9f0] disabled:text-slate-500">Lihat Hasil →</button></div></section>
+   </div>{submitError&&<p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">{submitError}</p>}<div className="mt-8 flex justify-between"><button onClick={()=>setShowIdentity(false)} className="rounded-xl border border-[#d5dde8] px-5 py-3 text-sm font-semibold">← Kembali</button><button onClick={submitAssessment} disabled={!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim()||isSubmitting} className="rounded-xl bg-[#203b68] px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e4e9f0] disabled:text-slate-500">{isSubmitting?"Memvalidasi dengan AI Orchestrator…":"Lihat Hasil →"}</button></div></section>
   </div></main>;
 
  return <main className="existing-assessment-page min-h-screen bg-white text-[#17243d]"><div className="mx-auto max-w-4xl px-6 py-10">

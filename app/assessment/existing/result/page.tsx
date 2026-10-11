@@ -39,15 +39,32 @@ export default function ExistingResultPage(){
    <section className="mt-8 rounded-3xl border border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#203b68]">30–60–90 Day Action Plan</p><h2 className="mt-2 text-2xl font-bold">Turnaround & Performance Roadmap</h2><div className="mt-6 grid gap-4 md:grid-cols-4">{[["0–30 Days","Stabilize","Validasi leakage, cash control, pricing, urgent guest issues, manpower dan critical operational risks."],["31–60 Days","Optimize","Revenue management, sales pipeline, SOP, procurement, F&B, productivity dan variance control."],["61–90 Days","Improve","Profitability, commercial strategy, organization, technology, process redesign dan guest experience."],["3–12 Months","Transform","Repositioning, asset improvement, digital transformation, long-term revenue strategy dan restructuring."]].map(x=><div key={x[0]} className="rounded-2xl border border-slate-200 bg-slate-50 p-5"><p className="text-xs font-bold text-[#203b68]">{x[0]}</p><h3 className="mt-2 font-bold">{x[1]}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{x[2]}</p></div>)}</div></section>
    <section className="mt-8 rounded-3xl border-2 border-slate-200 bg-white p-7"><p className="text-xs font-bold uppercase tracking-[.2em] text-[#203b68]">Owner / Investor Conclusion</p><h2 className="mt-2 text-2xl font-bold">{result.status||overallStyle.label}</h2><div className="mt-6 grid gap-4 md:grid-cols-2"><div><b>Investment / Business Risk</b><p className="mt-2 text-slate-600">{result.risk||"To be validated"}</p></div><div><b>Immediate Priorities</b><p className="mt-2 text-slate-600">{priorities.map(x=>x.title).join(" • ")}</p></div><div><b>Biggest Revenue Opportunity</b><p className="mt-2 text-slate-600">Identifikasi dari rooms, distribution, F&B dan ancillary setelah evidence revenue tersedia.</p></div><div><b>Biggest Cost Leakage</b><p className="mt-2 text-slate-600">Identifikasi dari payroll, utilities, procurement, inventory, commission dan maintenance setelah data tersedia.</p></div><div><b>Biggest Operational Risk</b><p className="mt-2 text-slate-600">Validasi melalui SOP, guest complaints, QA, maintenance dan audit trail.</p></div><div><b>Biggest People Risk</b><p className="mt-2 text-slate-600">Validasi melalui organization, manpower, productivity, turnover, competency dan leadership evidence.</p></div></div></section>
    {result.orchestrator?.validation?.status==="PASSED"&&<section className="mt-8 rounded-3xl border-2 border-emerald-500/30 bg-emerald-500/5 p-6 print:border-black print:bg-white"><p className="text-sm font-bold text-emerald-300 print:text-black">✓ {result.orchestrator.validation.label||"Lolos Validasi Otomatis CoreStay"}</p><p className="mt-2 text-sm leading-6 text-slate-700 print:text-black">Pemeriksaan dua tahap AI Orchestrator selesai. Skor dan bobot tetap mengikuti perhitungan assessment; temuan merupakan diagnosis berbasis jawaban self-assessment dan perlu dikonfirmasi dengan bukti operasional.</p><ul className="mt-3 list-disc space-y-1 pl-5 text-xs text-slate-600 print:text-black">{(result.orchestrator.validation.checks||[]).map((item:string,i:number)=><li key={i}>{item}</li>)}</ul></section>}
-   <footer className="mt-10 border-t border-slate-200 pt-6 text-center text-xs text-slate-600">CoreStay Advisory — Hospitality Business Auditor • Existing Hotel Assessment {result.assessmentVersion||""}</footer>
+   <footer className="mt-12 overflow-hidden rounded-3xl bg-[#172b4d] text-white print:rounded-none print:border-t print:border-slate-300 print:bg-white print:text-slate-800">
+    <div className="grid gap-6 px-7 py-8 md:grid-cols-[1.4fr_1fr] md:items-center print:px-0 print:py-5">
+     <div>
+      <p className="text-lg font-bold tracking-wide text-white print:text-slate-900">CoreStay Advisory</p>
+      <p className="mt-2 text-sm font-medium text-slate-200 print:text-slate-700">Hospitality Business Advisory</p>
+      <p className="mt-3 max-w-xl text-xs leading-6 text-slate-300 print:text-slate-600">Membantu pemilik dan pengelola hotel meningkatkan kinerja operasional, pendapatan, pengendalian biaya, dan profitabilitas melalui pendekatan bisnis yang terukur.</p>
+     </div>
+     <div className="md:border-l md:border-white/20 md:pl-6 print:border-slate-300">
+      <p className="text-xs font-bold uppercase tracking-[.18em] text-slate-300 print:text-slate-600">Assessment Report</p>
+      <p className="mt-2 text-sm font-semibold text-white print:text-slate-900">Hospitality Business Auditor • Existing Hotel</p>
+      <p className="mt-2 text-xs text-slate-300 print:text-slate-600">Confidential business assessment</p>
+     </div>
+    </div>
+    <div className="flex flex-col gap-2 border-t border-white/15 px-7 py-4 text-xs text-slate-300 sm:flex-row sm:items-center sm:justify-between print:border-slate-300 print:px-0 print:text-slate-600">
+     <span>© {new Date().getFullYear()} CoreStay Advisory. All rights reserved.</span>
+     <span>Evidence-led insights • Practical action plans</span>
+    </div>
+   </footer>
   </div>
-  <style jsx global>{`@page { size: A4 portrait; margin: 12mm; }
+  <style jsx global>{`@page { size: A4 portrait; margin: 0; }
 @media print {
 html, body { background: #fff !important; color: #111827 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
 body { margin: 0 !important; font-size: 10pt !important; }
 .no-print, button { display: none !important; }
 main, main > div { background: #fff !important; color: #111827 !important; min-height: 0 !important; }
-main > div { max-width: none !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+main > div { max-width: none !important; width: 100% !important; padding: 12mm !important; margin: 0 !important; }
 header, section, footer { color: #111827 !important; }
 header { margin-bottom: 8mm !important; padding-bottom: 5mm !important; }
 h1 { font-size: 22pt !important; line-height: 1.2 !important; } h2 { font-size: 14pt !important; line-height: 1.25 !important; } h3 { font-size: 10.5pt !important; }

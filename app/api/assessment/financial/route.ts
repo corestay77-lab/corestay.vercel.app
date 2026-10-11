@@ -420,15 +420,20 @@ function validateFinancialAssessmentResult(input: unknown): FinancialValidation 
     }
   }
 
+  const expectedScore = calculateDeterministicFinancialHealthScore(result);
+  if (result.financialHealthScore !== expectedScore) {
+    errors.push(`Skor akhir tidak sesuai rumus berbobot: diterima ${result.financialHealthScore}, seharusnya ${expectedScore}.`);
+  }
+
   const requiredFigures = ["Revenue", "GOP", "GOP Margin", "Operating Cost", "Net Profit", "Cash Flow"];
   const normalizedLabels = result.extractedFigures.map((item) => item.label.trim().toLowerCase());
   for (const label of requiredFigures) {
     if (!normalizedLabels.includes(label.toLowerCase())) {
-      warnings.push(`Indikator scorecard ${label} tidak ditemukan; perlu ditandai sebagai data tidak tersedia.`);
+      errors.push(`Indikator scorecard wajib ${label} tidak ditemukan.`);
     }
   }
   if (new Set(normalizedLabels).size !== normalizedLabels.length) {
-    warnings.push("Terdapat label indikator keuangan duplikat.");
+    errors.push("Terdapat label indikator keuangan duplikat.");
   }
 
   for (const figure of result.extractedFigures) {

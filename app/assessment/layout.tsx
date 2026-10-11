@@ -173,11 +173,14 @@ export default function AssessmentLayout({ children }: { children: ReactNode }) 
 
             .assessment-theme main {
               background:var(--cs-bg)!important;
-              /* Keep the Financial Check page sky blue without changing other assessment pages. */
               color:var(--cs-text)!important;
               font-family:var(--font-geist-sans),Arial,Helvetica,sans-serif!important;
               margin-left:0!important;
               padding-left:0!important;
+            }
+
+            .assessment-theme main[class*="bg-[#e0f2fe]"] {
+              background:#e0f2fe!important;
             }
 
             /* Every assessment page uses the single shared sidebar above. */

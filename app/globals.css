@@ -72,8 +72,8 @@ body { background: var(--background); color: var(--foreground); font-family: Ari
 }
 @media (min-width: 1024px) {
   .assessment-theme main.financial-assessment-page {
-    margin-left: 18px !important;
-    width: calc(100% - 18px) !important;
+    margin-left: 0 !important;
+    width: 100% !important;
   }
 }
 @media (max-width: 1023px) {

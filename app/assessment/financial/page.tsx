@@ -458,26 +458,69 @@ function ReportCard({ eyebrow, title, subtitle, children }: { eyebrow: string; t
 }
 
 function ReportText({ text }: { text: string }) {
-  const normalized = (text || "").replace(/\\n/g, "\n").replace(/\r\n/g, "\n").trim();
-  const lines = normalized.split("\n").map((x) => x.trim()).filter(Boolean);
-  const headingPattern = /^(assessment|overall assessment|key findings|financial impact|management concern|areas to monitor|main profit drivers|payroll & manpower|operational expenses|utility cost|gross operating profit|margin analysis|potential saving|recommendation|expected impact|0[-–]30 days|31[-–]60 days|61[-–]90 days)$/i;
+  const normalized = (text || "")
+    .replace(/\\n/g, "\n")
+    .replace(/\\\s*\n/g, "\n")
+    .replace(/\r\n/g, "\n")
+    .replace(/\r/g, "\n")
+    .trim();
+
+  // Split inline numbered findings into separate, readable blocks even when
+  // the source report contains them in one long paragraph.
+  const numbered = normalized
+    .replace(/[ \t]+(?=\d{1,2}[.)]\s+[A-ZÀ-Ý])/g, "\n")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+
+  const blocks: { number?: string; text: string; bullet: boolean; heading: boolean }[] = [];
+  for (const line of numbered) {
+    const item = line.match(/^(\d{1,2})[.)]\s+(.+)$/);
+    const bullet = /^[-•*]\s+/.test(line);
+    const content = (item ? item[2] : line)
+      .replace(/^[-•*]\s*/, "")
+      .replace(/^#+\s*/, "")
+      .trim();
+    if (!content) continue;
+
+    const headingPattern = /^(financial condition|needs attention|assessment|overall assessment|key findings|financial impact|management concern|areas to monitor|main profit drivers|payroll & manpower|operational expenses|utility cost|gross operating profit|margin analysis|potential saving|recommendation|expected impact|0[-–]30 days|31[-–]60 days|61[-–]90 days)$/i;
+    blocks.push({
+      number: item?.[1],
+      text: content,
+      bullet,
+      heading: !item && !bullet && headingPattern.test(content),
+    });
+  }
 
   return (
-    <div className="space-y-4 text-[15px] leading-7 text-slate-600">
-      {lines.map((line, index) => {
-        const clean = line.replace(/^[-•*]\s*/, "").replace(/^\d+[.)]\s*/, "").replace(/^#+\s*/, "").trim();
-        if (headingPattern.test(clean)) {
-          return <h3 key={index} className="pt-2 text-sm font-bold uppercase tracking-wider text-[#172a4d]">{clean}</h3>;
+    <div className="space-y-3 text-[15px] leading-7 text-slate-600">
+      {blocks.map((block, index) => {
+        if (block.heading) {
+          return <h3 key={index} className="pt-3 text-sm font-extrabold uppercase tracking-wider text-[#172a4d]">{block.text}</h3>;
         }
-        if (/^[-•*]\s+/.test(line) || /^\d+[.)]\s+/.test(line)) {
-          return <div key={index} className="flex gap-3"><span className="font-bold text-[#9b7439]">•</span><p>{clean}</p></div>;
+
+        if (block.number) {
+          const colon = block.text.indexOf(":");
+          const hasLead = colon > 0 && colon < 90;
+          return (
+            <div key={index} className="flex items-start gap-3 rounded-xl border border-slate-100 bg-white px-4 py-3">
+              <span className="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-[#172a4d] text-xs font-bold text-white">{block.number}</span>
+              <p className="min-w-0 flex-1">
+                {hasLead ? <><strong className="font-bold text-[#172a4d]">{block.text.slice(0, colon + 1)}</strong>{block.text.slice(colon + 1)}</> : block.text}
+              </p>
+            </div>
+          );
         }
-        return <p key={index}>{clean}</p>;
+
+        if (block.bullet) {
+          return <div key={index} className="flex items-start gap-3"><span className="font-bold text-[#9b7439]">•</span><p>{block.text}</p></div>;
+        }
+
+        return <p key={index}>{block.text}</p>;
       })}
     </div>
   );
 }
-
 function BulletList({ items }: { items: string[] }) {
   return <ul className="mt-3 space-y-2 pl-5 text-sm leading-6 text-slate-600">{items.map((item, i) => <li key={i} className="list-disc">{item}</li>)}</ul>;
 }

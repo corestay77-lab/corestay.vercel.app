@@ -228,9 +228,9 @@ export default function FinancialAssessmentPage() {
         </p>
 
         <section className="mt-5 rounded-2xl border border-[#d8b985]/35 bg-[#fbf8f2] px-5 py-4 sm:px-6">
-          <p className="text-sm font-bold text-[#172a4d]">🔐 Data Anda Tetap Rahasia</p>
+          <p className="text-sm font-bold text-[#172a4d]">Kerahasiaan & Pengelolaan Data</p>
           <p className="mt-1.5 text-sm leading-6 text-slate-600">
-            Tidak perlu login untuk upload dan mendapatkan analisis. File diproses sementara untuk menghasilkan assessment dan sumber file dihapus setelah pemrosesan selesai.
+            Layanan Financial Check dapat digunakan tanpa login. Dokumen keuangan digunakan untuk keperluan analisis assessment, dan file sumber dihapus setelah proses pemrosesan selesai. Untuk mendukung tata kelola informasi yang baik, unggah hanya dokumen yang relevan dengan tujuan evaluasi.
           </p>
         </section>
 

@@ -53,7 +53,7 @@ function wrap(text: string, max = 92) {
   return lines;
 }
 
-async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessment>) {
+async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessment>, validationWarnings: string[] = []) {
   const doc = await PDFDocument.create();
   const regular = await doc.embedFont(StandardFonts.Helvetica);
   const bold = await doc.embedFont(StandardFonts.HelveticaBold);
@@ -333,14 +333,26 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   section("12", "Assessment Score", "Financial Health Score");
   scoreCard(result.financialHealthScore, true);
 
-  // Explicitly disclose the scope of the automated validation gate.
+  // Explicitly disclose whether independent reconciliation raised warnings.
   section("13", "Automated Validation Status", "Server-side pre-publication checks");
-  ensure(76);
-  page.drawRectangle({ x: MARGIN, y: y - 58, width: CONTENT_W, height: 58, color: GREEN_BG, borderColor: GREEN, borderWidth: 0.8 });
-  page.drawText("PASSED — AI ORCHESTRATOR + AUTOMATED CHECKS", { x: MARGIN + 12, y: y - 18, size: 8.2, font: bold, color: GREEN });
-  page.drawText("Checks: evidence-based review, required fields, score ranges, and fixed weighted overall score.", { x: MARGIN + 12, y: y - 33, size: 7.5, font: regular, color: TEXT });
-  page.drawText("This does not certify source-data accuracy or replace an independent financial audit.", { x: MARGIN + 12, y: y - 46, size: 7.4, font: regular, color: MUTED });
-  y -= 68;
+  const hasValidationWarnings = validationWarnings.length > 0;
+  const validationBg = hasValidationWarnings ? AMBER_BG : GREEN_BG;
+  const validationColor = hasValidationWarnings ? AMBER : GREEN;
+  const validationHeight = hasValidationWarnings ? Math.min(118, 76 + Math.min(validationWarnings.length, 2) * 18) : 58;
+  ensure(validationHeight + 12);
+  page.drawRectangle({ x: MARGIN, y: y - validationHeight, width: CONTENT_W, height: validationHeight, color: validationBg, borderColor: validationColor, borderWidth: 0.8 });
+  page.drawText(hasValidationWarnings ? "PASSED WITH WARNINGS — REVIEW REQUIRED" : "PASSED — AI ORCHESTRATOR + AUTOMATED CHECKS", { x: MARGIN + 12, y: y - 18, size: 8.2, font: bold, color: validationColor });
+  page.drawText("Checks: source-based scoring, required fields, score ranges, fixed weighted score, and financial reconciliation.", { x: MARGIN + 12, y: y - 33, size: 7.2, font: regular, color: TEXT });
+  let warningY = y - 48;
+  validationWarnings.slice(0, 2).forEach((warning) => {
+    const lines = wrap("• " + warning, 7.0, CONTENT_W - 24, regular).slice(0, 2);
+    lines.forEach((line) => {
+      page.drawText(line, { x: MARGIN + 12, y: warningY, size: 7.0, font: regular, color: validationColor });
+      warningY -= 9;
+    });
+  });
+  page.drawText("Automated checks do not replace an independent financial audit.", { x: MARGIN + 12, y: y - validationHeight + 10, size: 7.0, font: regular, color: MUTED });
+  y -= validationHeight + 10;
 
   // Consistent footer on every page.
   const pages = doc.getPages();
@@ -596,7 +608,9 @@ export async function POST(request: Request) {
       const document = await getDocumentProxy(new Uint8Array(buffer));
       const parsed = await extractText(document, { mergePages: true });
       const extracted = parsed.text.trim();
-      if (extracted.length >= 40) return extracted;
+      const readableCharacters = (extracted.match(/[A-Za-zÀ-ÿ0-9]/g) || []).length;
+      const readableRatio = extracted.length ? readableCharacters / extracted.length : 0;
+      if (extracted.length >= 40 && readableCharacters >= 30 && readableRatio >= 0.25) return extracted;
 
       // OCR fallback: send image-only/scanned PDFs to Gemini's native PDF vision input.
       // Try several models so temporary capacity errors do not stop extraction.
@@ -783,7 +797,7 @@ export async function POST(request: Request) {
       _scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
       _scoringMethod: "deterministic-source-rubric-v1",
     };
-    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, finalResult);
+    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, finalResult, reconciliationWarnings);
     let saved: any = null;
     const db: any = supabase;
     if (userId && supabase) {

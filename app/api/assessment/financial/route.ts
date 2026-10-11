@@ -336,8 +336,8 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   section("13", "Automated Validation Status", "Server-side pre-publication checks");
   ensure(76);
   page.drawRectangle({ x: MARGIN, y: y - 58, width: CONTENT_W, height: 58, color: GREEN_BG, borderColor: GREEN, borderWidth: 0.8 });
-  page.drawText("PASSED — AUTOMATED VALIDATION", { x: MARGIN + 12, y: y - 18, size: 9, font: bold, color: GREEN });
-  page.drawText("Checks: report structure, required fields, score ranges, and invalid indicator values.", { x: MARGIN + 12, y: y - 33, size: 8.1, font: regular, color: TEXT });
+  page.drawText("PASSED — AI ORCHESTRATOR + AUTOMATED CHECKS", { x: MARGIN + 12, y: y - 18, size: 8.2, font: bold, color: GREEN });
+  page.drawText("Checks: evidence-based review, required fields, score ranges, and fixed weighted overall score.", { x: MARGIN + 12, y: y - 33, size: 7.5, font: regular, color: TEXT });
   page.drawText("This does not certify source-data accuracy or replace an independent financial audit.", { x: MARGIN + 12, y: y - 46, size: 7.4, font: regular, color: MUTED });
   y -= 68;
 
@@ -359,6 +359,19 @@ function getFigureForPdf(figures: { label: string; value: string; period: string
 
 function scoreLabel(score: number) {
   return score >= 80 ? "GOOD" : score >= 60 ? "MODERATE" : "HIGH";
+}
+
+// Fixed, versioned weighting: identical component scores always produce the same overall score.
+function calculateDeterministicFinancialHealthScore(result: z.infer<typeof FinancialAssessment>) {
+  const weighted =
+    result.revenueHealthScore * 0.20 +
+    result.profitabilityHealthScore * 0.20 +
+    result.costControlScore * 0.15 +
+    result.cashFlowScore * 0.15 +
+    result.internalControlScore * 0.10 +
+    result.revenueIntegrityScore * 0.10 +
+    result.dataCompletenessScore * 0.10;
+  return Math.round(weighted);
 }
 
 function isRetryableAiError(error: unknown) {
@@ -523,7 +536,10 @@ export async function POST(request: Request) {
     }
 
     const cachedReport = userId && supabase
-      ? previousReports.find((row) => row?.report_json?._sourceHash === sourceFingerprint)?.report_json
+      ? previousReports.find((row) =>
+          row?.report_json?._sourceHash === sourceFingerprint &&
+          row?.report_json?._orchestratorVersion === "corestay-financial-orchestrator-v1"
+        )?.report_json
       : null;
 
     if (cachedReport) {
@@ -578,7 +594,48 @@ export async function POST(request: Request) {
     }
     if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
 
-    const validation = validateFinancialAssessmentResult(result.object);
+    // AI Orchestrator: a second pass reviews the draft against the source document.
+    // The orchestrator may correct unsupported narrative/figures, but component scores
+    // remain anchored to the first scoring pass and the overall score uses fixed weights.
+    const firstPass = result.object;
+    const orchestratorSystem = "Anda adalah AI Orchestrator dan reviewer independen untuk laporan Financial Assessment CoreStay. Bandingkan draft dengan teks sumber secara ketat. Koreksi angka/label yang tidak didukung, klaim yang berlebihan, ketidakkonsistenan periode/mata uang, temuan yang tidak memiliki bukti, dan rekomendasi yang tidak relevan. Jangan menambahkan angka, benchmark, tren, transaksi, atau fakta baru. Bila bukti tidak cukup, tulis bahwa data tidak tersedia dan jelaskan keterbatasannya. Pertahankan semua skor komponen persis seperti draft; jangan menilai ulang skor. Perbaiki narasi, indikator, temuan, risiko, rekomendasi, dan action plan hanya bila ada dasar di sumber. Gunakan bahasa Indonesia profesional. Kembalikan seluruh field sesuai schema.";
+    const orchestratorPrompt = "NAMA FILE: " + (file?.name || submittedFileName) +
+      "\n\nTEKS SUMBER (evidence of record):\n" + text +
+      "\n\nDRAFT HASIL TAHAP PERTAMA (JSON):\n" + JSON.stringify(firstPass) +
+      "\n\nLakukan review dan koreksi berbasis bukti. Jangan mengarang data. Skor komponen harus dipertahankan persis.";
+    let orchestrated: Awaited<ReturnType<typeof generateObject<typeof FinancialAssessment>>> | null = null;
+    try {
+      orchestrated = await generateObject({
+        model: google("gemini-3.8-flash"),
+        schema: FinancialAssessment,
+        system: orchestratorSystem,
+        prompt: orchestratorPrompt,
+      });
+    } catch (orchestratorError) {
+      console.error("Financial orchestrator review failed:", orchestratorError);
+      return NextResponse.json({
+        error: "Tahap review AI Orchestrator gagal. Laporan tidak diterbitkan agar hasil tidak diberi status validasi yang belum selesai.",
+      }, { status: 503 });
+    }
+
+    const reviewed = orchestrated.object;
+    const stableResultWithoutMeta = {
+      ...reviewed,
+      // Preserve the original component scores; only overall score is calculated by fixed rubric.
+      dataCompletenessScore: firstPass.dataCompletenessScore,
+      revenueHealthScore: firstPass.revenueHealthScore,
+      profitabilityHealthScore: firstPass.profitabilityHealthScore,
+      costControlScore: firstPass.costControlScore,
+      cashFlowScore: firstPass.cashFlowScore,
+      internalControlScore: firstPass.internalControlScore,
+      revenueIntegrityScore: firstPass.revenueIntegrityScore,
+    };
+    const finalResult = {
+      ...stableResultWithoutMeta,
+      financialHealthScore: calculateDeterministicFinancialHealthScore(stableResultWithoutMeta),
+    };
+
+    const validation = validateFinancialAssessmentResult(finalResult);
     if (!validation.valid) {
       return NextResponse.json({
         error: "Hasil assessment belum lolos validasi otomatis sehingga tidak diterbitkan.",
@@ -587,8 +644,13 @@ export async function POST(request: Request) {
       }, { status: 422 });
     }
 
-    const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
-    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);
+    const stableResult = {
+      ...finalResult,
+      _sourceHash: sourceFingerprint,
+      _orchestratorVersion: "corestay-financial-orchestrator-v1",
+      _scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
+    };
+    const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, finalResult);
     let saved: any = null;
     const db: any = supabase;
     if (userId && supabase) {
@@ -597,7 +659,7 @@ export async function POST(request: Request) {
         user_id: userId,
         assessment_type: "financial",
         file_name: action === "analyze" ? submittedFileName : (file as File).name,
-        score: Math.round(result.object.financialHealthScore),
+        score: Math.round(finalResult.financialHealthScore),
         report_json: stableResult,
         pdf_base64: pdfBase64,
       }).select("id,created_at").single();
@@ -609,7 +671,20 @@ export async function POST(request: Request) {
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
-    return NextResponse.json({ success: true, reportId: saved?.id || null, createdAt: saved?.created_at || null, fileName: file?.name || submittedFileName, result: result.object, pdfBase64, deterministic: true });
+    return NextResponse.json({
+      success: true,
+      reportId: saved?.id || null,
+      createdAt: saved?.created_at || null,
+      fileName: file?.name || submittedFileName,
+      result: finalResult,
+      pdfBase64,
+      deterministic: true,
+      orchestration: {
+        version: "corestay-financial-orchestrator-v1",
+        completed: true,
+        scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
+      },
+    });
   } catch (error) {
     console.error(error);
     return NextResponse.json({ error: error instanceof Error ? error.message : "Server gagal memproses PDF." }, { status: 500 });

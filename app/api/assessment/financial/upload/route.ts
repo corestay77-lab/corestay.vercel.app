@@ -24,18 +24,23 @@ export async function POST(request: NextRequest) {
     const formData = await request.formData();
     const file = formData.get("file");
     if (!(file instanceof File)) {
-      return NextResponse.json({ error: "File PDF belum dipilih." }, { status: 400 });
+      return NextResponse.json({ error: "File laporan belum dipilih." }, { status: 400 });
     }
 
-    if (file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      return NextResponse.json({ error: "File harus berformat PDF." }, { status: 400 });
+    const lowerName = file.name.toLowerCase();
+    const isPdf = file.type === "application/pdf" || lowerName.endsWith(".pdf");
+    const isExcel = lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls") ||
+      file.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file.type === "application/vnd.ms-excel";
+    if (!isPdf && !isExcel) {
+      return NextResponse.json({ error: "Format file harus PDF atau Excel (.xlsx, .xls)." }, { status: 400 });
     }
 
-    if (file.size > 4 * 1024 * 1024) {
-      return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
+    if (file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "Ukuran file maksimal 5 MB." }, { status: 400 });
     }
 
-    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180) || "report.pdf";
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, "_").slice(-180) || "financial-report";
     const pathname = `financial-reports/${userId || "anonymous"}/${crypto.randomUUID()}-${safeName}`;
 
     const blob = await put(pathname, file, {

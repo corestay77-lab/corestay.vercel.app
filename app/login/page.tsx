@@ -41,8 +41,8 @@ export default function LoginPage() {
         <div className="w-full rounded-[2rem] border border-[#dce4ef] bg-white p-7 shadow-[0_20px_70px_rgba(32,59,104,0.10)] sm:p-9">
           <div className="mb-7 text-center">
             <Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="mx-auto h-auto w-[150px] object-contain" priority />
-            <h1 className="mt-6 text-2xl font-semibold">Login</h1>
-            <p className="mt-2 text-sm text-[#748096]">Masuk untuk mengakses assessment dan hasil Anda.</p>
+            <h1 className="mt-6 text-2xl font-semibold text-[#203b68]">Login</h1>
+            <p className="mt-2 text-sm text-[#456b9a]">Masuk untuk mengakses assessment dan hasil Anda.</p>
           </div>
 
           <form onSubmit={handleLogin} className="space-y-4">

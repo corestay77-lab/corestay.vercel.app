@@ -6,7 +6,7 @@ export default function PremiumReportBanner() {
   if (!pathname.includes("/assessment/") || !pathname.endsWith("/result")) return null;
 
   return (
-    <section className="premium-report-banner mx-auto my-8 w-[calc(100%-2rem)] max-w-5xl rounded-3xl border border-[#d8b985] bg-white p-6 shadow-[0_20px_60px_rgba(32,59,104,.10)] sm:p-8 lg:ml-[270px] lg:w-[calc(100%-300px)]">
+    <section className="premium-report-banner no-print mx-auto my-8 w-[calc(100%-2rem)] max-w-5xl rounded-3xl border border-[#d8b985] bg-white p-6 shadow-[0_20px_60px_rgba(32,59,104,.10)] sm:p-8 lg:ml-[270px] lg:w-[calc(100%-300px)]">
       <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
         <div>
           <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#a78660]">Laporan Premium</p>

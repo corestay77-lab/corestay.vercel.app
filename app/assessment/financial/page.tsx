@@ -383,7 +383,6 @@ export default function FinancialAssessmentPage() {
           <div className="flex flex-col items-center gap-2 sm:flex-row">
             <img src="/logo-corestay.png" alt="CoreStay Advisory" width="132" height="50" className="h-8 w-[132px] object-contain object-center" />
             <span className="hidden text-white/30 sm:inline">|</span>
-            <p className="text-xs text-white/80">Hospitality Business Advisory</p>
           </div>
           <p className="text-xs text-white/70">© {new Date().getFullYear()} CoreStay Advisory. All rights reserved.</p>
         </div>

@@ -117,15 +117,23 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   }
 
   function textBlock(text: string, size = 9.2, color = TEXT, gap = 5) {
-    const normalized = String(text || "").replace(/\\n/g, "\n").replace(/\\r\\n/g, "\n");
+    const normalized = String(text || "")
+      .replace(/\\\\n/g, "\n")
+      .replace(/\\\\r\\\\n/g, "\n")
+      .replace(/[ \\t]+(?=\\d{1,2}[.)]\\s+[A-ZÀ-Ý])/g, "\n");
     const paragraphs = normalized.split("\n").map((x) => x.trim()).filter(Boolean);
     for (const paragraph of paragraphs) {
-      const bullet = /^[-•*]\\s+/.test(paragraph) || /^\\d+[.)]\\s+/.test(paragraph);
-      const clean = paragraph.replace(/^[-•*]\\s+/, "").replace(/^\\d+[.)]\\s+/, "");
-      const indent = bullet ? 16 : 0;
+      const numbered = paragraph.match(/^(\\d{1,2})[.)]\\s+(.+)$/);
+      const bullet = /^[-•*]\\s+/.test(paragraph);
+      const clean = numbered ? numbered[2] : paragraph.replace(/^[-•*]\\s+/, "");
+      const indent = numbered || bullet ? 24 : 0;
       const lines = wrap(clean, size, CONTENT_W - indent);
       ensure(lines.length * (size + 3.4) + gap + 10);
-      if (bullet) page.drawText("•", { x: MARGIN, y, size: size + 1, font: bold, color: GOLD });
+      if (numbered) {
+        page.drawText(numbered[1] + ".", { x: MARGIN, y, size: size - 0.2, font: bold, color: GOLD });
+      } else if (bullet) {
+        page.drawText("•", { x: MARGIN, y, size: size + 1, font: bold, color: GOLD });
+      }
       for (const line of lines) {
         page.drawText(line, { x: MARGIN + indent, y, size, font: regular, color });
         y -= size + 3.4;

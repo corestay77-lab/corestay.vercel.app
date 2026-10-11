@@ -378,6 +378,16 @@ export default function FinancialAssessmentPage() {
           </section>
         )}
       </div>
+      <footer className="mt-12 border-t border-slate-200 bg-white/90">
+        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-5 py-6 text-center sm:flex-row sm:px-8 sm:text-left lg:px-12">
+          <div className="flex flex-col items-center gap-2 sm:flex-row">
+            <img src="/logo-corestay.png" alt="CoreStay Advisory" width="132" height="50" className="h-8 w-[132px] object-contain object-center" />
+            <span className="hidden text-slate-300 sm:inline">|</span>
+            <p className="text-xs text-slate-500">Hospitality Business Advisory</p>
+          </div>
+          <p className="text-xs text-slate-500">© {new Date().getFullYear()} CoreStay Advisory. All rights reserved.</p>
+        </div>
+      </footer>
     </main>
   );
 }

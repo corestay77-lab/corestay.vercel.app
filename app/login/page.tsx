@@ -36,7 +36,7 @@ export default function LoginPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#263f63] px-5 py-10 text-[#17243d] lg:pl-[250px]">
+    <main className="min-h-screen bg-[#f4f7fb] px-5 py-10 text-[#17243d] lg:pl-[250px]">
       <div className="mx-auto flex min-h-[80vh] max-w-md items-center">
         <div className="w-full rounded-[2rem] border border-[#dce4ef] bg-white p-7 shadow-[0_20px_70px_rgba(32,59,104,0.10)] sm:p-9">
           <div className="mb-7 text-center">

@@ -44,20 +44,15 @@ export default function ExistingAssessmentPage(){
   if(!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim()||isSubmitting)return;
   setIsSubmitting(true);setSubmitError("");
   try{
-   const baseResult=calculateResult(answers);
-   const orchestratorResponse=await fetch("/api/assessment/existing/orchestrator",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({
-    overall:baseResult.overall,
-    areaScores:{business:baseResult.business,revenue:baseResult.revenue,operations:baseResult.operations,people:baseResult.people,profitability:baseResult.profitability},
-    answers:questions.map((q,i)=>({area:categoryTitles[q.category],question:q.title+" — "+q.question,selectedAnswer:q.options.find(o=>o.score===answers[i])?.label||"",selectedScore:answers[i]??null}))
-   })});
-   const orchestratorPayload=await orchestratorResponse.json();
-   if(!orchestratorResponse.ok||!orchestratorPayload.success||orchestratorPayload.result?.validation?.status!=="PASSED")throw new Error(orchestratorPayload.error||"Validasi AI Orchestrator belum berhasil. Hasil belum diterbitkan.");
-   const result={...baseResult,orchestrator:orchestratorPayload.result};
+   const result=calculateResult(answers);
    sessionStorage.setItem("corestay_assessment",JSON.stringify(result));
    notifyAssessmentCompleted(result);
    router.push("/assessment/existing/result");
-  }catch(error){setSubmitError(error instanceof Error?error.message:"AI Orchestrator gagal memvalidasi hasil. Silakan coba kembali.");}
-  finally{setIsSubmitting(false);}
+  }catch(error){
+   console.error("Gagal menerbitkan hasil assessment:",error);
+   setSubmitError("Hasil belum dapat dibuka. Silakan coba kembali.");
+   setIsSubmitting(false);
+  }
  }
 
  if(showIdentity)return <main className="existing-assessment-page min-h-screen bg-white text-[#17243d]">
@@ -69,7 +64,7 @@ export default function ExistingAssessmentPage(){
     <div><label className="mb-2 block text-sm font-semibold">Nama Hotel</label><input value={hotelName} onChange={e=>setHotelName(e.target.value)} placeholder="Nama hotel" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 outline-none"/></div>
     <div><label className="mb-2 block text-sm font-semibold">Kota / Lokasi</label><input value={city} onChange={e=>setCity(e.target.value)} placeholder="Kota / lokasi hotel" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 outline-none"/></div>
     <div><label className="mb-2 block text-sm font-semibold">No. Tlp</label><input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="08xxxxxxxxxx" className="w-full rounded-2xl border border-[#d5dde8] bg-[#f4f7fb] px-4 py-4 outline-none"/></div>
-   </div>{submitError&&<p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">{submitError}</p>}<div className="mt-8 flex justify-between"><button onClick={()=>setShowIdentity(false)} className="rounded-xl border border-[#d5dde8] px-5 py-3 text-sm font-semibold">← Kembali</button><button onClick={submitAssessment} disabled={!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim()||isSubmitting} className="rounded-xl bg-[#203b68] px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e4e9f0] disabled:text-slate-500">{isSubmitting?"Memvalidasi dengan AI Orchestrator…":"Lihat Hasil →"}</button></div></section>
+   </div>{submitError&&<p role="alert" className="mt-5 rounded-xl border border-red-200 bg-red-50 p-4 text-sm leading-6 text-red-700">{submitError}</p>}<div className="mt-8 flex justify-between"><button onClick={()=>setShowIdentity(false)} className="rounded-xl border border-[#d5dde8] px-5 py-3 text-sm font-semibold">← Kembali</button><button onClick={submitAssessment} disabled={!respondentName.trim()||!hotelName.trim()||!city.trim()||!phone.trim()||isSubmitting} className="rounded-xl bg-[#203b68] px-6 py-3 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:bg-[#e4e9f0] disabled:text-slate-500">{isSubmitting?"Memproses hasil…":"Lihat Hasil →"}</button></div></section>
   </div></main>;
 
  return <main className="existing-assessment-page min-h-screen bg-white text-[#17243d]"><div className="mx-auto max-w-4xl px-6 py-10">

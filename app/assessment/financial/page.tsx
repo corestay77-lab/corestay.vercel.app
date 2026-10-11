@@ -408,7 +408,7 @@ export default function FinancialAssessmentPage() {
         <div className="mx-0 flex w-full max-w-none flex-col items-center justify-center gap-3 px-3 py-6 text-center sm:px-5 lg:px-6">
           <div className="flex flex-col items-center gap-2 sm:flex-row">
             <img src="/logo-corestay.png" alt="CoreStay Advisory" width="132" height="50" className="h-8 w-[132px] object-contain object-center" />
-            <span className="hidden text-white/30 sm:inline">|</span>
+            
           </div>
           <p className="text-xs text-white/70">© {new Date().getFullYear()} CoreStay Advisory. All rights reserved.</p>
         </div>

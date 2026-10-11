@@ -218,7 +218,7 @@ export default function FinancialAssessmentPage() {
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]">
 <div className="mx-auto w-full max-w-7xl px-6 py-6 sm:px-6 lg:px-8 lg:py-10">
-        <div className="mb-4 flex w-full items-center justify-center px-0 pt-2"><div className="flex min-h-[112px] w-full max-w-[340px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm"><img src="/logo-corestay.png" alt="CoreStay Advisory" width="280" height="112" className="block h-[88px] w-[280px] max-w-full object-contain object-center" /></div></div>
+        <div className="mb-4 flex w-full items-center justify-center px-0 pt-2"><div className="flex min-h-[112px] w-full max-w-[340px] items-center justify-center rounded-2xl border border-slate-200 bg-white px-5 py-3 shadow-sm"><img src="/logo-corestay.png" alt="Brand logo" width="280" height="112" className="block h-[88px] w-[280px] max-w-full object-contain object-center" /></div></div>
         <h1 className="mt-3 ml-0 w-full pl-0 text-left text-3xl font-bold tracking-tight sm:text-5xl">Financial Check</h1>
         <p className="mt-4 ml-0 max-w-3xl pl-0 text-left text-base leading-7 text-slate-500">
           <b>Upload laporan keuangan → Analisis → Hasil Assessment.</b> Dapatkan gambaran kondisi keuangan hotel, kinerja pendapatan dan biaya, profitabilitas, risiko keuangan, serta area yang perlu diperbaiki.

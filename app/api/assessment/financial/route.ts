@@ -357,6 +357,80 @@ function isRetryableAiError(error: unknown) {
   return /high demand|overloaded|capacity|temporar|rate.?limit|429|503|service unavailable|internal server error/i.test(message);
 }
 
+
+type FinancialValidation = { valid: boolean; errors: string[]; warnings: string[] };
+
+function validateFinancialAssessmentResult(input: unknown): FinancialValidation {
+  const parsed = FinancialAssessment.safeParse(input);
+  if (!parsed.success) {
+    return {
+      valid: false,
+      errors: parsed.error.issues.map((issue) => `${issue.path.join(".") || "result"}: ${issue.message}`),
+      warnings: [],
+    };
+  }
+
+  const result = parsed.data;
+  const errors: string[] = [];
+  const warnings: string[] = [];
+  const requiredText: Array<[string, string]> = [
+    ["executiveSummary", result.executiveSummary],
+    ["conclusion", result.conclusion],
+  ];
+
+  for (const [field, value] of requiredText) {
+    if (!value.trim()) errors.push(`Bagian wajib ${field} kosong.`);
+  }
+
+  const scoreFields: Array<[string, number]> = [
+    ["financialHealthScore", result.financialHealthScore],
+    ["dataCompletenessScore", result.dataCompletenessScore],
+    ["revenueHealthScore", result.revenueHealthScore],
+    ["profitabilityHealthScore", result.profitabilityHealthScore],
+    ["costControlScore", result.costControlScore],
+    ["cashFlowScore", result.cashFlowScore],
+    ["internalControlScore", result.internalControlScore],
+    ["revenueIntegrityScore", result.revenueIntegrityScore],
+  ];
+  for (const [field, score] of scoreFields) {
+    if (!Number.isFinite(score) || score < 0 || score > 100) {
+      errors.push(`Skor ${field} berada di luar rentang 0–100.`);
+    }
+  }
+
+  const requiredFigures = ["Revenue", "GOP", "GOP Margin", "Operating Cost", "Net Profit", "Cash Flow"];
+  const normalizedLabels = result.extractedFigures.map((item) => item.label.trim().toLowerCase());
+  for (const label of requiredFigures) {
+    if (!normalizedLabels.includes(label.toLowerCase())) {
+      warnings.push(`Indikator scorecard ${label} tidak ditemukan; perlu ditandai sebagai data tidak tersedia.`);
+    }
+  }
+  if (new Set(normalizedLabels).size !== normalizedLabels.length) {
+    warnings.push("Terdapat label indikator keuangan duplikat.");
+  }
+
+  for (const figure of result.extractedFigures) {
+    if (!figure.label.trim() || !figure.value.trim()) {
+      warnings.push("Ada indikator keuangan tanpa label atau nilai.");
+    }
+    if (/\b(undefined|null|nan|\[object object\])\b/i.test(figure.value)) {
+      errors.push(`Nilai indikator ${figure.label || "(tanpa label)"} tidak valid.`);
+    }
+  }
+
+  if (!result.auditFindings.length && !result.dataLimitations.length) {
+    warnings.push("Tidak ada temuan audit maupun keterbatasan data; pastikan analisis berbasis bukti.");
+  }
+  if (!result.recommendations.length && !result.dataLimitations.length) {
+    warnings.push("Tidak ada rekomendasi; hasil perlu ditinjau.");
+  }
+  if (!result.actionPlan.length && !result.dataLimitations.length) {
+    warnings.push("Rencana tindakan kosong; hasil perlu ditinjau.");
+  }
+
+  return { valid: errors.length === 0, errors, warnings };
+}
+
 export async function POST(request: Request) {
   let pdf: any = null;
 
@@ -444,6 +518,13 @@ export async function POST(request: Request) {
       : null;
 
     if (cachedReport) {
+      const cachedValidation = validateFinancialAssessmentResult(cachedReport);
+      if (!cachedValidation.valid) {
+        return NextResponse.json({
+          error: "Hasil tersimpan gagal validasi otomatis. Silakan proses ulang laporan.",
+          validationErrors: cachedValidation.errors,
+        }, { status: 422 });
+      }
       const stableResult = FinancialAssessment.parse(cachedReport);
       const stableReport = { ...stableResult, _sourceHash: sourceFingerprint };
       const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
@@ -487,6 +568,15 @@ export async function POST(request: Request) {
       }
     }
     if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
+
+    const validation = validateFinancialAssessmentResult(result.object);
+    if (!validation.valid) {
+      return NextResponse.json({
+        error: "Hasil assessment belum lolos validasi otomatis sehingga tidak diterbitkan.",
+        validationErrors: validation.errors,
+        validationWarnings: validation.warnings,
+      }, { status: 422 });
+    }
 
     const stableResult = { ...result.object, _sourceHash: sourceFingerprint };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, result.object);

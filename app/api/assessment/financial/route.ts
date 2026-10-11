@@ -100,7 +100,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   }
 
   function wrap(text: string, size = 9.2, maxWidth = CONTENT_W, font = regular) {
-    const words = String(text || "").replace(/\\s+/g, " ").trim().split(" ").filter(Boolean);
+    const words = String(text || "").replace(/\s+/g, " ").trim().split(" ").filter(Boolean);
     const lines: string[] = [];
     let line = "";
     for (const word of words) {
@@ -117,9 +117,12 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   }
 
   function textBlock(text: string, size = 9.2, color = TEXT, gap = 5) {
+    // Normalize real and escaped line endings so paragraphs and numbering print consistently.
     const normalized = String(text || "")
-      .replace(/\\n/g, "\n")
       .replace(/\\r\\n/g, "\n")
+      .replace(/\\n/g, "\n")
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
       .replace(/[ \t]+(?=\d{1,2}[.)]\s+[A-ZÀ-Ý])/g, "\n");
     const paragraphs = normalized.split("\n").map((x) => x.trim()).filter(Boolean);
     for (const paragraph of paragraphs) {
@@ -128,19 +131,24 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
       const clean = numbered ? numbered[2] : paragraph.replace(/^[-•*]\s+/, "");
       const indent = numbered || bullet ? 24 : 0;
       const lines = wrap(clean, size, CONTENT_W - indent);
-      ensure(lines.length * (size + 3.4) + gap + 10);
-      if (numbered) {
-        page.drawText(numbered[1] + ".", { x: MARGIN, y, size: size - 0.2, font: bold, color: GOLD });
-      } else if (bullet) {
-        page.drawText("•", { x: MARGIN, y, size: size + 1, font: bold, color: GOLD });
-      }
+      const lineHeight = size + 3.4;
+      // Split long paragraphs safely across pages instead of allowing text to run into the footer.
+      let firstLine = true;
       for (const line of lines) {
+        ensure(lineHeight + gap + 4);
+        if (firstLine && numbered) {
+          page.drawText(numbered[1] + ".", { x: MARGIN, y, size: size - 0.2, font: bold, color: GOLD });
+        } else if (firstLine && bullet) {
+          page.drawText("•", { x: MARGIN, y, size: size + 1, font: bold, color: GOLD });
+        }
         page.drawText(line, { x: MARGIN + indent, y, size, font: regular, color });
-        y -= size + 3.4;
+        y -= lineHeight;
+        firstLine = false;
       }
       y -= gap;
     }
   }
+
   function label(text: string, color = GOLD) {
     page.drawText(text.toUpperCase(), { x: MARGIN, y, size: 7.2, font: bold, color });
     y -= 12;
@@ -199,21 +207,25 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
 
   function listBlock(items: string[], numbered = false) {
     items.forEach((item, i) => {
-      if (!numbered) {
-        textBlock("- " + item, 9.1, TEXT, 3);
-        return;
-      }
       const size = 9.1;
-      y -= 8;
-      const number = String(i + 1).padStart(2, "0");
-      const lines = wrap(String(item || ""), size, CONTENT_W - 30);
-      ensure(lines.length * (size + 3.4) + 12);
-      page.drawText(number, { x: MARGIN, y, size: 8, font: bold, color: GOLD });
-      lines.forEach((line) => {
-        page.drawText(line, { x: MARGIN + 30, y, size, font: regular, color: TEXT });
-        y -= size + 3.4;
-      });
-      y -= 12;
+      const lines = wrap(String(item || ""), size, CONTENT_W - (numbered ? 30 : 24));
+      const lineHeight = size + 3.4;
+      y -= numbered ? 8 : 0;
+      let firstLine = true;
+      for (const line of lines) {
+        ensure(lineHeight + 12);
+        if (firstLine) {
+          if (numbered) {
+            page.drawText(String(i + 1).padStart(2, "0"), { x: MARGIN, y, size: 8, font: bold, color: GOLD });
+          } else {
+            page.drawText("•", { x: MARGIN, y, size: size + 1, font: bold, color: GOLD });
+          }
+        }
+        page.drawText(line, { x: MARGIN + (numbered ? 30 : 18), y, size, font: regular, color: TEXT });
+        y -= lineHeight;
+        firstLine = false;
+      }
+      y -= numbered ? 12 : 3;
     });
   }
 

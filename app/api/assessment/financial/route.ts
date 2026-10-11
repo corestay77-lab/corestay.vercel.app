@@ -3,6 +3,7 @@ import { get, del } from "@vercel/blob";
 import { generateObject } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { extractText, getDocumentProxy } from "unpdf";
+import * as XLSX from "xlsx";
 import { PDFDocument, StandardFonts, rgb } from "pdf-lib";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
@@ -490,34 +491,52 @@ export async function POST(request: Request) {
       if (blobPath && !blobPath.startsWith("financial-reports/")) return NextResponse.json({ error: "Lokasi file tidak valid." }, { status: 400 });
       if (extractedText && extractedText.length < 20) return NextResponse.json({ error: "Teks laporan terlalu pendek untuk dianalisa." }, { status: 422 });
     } else if (!(file instanceof File)) {
-      return NextResponse.json({ error: "File PDF belum dipilih." }, { status: 400 });
+      return NextResponse.json({ error: "File laporan belum dipilih." }, { status: 400 });
     }
-    if (action !== "analyze" && file instanceof File && file.type !== "application/pdf" && !file.name.toLowerCase().endsWith(".pdf")) {
-      return NextResponse.json({ error: "File harus berformat PDF." }, { status: 400 });
+    const uploadName = (file?.name || submittedFileName || blobPath).toLowerCase();
+    const isPdf = uploadName.endsWith(".pdf") || file?.type === "application/pdf";
+    const isExcel = uploadName.endsWith(".xlsx") || uploadName.endsWith(".xls") ||
+      file?.type === "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" ||
+      file?.type === "application/vnd.ms-excel";
+    if (action !== "analyze" && file instanceof File && !isPdf && !isExcel) {
+      return NextResponse.json({ error: "Format file harus PDF atau Excel (.xlsx, .xls)." }, { status: 400 });
     }
-    if (action !== "analyze" && file instanceof File && file.size > 4 * 1024 * 1024) {
-      return NextResponse.json({ error: "Ukuran PDF maksimal 4 MB." }, { status: 400 });
+    if (action !== "analyze" && file instanceof File && file.size > 5 * 1024 * 1024) {
+      return NextResponse.json({ error: "Ukuran file maksimal 5 MB." }, { status: 400 });
     }
     if (action === "analyze" && !process.env.GEMINI_API_KEY) return NextResponse.json({ error: "Gemini API belum aktif pada deployment ini." }, { status: 503 });
 
     let text = extractedText;
+    const sourceName = (file?.name || submittedFileName || blobPath).toLowerCase();
+    const parseUploadedBytes = async (buffer: ArrayBuffer, filename: string) => {
+      const lowerName = filename.toLowerCase();
+      if (lowerName.endsWith(".xlsx") || lowerName.endsWith(".xls")) {
+        const workbook = XLSX.read(new Uint8Array(buffer), { type: "array", cellDates: true });
+        const sheets = workbook.SheetNames.map((sheetName) => {
+          const sheet = workbook.Sheets[sheetName];
+          const csv = XLSX.utils.sheet_to_csv(sheet, { blankrows: false });
+          return "SHEET: " + sheetName + "\n" + csv;
+        }).filter((sheetText) => sheetText.trim().length > 0);
+        return sheets.join("\n\n");
+      }
+      const document = await getDocumentProxy(new Uint8Array(buffer));
+      const parsed = await extractText(document, { mergePages: true });
+      return parsed.text.trim();
+    };
+
     if (blobPath) {
       const blobResult = await get(blobPath, { access: "private" });
       if (!blobResult || blobResult.statusCode !== 200 || !blobResult.stream) {
         return NextResponse.json({ error: "File laporan tidak ditemukan atau tidak dapat dibaca." }, { status: 404 });
       }
       const buffer = await new Response(blobResult.stream).arrayBuffer();
-      pdf = await getDocumentProxy(new Uint8Array(buffer));
-      const parsed = await extractText(pdf, { mergePages: true });
-      text = parsed.text.trim();
+      text = await parseUploadedBytes(buffer, sourceName);
     } else if (action !== "analyze") {
       const buffer = await (file as File).arrayBuffer();
-      pdf = await getDocumentProxy(new Uint8Array(buffer));
-      const parsed = await extractText(pdf, { mergePages: true });
-      text = parsed.text.trim();
+      text = await parseUploadedBytes(buffer, file?.name || submittedFileName);
     }
 
-    if (!text) return NextResponse.json({ error: "PDF tidak memiliki teks yang dapat dibaca. OCR perlu ditambahkan untuk PDF scan." }, { status: 422 });
+    if (!text.trim()) return NextResponse.json({ error: "File tidak memiliki data yang dapat dibaca. Untuk PDF hasil scan, OCR masih diperlukan; untuk Excel, periksa apakah sheet berisi data." }, { status: 422 });
     if (action === "extract") return NextResponse.json({ success: true, fileName: (file as File).name, text });
 
     // Deterministic source fingerprint: same extracted financial data = same analysis/score,

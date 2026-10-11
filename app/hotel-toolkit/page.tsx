@@ -75,8 +75,8 @@ function Preview({ item }: { item: typeof templates[number] }) {
 export default function HotelToolkitPage() {
   const wa = "https://wa.me/6285109006363";
   return (
-    <main className="min-h-screen bg-[#f4f7fb] px-6 py-12 lg:pl-[280px]">
-      <div className="mx-auto max-w-6xl">
+    <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] px-6 py-12 lg:pl-[250px]">
+      <div className="mx-auto max-w-7xl">
         <p className="text-xs font-bold uppercase tracking-[0.22em] text-[#6b8a80]">CoreStay Business Tools</p>
         <h1 className="mt-3 text-4xl font-semibold text-[#17243d]">CoreStay Hotel Toolkit</h1>
         <p className="mt-4 max-w-3xl text-[#66738a]">Template praktis untuk owner dan manajemen hotel. Lihat 1–3 slide preview sebelum membeli.</p>

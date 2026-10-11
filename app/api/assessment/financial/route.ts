@@ -337,8 +337,8 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   ensure(76);
   page.drawRectangle({ x: MARGIN, y: y - 58, width: CONTENT_W, height: 58, color: GREEN_BG, borderColor: GREEN, borderWidth: 0.8 });
   page.drawText("PASSED — AUTOMATED VALIDATION", { x: MARGIN + 12, y: y - 18, size: 9, font: bold, color: GREEN });
-  textBlock("The report passed automated structure and required-field checks, score-range checks, and invalid-indicator-value checks before publication.", 8.2, TEXT, 0);
-  textBlock("This status confirms these automated checks only; it does not certify source-document accuracy or replace an independent financial audit.", 7.4, MUTED, 0);
+  page.drawText("Checks: report structure, required fields, score ranges, and invalid indicator values.", { x: MARGIN + 12, y: y - 33, size: 8.1, font: regular, color: TEXT });
+  page.drawText("This does not certify source-data accuracy or replace an independent financial audit.", { x: MARGIN + 12, y: y - 46, size: 7.4, font: regular, color: MUTED });
   y -= 68;
 
   // Consistent footer on every page.

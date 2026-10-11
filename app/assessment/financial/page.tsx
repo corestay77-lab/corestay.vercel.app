@@ -385,6 +385,17 @@ export default function FinancialAssessmentPage() {
               <p className="mt-4 text-sm font-bold uppercase tracking-[0.18em] text-[#d8b985]">Status: {financialStatus(result.financialHealthScore)}</p>
               <button type="button" onClick={downloadPdf} className="mt-7 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#172a4d]">Download Financial Assessment PDF</button>
             </div>
+
+            <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 shadow-sm" role="status" aria-label="Automated validation passed">
+              <div className="flex items-start gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-emerald-600 text-xl font-bold text-white" aria-hidden="true">✓</div>
+                <div>
+                  <p className="text-sm font-extrabold uppercase tracking-wide text-emerald-900">Lolos Validasi Otomatis CoreStay</p>
+                  <p className="mt-1 text-sm leading-6 text-emerald-800">Laporan ini telah melewati pemeriksaan server sebelum diterbitkan: struktur dan bagian wajib, rentang skor, serta nilai indikator yang tidak valid.</p>
+                  <p className="mt-2 text-xs leading-5 text-emerald-800/80">Catatan: status ini mengonfirmasi pemeriksaan otomatis tersebut, bukan sertifikasi kebenaran seluruh angka sumber atau pengganti audit keuangan independen.</p>
+                </div>
+              </div>
+            </div>
           </section>
         )}
       </div>

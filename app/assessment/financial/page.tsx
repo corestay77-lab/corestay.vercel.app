@@ -217,8 +217,8 @@ export default function FinancialAssessmentPage() {
 
   return (
     <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]">
-      <div className="mx-auto max-w-5xl px-5 py-8 sm:px-8 lg:px-12 lg:py-12">
-        <div className="mb-1 -mx-5 flex min-h-[88px] w-[calc(100%+2.5rem)] items-center justify-center bg-transparent px-5 py-3 sm:-mx-8 sm:w-[calc(100%+4rem)] lg:-mx-12 lg:w-[calc(100%+6rem)]"><img src="/logo-corestay.png" alt="CoreStay Advisory" width="240" height="96" className="block h-[66px] w-[220px] max-w-[78vw] object-contain object-center sm:h-[72px] sm:w-[240px]" /></div>
+      <div className="mx-0 w-full max-w-none px-3 py-6 sm:px-5 lg:px-6 lg:py-10">
+        <div className="mb-1 -mx-3 flex min-h-[88px] w-[calc(100%+1.5rem)] items-center justify-center bg-transparent px-3 py-3 sm:-mx-5 sm:w-[calc(100%+2.5rem)] lg:-mx-6 lg:w-[calc(100%+3rem)]"><img src="/logo-corestay.png" alt="CoreStay Advisory" width="240" height="96" className="block h-[66px] w-[220px] max-w-[78vw] object-contain object-center sm:h-[72px] sm:w-[240px]" /></div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Financial Check</h1>
         <p className="mt-4 max-w-3xl text-base leading-7 text-slate-500">
           <b>Upload laporan keuangan → Analisis → Hasil Assessment.</b> Dapatkan gambaran kondisi keuangan hotel, kinerja pendapatan dan biaya, profitabilitas, risiko keuangan, serta area yang perlu diperbaiki.
@@ -389,7 +389,7 @@ export default function FinancialAssessmentPage() {
         )}
       </div>
       <footer className="mt-12 border-t border-[#d8b985]/30 bg-[#10284b]">
-        <div className="mx-auto flex max-w-5xl flex-col items-center justify-between gap-3 px-5 py-6 text-center sm:flex-row sm:px-8 sm:text-left lg:px-12">
+        <div className="mx-0 flex w-full max-w-none flex-col items-center justify-between gap-3 px-3 py-6 text-center sm:flex-row sm:px-5 sm:text-left lg:px-6">
           <div className="flex flex-col items-center gap-2 sm:flex-row">
             <img src="/logo-corestay.png" alt="CoreStay Advisory" width="132" height="50" className="h-8 w-[132px] object-contain object-center" />
             <span className="hidden text-white/30 sm:inline">|</span>

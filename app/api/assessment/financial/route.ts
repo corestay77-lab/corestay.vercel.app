@@ -332,6 +332,15 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   section("12", "Assessment Score", "Financial Health Score");
   scoreCard(result.financialHealthScore, true);
 
+  // Explicitly disclose the scope of the automated validation gate.
+  section("13", "Automated Validation Status", "Server-side pre-publication checks");
+  ensure(76);
+  page.drawRectangle({ x: MARGIN, y: y - 58, width: CONTENT_W, height: 58, color: GREEN_BG, borderColor: GREEN, borderWidth: 0.8 });
+  page.drawText("PASSED — AUTOMATED VALIDATION", { x: MARGIN + 12, y: y - 18, size: 9, font: bold, color: GREEN });
+  textBlock("The report passed automated structure and required-field checks, score-range checks, and invalid-indicator-value checks before publication.", 8.2, TEXT, 0);
+  textBlock("This status confirms these automated checks only; it does not certify source-document accuracy or replace an independent financial audit.", 7.4, MUTED, 0);
+  y -= 68;
+
   // Consistent footer on every page.
   const pages = doc.getPages();
   pages.forEach((p, index) => {

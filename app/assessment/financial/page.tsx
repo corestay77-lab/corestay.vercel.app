@@ -216,7 +216,7 @@ export default function FinancialAssessmentPage() {
   }
 
   return (
-    <main className="financial-assessment-page min-h-screen w-full overflow-x-hidden bg-[#f8f8f6] text-[#102f5b] lg:ml-[18px] lg:w-[calc(100%-18px)]">
+    <main className="financial-assessment-page min-h-screen w-full overflow-x-hidden bg-[#f8f8f6] text-[#102f5b]">
 <div className="financial-assessment-content ml-0 mr-0 w-full max-w-none px-4 py-6 sm:px-6 lg:px-0 lg:py-10">
         <div className="mb-1 -mx-3 flex min-h-[88px] w-[calc(100%+1.5rem)] items-center justify-center bg-transparent px-3 py-3 sm:-mx-5 sm:w-[calc(100%+2.5rem)] lg:-mx-6 lg:w-[calc(100%+3rem)]"><img src="/logo-corestay.png" alt="CoreStay Advisory" width="240" height="96" className="block h-[66px] w-[220px] max-w-[78vw] object-contain object-center sm:h-[72px] sm:w-[240px]" /></div>
         <h1 className="mt-3 text-3xl font-bold tracking-tight sm:text-5xl">Financial Check</h1>

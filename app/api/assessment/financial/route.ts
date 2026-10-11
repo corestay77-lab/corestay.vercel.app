@@ -523,7 +523,7 @@ export async function POST(request: Request) {
     // Deterministic source fingerprint: same extracted financial data = same analysis/score,
     // regardless of filename or minor PDF metadata differences.
     const sourceFingerprint = createHash("sha256")
-      .update(text.replace(/\\s+/g, " ").trim(), "utf8")
+      .update(text.replace(/\s+/g, " ").trim(), "utf8")
       .digest("hex");
 
     // Reuse the previously generated result for an identical source. This prevents
@@ -543,7 +543,7 @@ export async function POST(request: Request) {
     const cachedReport = userId && supabase
       ? previousReports.find((row) =>
           row?.report_json?._sourceHash === sourceFingerprint &&
-          row?.report_json?._orchestratorVersion === "corestay-financial-orchestrator-v1"
+          row?.report_json?._orchestratorVersion === "corestay-financial-orchestrator-v2"
         )?.report_json
       : null;
 
@@ -652,7 +652,7 @@ export async function POST(request: Request) {
     const stableResult = {
       ...finalResult,
       _sourceHash: sourceFingerprint,
-      _orchestratorVersion: "corestay-financial-orchestrator-v1",
+      _orchestratorVersion: "corestay-financial-orchestrator-v2",
       _scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
     };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, finalResult);
@@ -685,7 +685,7 @@ export async function POST(request: Request) {
       pdfBase64,
       deterministic: true,
       orchestration: {
-        version: "corestay-financial-orchestrator-v1",
+        version: "corestay-financial-orchestrator-v2",
         completed: true,
         scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
       },

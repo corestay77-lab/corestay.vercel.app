@@ -361,7 +361,7 @@ export default function PreOpeningAssessmentPage() {
   }
 
   return (
-    <main className="min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]"><aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-[#17243d] lg:flex lg:flex-col">
+    <main className="pre-opening-assessment-page min-h-screen bg-[#f4f7fb] text-[#17243d] lg:pl-[250px]"><aside className="fixed inset-y-0 left-0 z-50 hidden w-[250px] border-r border-white/10 bg-black text-[#17243d] lg:flex lg:flex-col">
         <div className="flex h-full flex-col px-6 py-7">
           <a href="/" className="flex items-center justify-center rounded-2xl px-2 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="h-auto w-[165px] object-contain mix-blend-screen" /></a>
           <div className="mt-10">

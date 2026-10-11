@@ -18,8 +18,34 @@ function style(score:number){if(score>=90)return{label:"EXCELLENT",tone:"text-gr
 
 export default function ExistingResultPage(){
  const [result,setResult]=useState<Result|null>(null);
- useEffect(()=>{const raw=sessionStorage.getItem("corestay_assessment");if(!raw)return;try{const parsed=JSON.parse(raw) as Result;setResult(parsed);void save(parsed)}catch{setResult(null)}},[]);
- async function save(parsed:Result){const key="corestay_existing_report_saved";if(sessionStorage.getItem(key)==="1")return;const {data:auth}=await supabase.auth.getSession();if(!auth.session?.user)return;const {error}=await supabase.from("assessment_reports").insert({user_id:auth.session.user.id,assessment_type:"existing",file_name:parsed.hotelName?`Assessment — Hotel Existing — ${parsed.hotelName}`:"Assessment — Hotel Existing",score:Number(parsed.overall)||0,report_json:parsed,pdf_base64:""});if(!error)sessionStorage.setItem(key,"1");}
+ const [isLoading,setIsLoading]=useState(true);
+ useEffect(()=>{
+  const raw=sessionStorage.getItem("corestay_assessment");
+  if(!raw){setIsLoading(false);return;}
+  try{
+   const parsed=JSON.parse(raw) as Result;
+   setResult(parsed);
+   void save(parsed);
+  }catch{
+   setResult(null);
+  }finally{
+   setIsLoading(false);
+  }
+ },[]);
+ async function save(parsed:Result){
+  try{
+   const key="corestay_existing_report_saved";
+   if(sessionStorage.getItem(key)==="1")return;
+   const {data:auth}=await supabase.auth.getSession();
+   if(!auth.session?.user)return;
+   const {error}=await supabase.from("assessment_reports").insert({user_id:auth.session.user.id,assessment_type:"existing",file_name:parsed.hotelName?`Assessment — Hotel Existing — ${parsed.hotelName}`:"Assessment — Hotel Existing",score:Number(parsed.overall)||0,report_json:parsed,pdf_base64:""});
+   if(!error)sessionStorage.setItem(key,"1");
+   else console.warn("Gagal menyimpan hasil assessment ke riwayat:",error.message);
+  }catch(error){
+   console.warn("Gagal menyimpan hasil assessment ke riwayat:",error);
+  }
+ }
+ if(isLoading)return <main className="min-h-screen bg-white px-6 py-20 text-center text-[#17243d]"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} className="mx-auto h-[46px] w-[151px] object-contain"/><p className="mt-10 text-slate-600">Memuat hasil assessment...</p></main>;
  if(!result)return <main className="min-h-screen bg-white px-6 py-20 text-center text-[#17243d]"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={55} className="mx-auto h-[46px] w-[151px] object-contain"/><h1 className="mt-10 text-3xl font-bold">Assessment data not found.</h1><p className="mt-4 text-slate-600">Silakan ulangi assessment Hotel Existing.</p></main>;
  const overall=Math.max(0,Math.min(100,Number(result.overall)||0));const overallStyle=style(overall);
  const resultAreas=result.areaResults?.length?result.areaResults:areas.map(a=>({key:a.key,category:a.key,title:a.title,score:Number(result[a.key as keyof Result])||0,level:style(Number(result[a.key as keyof Result])||0).label,diagnosis:"Data assessment perlu ditinjau bersama evidence hotel.",recommendation:"Validasi data, root cause, PIC, KPI dan action plan."}));

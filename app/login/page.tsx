@@ -40,7 +40,7 @@ export default function LoginPage() {
       <div className="mx-auto flex min-h-[80vh] max-w-md items-center">
         <div className="w-full rounded-[2rem] border border-[#dce4ef] bg-white p-7 shadow-[0_20px_70px_rgba(32,59,104,0.10)] sm:p-9">
           <div className="mb-7 text-center">
-            <div className="mx-auto mb-2 inline-flex rounded-xl bg-[#263f63] px-4 py-3"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="mx-auto h-auto w-[150px] object-contain" priority /></div>
+            <div className="mx-auto mb-2 flex justify-center"><Image src="/logo-corestay.png" alt="CoreStay Advisory" width={180} height={70} className="mx-auto h-auto w-[150px] object-contain" priority /></div>
             <h1 className="mt-6 text-2xl font-semibold text-[#203b68]">Login</h1>
             <p className="mt-2 text-sm text-[#456b9a]">Masuk untuk mengakses assessment dan hasil Anda.</p>
           </div>

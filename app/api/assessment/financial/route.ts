@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { get, del } from "@vercel/blob";
-import { generateObject } from "ai";
+import { generateObject, generateText } from "ai";
 import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { extractText, getDocumentProxy } from "unpdf";
 import * as XLSX from "xlsx";
@@ -375,6 +375,80 @@ function calculateDeterministicFinancialHealthScore(result: z.infer<typeof Finan
   return Math.round(weighted);
 }
 
+function deterministicComponentScores(sourceText: string) {
+  // Versioned, source-derived rubric. It uses only reproducible text evidence,
+  // not free-form model scoring, so the same extracted source yields the same scores.
+  const t = sourceText.normalize("NFKC").toLowerCase().replace(/\s+/g, " ");
+  const has = (...terms: string[]) => terms.some((term) => t.includes(term));
+  const count = (terms: string[]) => terms.reduce((n, term) => n + (t.includes(term) ? 1 : 0), 0);
+  const financialTerms = ["revenue", "pendapatan", "gop", "gross operating profit", "expense", "biaya", "profit", "laba", "cash flow", "arus kas"];
+  const completeness = Math.round(100 * count(financialTerms) / financialTerms.length);
+  const hasRevenue = has("revenue", "pendapatan", "total sales", "total income");
+  const hasProfit = has("gop", "gross operating profit", "operating profit", "laba usaha", "net profit", "laba bersih");
+  const hasCosts = has("operating cost", "operating expenses", "total expenses", "biaya operasional", "total biaya");
+  const hasCashFlow = has("cash flow", "arus kas", "operating cash flow", "net cash flow");
+  const hasComparatives = has("budget", "forecast", "previous period", "prior year", "variance", "anggaran", "periode sebelumnya");
+  const hasControls = has("reconciliation", "rekonsiliasi", "approval", "persetujuan", "audit trail", "supporting schedule", "bank statement");
+  const hasAnomaly = has("data integrity issue", "inconsistent", "mismatch", "duplicate", "missing data", "unreconciled", "inkonsisten", "selisih tidak terjelaskan");
+  const gopMarginMatch = t.match(/(?:gop\s*margin|gop\s*%|gross operating profit margin)[^\d-]{0,30}(-?\d+(?:[.,]\d+)?)\s*%/i);
+  const gopMargin = gopMarginMatch ? Number(gopMarginMatch[1].replace(",", ".")) : null;
+  const revenueHealthScore = hasRevenue ? (hasComparatives ? 70 : 60) : 35;
+  const profitabilityHealthScore = gopMargin !== null
+    ? (gopMargin < 0 ? 20 : gopMargin < 10 ? 45 : gopMargin < 20 ? 60 : gopMargin < 30 ? 75 : 85)
+    : hasProfit ? 60 : 35;
+  const costControlScore = hasCosts ? (hasAnomaly ? 35 : hasComparatives ? 70 : 55) : 35;
+  const cashFlowScore = hasCashFlow ? (hasAnomaly ? 35 : 60) : 30;
+  const internalControlScore = hasControls ? (hasAnomaly ? 40 : 70) : (hasAnomaly ? 25 : 45);
+  const revenueIntegrityScore = hasRevenue ? (hasAnomaly ? 35 : 60) : 30;
+  return {
+    dataCompletenessScore: Math.max(0, Math.min(100, completeness)),
+    revenueHealthScore,
+    profitabilityHealthScore,
+    costControlScore,
+    cashFlowScore,
+    internalControlScore,
+    revenueIntegrityScore,
+  };
+}
+
+function parseFinancialNumber(value: string): number | null {
+  const cleaned = String(value || "").replace(/[^0-9,().-]/g, "").trim();
+  if (!cleaned || /^(?:-|\.)$/.test(cleaned)) return null;
+  let normalized = cleaned;
+  if (normalized.includes(",") && normalized.includes(".")) {
+    normalized = normalized.lastIndexOf(",") > normalized.lastIndexOf(".")
+      ? normalized.replace(/\./g, "").replace(",", ".")
+      : normalized.replace(/,/g, "");
+  } else if (normalized.includes(",")) {
+    const tail = normalized.split(",").pop() || "";
+    normalized = tail.length === 2 ? normalized.replace(",", ".") : normalized.replace(/,/g, "");
+  }
+  const negative = normalized.startsWith("(") && normalized.endsWith(")");
+  const number = Number(normalized.replace(/[()]/g, ""));
+  return Number.isFinite(number) ? (negative ? -number : number) : null;
+}
+
+function validateFinancialReconciliation(result: z.infer<typeof FinancialAssessment>) {
+  const warnings: string[] = [];
+  const find = (label: string) => result.extractedFigures.find((f) => f.label.trim().toLowerCase() === label.toLowerCase());
+  const revenue = find("Revenue");
+  const gop = find("GOP");
+  const margin = find("GOP Margin");
+  const revenueValue = revenue ? parseFinancialNumber(revenue.value) : null;
+  const gopValue = gop ? parseFinancialNumber(gop.value) : null;
+  const marginValue = margin ? parseFinancialNumber(margin.value) : null;
+  if (revenueValue !== null && gopValue !== null && revenueValue > 0 && gopValue > revenueValue) {
+    warnings.push("Rekonsiliasi sumber: GOP melebihi Revenue; periksa klasifikasi, periode, dan satuan angka.");
+  }
+  if (revenueValue !== null && gopValue !== null && marginValue !== null && revenueValue > 0 && /%/.test(margin?.value || "")) {
+    const calculatedMargin = (gopValue / revenueValue) * 100;
+    if (Math.abs(calculatedMargin - marginValue) > 2) {
+      warnings.push("Rekonsiliasi sumber: GOP Margin berbeda lebih dari 2 poin persentase dari GOP ÷ Revenue; angka ditandai untuk pemeriksaan.");
+    }
+  }
+  return warnings;
+}
+
 function isRetryableAiError(error: unknown) {
   const message = error instanceof Error ? error.message : String(error);
   return /high demand|overloaded|capacity|temporar|rate.?limit|429|503|service unavailable|internal server error/i.test(message);
@@ -521,7 +595,35 @@ export async function POST(request: Request) {
       }
       const document = await getDocumentProxy(new Uint8Array(buffer));
       const parsed = await extractText(document, { mergePages: true });
-      return parsed.text.trim();
+      const extracted = parsed.text.trim();
+      if (extracted.length >= 40) return extracted;
+
+      // OCR fallback: send image-only/scanned PDFs to Gemini's native PDF vision input.
+      // Try several models so temporary capacity errors do not stop extraction.
+      const google = createGoogleGenerativeAI({ apiKey: process.env.GEMINI_API_KEY });
+      const ocrModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
+      let lastOcrError: unknown = null;
+      for (const modelId of ocrModels) {
+        try {
+          const ocr = await generateText({
+            model: google(modelId),
+            messages: [{
+              role: "user",
+              content: [
+                { type: "text", text: "Ekstrak/OCR seluruh teks yang terbaca dari PDF laporan keuangan ini. Pertahankan angka, tanda negatif, pemisah ribuan/desimal, nama akun, periode, mata uang, judul tabel, dan urutan baris. Jangan meringkas, menafsirkan, atau mengarang data. Jika halaman tidak terbaca, tulis [TIDAK TERBACA HALAMAN N]. Kembalikan teks saja." },
+                { type: "file", data: new Uint8Array(buffer), mediaType: "application/pdf" },
+              ],
+            }],
+          });
+          if (ocr.text.trim().length >= 20) return "[OCR PDF SCAN]\n" + ocr.text.trim();
+        } catch (error) {
+          lastOcrError = error;
+          console.error("Financial PDF OCR failed:", modelId, error);
+          if (!isRetryableAiError(error)) continue;
+        }
+      }
+      if (lastOcrError) console.error("All PDF OCR fallback models failed.");
+      return extracted;
     };
 
     if (blobPath) {
@@ -536,7 +638,7 @@ export async function POST(request: Request) {
       text = await parseUploadedBytes(buffer, file?.name || submittedFileName);
     }
 
-    if (!text.trim()) return NextResponse.json({ error: "File tidak memiliki data yang dapat dibaca. Untuk PDF hasil scan, OCR masih diperlukan; untuk Excel, periksa apakah sheet berisi data." }, { status: 422 });
+    if (!text.trim()) return NextResponse.json({ error: "File tidak memiliki data yang dapat dibaca setelah ekstraksi teks dan percobaan OCR. Pastikan PDF tidak rusak, halaman jelas, dan file tidak dilindungi kata sandi; untuk Excel, periksa apakah sheet berisi data." }, { status: 422 });
     if (action === "extract") return NextResponse.json({ success: true, fileName: (file as File).name, text });
 
     // Deterministic source fingerprint: same extracted financial data = same analysis/score,
@@ -562,7 +664,7 @@ export async function POST(request: Request) {
     const cachedReport = userId && supabase
       ? previousReports.find((row) =>
           row?.report_json?._sourceHash === sourceFingerprint &&
-          row?.report_json?._orchestratorVersion === "corestay-financial-orchestrator-v2"
+          row?.report_json?._orchestratorVersion === "corestay-financial-orchestrator-v3"
         )?.report_json
       : null;
 
@@ -622,37 +724,41 @@ export async function POST(request: Request) {
     // The orchestrator may correct unsupported narrative/figures, but component scores
     // remain anchored to the first scoring pass and the overall score uses fixed weights.
     const firstPass = result.object;
-    const orchestratorSystem = "Anda adalah AI Orchestrator dan reviewer independen untuk laporan Financial Assessment CoreStay. Bandingkan draft dengan teks sumber secara ketat. Koreksi angka/label yang tidak didukung, klaim yang berlebihan, ketidakkonsistenan periode/mata uang, temuan yang tidak memiliki bukti, dan rekomendasi yang tidak relevan. Jangan menambahkan angka, benchmark, tren, transaksi, atau fakta baru. Bila bukti tidak cukup, tulis bahwa data tidak tersedia dan jelaskan keterbatasannya. Pertahankan semua skor komponen persis seperti draft; jangan menilai ulang skor. Perbaiki narasi, indikator, temuan, risiko, rekomendasi, dan action plan hanya bila ada dasar di sumber. Gunakan bahasa Indonesia profesional. Kembalikan seluruh field sesuai schema.";
+    const orchestratorSystem = "Anda adalah AI Orchestrator dan reviewer independen untuk laporan Financial Assessment CoreStay. Bandingkan draft dengan teks sumber secara ketat. Koreksi angka/label yang tidak didukung, klaim yang berlebihan, ketidakkonsistenan periode/mata uang, temuan yang tidak memiliki bukti, dan rekomendasi yang tidak relevan. Jangan menambahkan angka, benchmark, tren, transaksi, atau fakta baru. Bila bukti tidak cukup, tulis bahwa data tidak tersedia dan jelaskan keterbatasannya. Jangan menilai ulang skor; skor final dihitung oleh mesin deterministik di server. Perbaiki narasi, indikator, temuan, risiko, rekomendasi, dan action plan hanya bila ada dasar di sumber. Gunakan bahasa Indonesia profesional. Kembalikan seluruh field sesuai schema.";
     const orchestratorPrompt = "NAMA FILE: " + (file?.name || submittedFileName) +
       "\n\nTEKS SUMBER (evidence of record):\n" + text +
       "\n\nDRAFT HASIL TAHAP PERTAMA (JSON):\n" + JSON.stringify(firstPass) +
       "\n\nLakukan review dan koreksi berbasis bukti. Jangan mengarang data. Skor komponen harus dipertahankan persis.";
     let orchestrated: Awaited<ReturnType<typeof generateObject<typeof FinancialAssessment>>> | null = null;
-    try {
-      orchestrated = await generateObject({
-        model: google("gemini-3.8-flash"),
-        schema: FinancialAssessment,
-        system: orchestratorSystem,
-        prompt: orchestratorPrompt,
-      });
-    } catch (orchestratorError) {
-      console.error("Financial orchestrator review failed:", orchestratorError);
+    let orchestratorLastError: unknown = null;
+    const orchestratorModels = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.5-flash-lite"];
+    for (const modelId of orchestratorModels) {
+      try {
+        orchestrated = await generateObject({
+          model: google(modelId),
+          schema: FinancialAssessment,
+          system: orchestratorSystem,
+          prompt: orchestratorPrompt,
+        });
+        break;
+      } catch (orchestratorError) {
+        orchestratorLastError = orchestratorError;
+        console.error("Financial orchestrator review failed:", modelId, orchestratorError);
+      }
+    }
+    if (!orchestrated) {
       return NextResponse.json({
-        error: "Tahap review AI Orchestrator gagal. Laporan tidak diterbitkan agar hasil tidak diberi status validasi yang belum selesai.",
+        error: "Tahap review AI Orchestrator gagal setelah mencoba beberapa model. Laporan tidak diterbitkan karena validasi belum selesai.",
+        retryable: isRetryableAiError(orchestratorLastError),
       }, { status: 503 });
     }
 
     const reviewed = orchestrated.object;
     const stableResultWithoutMeta = {
       ...reviewed,
-      // Preserve the original component scores; only overall score is calculated by fixed rubric.
-      dataCompletenessScore: firstPass.dataCompletenessScore,
-      revenueHealthScore: firstPass.revenueHealthScore,
-      profitabilityHealthScore: firstPass.profitabilityHealthScore,
-      costControlScore: firstPass.costControlScore,
-      cashFlowScore: firstPass.cashFlowScore,
-      internalControlScore: firstPass.internalControlScore,
-      revenueIntegrityScore: firstPass.revenueIntegrityScore,
+      // Replace model-generated scores with a reproducible rubric derived from the
+      // exact extracted source text. This prevents model wording/temperature drift.
+      ...deterministicComponentScores(text),
     };
     const finalResult = {
       ...stableResultWithoutMeta,
@@ -660,6 +766,8 @@ export async function POST(request: Request) {
     };
 
     const validation = validateFinancialAssessmentResult(finalResult);
+    const reconciliationWarnings = validateFinancialReconciliation(finalResult);
+    validation.warnings.push(...reconciliationWarnings);
     if (!validation.valid) {
       return NextResponse.json({
         error: "Hasil assessment belum lolos validasi otomatis sehingga tidak diterbitkan.",
@@ -671,8 +779,9 @@ export async function POST(request: Request) {
     const stableResult = {
       ...finalResult,
       _sourceHash: sourceFingerprint,
-      _orchestratorVersion: "corestay-financial-orchestrator-v2",
+      _orchestratorVersion: "corestay-financial-orchestrator-v3",
       _scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
+      _scoringMethod: "deterministic-source-rubric-v1",
     };
     const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, finalResult);
     let saved: any = null;
@@ -704,8 +813,10 @@ export async function POST(request: Request) {
       pdfBase64,
       deterministic: true,
       orchestration: {
-        version: "corestay-financial-orchestrator-v2",
+        version: "corestay-financial-orchestrator-v3",
         completed: true,
+        scoringMethod: "deterministic-source-rubric-v1",
+        reconciliationWarnings,
         scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",
       },
     });

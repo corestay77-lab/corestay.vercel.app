@@ -340,7 +340,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   const validationHeight = hasValidationWarnings ? Math.min(118, 76 + Math.min(validationWarnings.length, 2) * 18) : 58;
   ensure(validationHeight + 12);
   page.drawRectangle({ x: MARGIN, y: y - validationHeight, width: CONTENT_W, height: validationHeight, color: validationBg, borderColor: validationColor, borderWidth: 0.8 });
-  page.drawText(hasValidationWarnings ? "PASSED WITH WARNINGS — REVIEW REQUIRED" : "PASSED — AI ORCHESTRATOR + AUTOMATED CHECKS", { x: MARGIN + 12, y: y - 18, size: 8.2, font: bold, color: validationColor });
+  page.drawText(hasValidationWarnings ? "PASSED WITH WARNINGS — REVIEW REQUIRED" : "PASSED — CORESTAY-FINANCIAL AUTOMATED CHECKS", { x: MARGIN + 12, y: y - 18, size: 8.2, font: bold, color: validationColor });
   page.drawText("Checks: source-based scoring, required fields, score ranges, fixed weighted score, and financial reconciliation.", { x: MARGIN + 12, y: y - 33, size: 7.2, font: regular, color: TEXT });
   let warningY = y - 48;
   validationWarnings.slice(0, 2).forEach((warning) => {

@@ -14,3 +14,19 @@ body { background: var(--background); color: var(--foreground); font-family: Ari
   .site-sidebar ~ main { padding-left: 264px !important; }
   .assessment-theme { margin-left: 0 !important; padding-left: 264px !important; }
 }
+
+/* Align only Financial Assessment content exactly with the shared 264px sidebar. */
+@media (min-width: 1024px) {
+  .assessment-theme main.financial-assessment-page {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-left: 264px !important;
+  }
+}
+@media (max-width: 1023px) {
+  .assessment-theme main.financial-assessment-page {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding-left: 0 !important;
+  }
+}

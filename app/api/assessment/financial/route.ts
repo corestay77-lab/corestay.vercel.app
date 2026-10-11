@@ -217,8 +217,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   y -= 24;
   page.drawText("FINANCIAL REPORT", { x: MARGIN, y, size: 24, font: bold, color: NAVY });
   y -= 21;
-  page.drawText("Hospitality Financial Performance Assessment", { x: MARGIN, y, size: 10.5, font: regular, color: MUTED });
-  y -= 20;
+  page.drawText("Hospitality Financial Performance Assessment", { x: MARGIN, y, size: 10.5, font: regular, color: MUTED });  y -= 20;
   page.drawLine({ start: { x: MARGIN, y }, end: { x: PAGE_W - MARGIN, y }, thickness: 1, color: BORDER });
   y -= 18;
   page.drawText("Prepared for management decision-making", { x: MARGIN, y, size: 8.2, font: regular, color: MUTED });
@@ -437,8 +436,7 @@ function parseFinancialNumber(value: string): number | null {
   }
   const negative = normalized.startsWith("(") && normalized.endsWith(")");
   const number = Number(normalized.replace(/[()]/g, ""));
-  return Number.isFinite(number) ? (negative ? -number : number) : null;
-}
+  return Number.isFinite(number) ? (negative ? -number : number) : null;}
 
 function validateFinancialReconciliation(result: z.infer<typeof FinancialAssessment>) {
   const warnings: string[] = [];
@@ -621,6 +619,8 @@ export async function POST(request: Request) {
         try {
           const ocr = await generateText({
             model: google(modelId),
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(20_000),
             messages: [{
               role: "user",
               content: [
@@ -657,8 +657,7 @@ export async function POST(request: Request) {
 
     // Deterministic source fingerprint: same extracted financial data = same analysis/score,
     // regardless of filename or minor PDF metadata differences.
-    const sourceFingerprint = createHash("sha256")
-      .update(text.replace(/\s+/g, " ").trim(), "utf8")
+    const sourceFingerprint = createHash("sha256")      .update(text.replace(/\s+/g, " ").trim(), "utf8")
       .digest("hex");
 
     // Reuse the previously generated result for an identical source. This prevents
@@ -724,12 +723,12 @@ export async function POST(request: Request) {
     let lastAiError: unknown = null;
     for (const modelId of models) {
       try {
-        result = await generateObject({ model: google(modelId), schema: FinancialAssessment, system, prompt });
+        result = await generateObject({ model: google(modelId), schema: FinancialAssessment, system, prompt, maxRetries: 0, abortSignal: AbortSignal.timeout(20_000) });
         break;
       } catch (error) {
         lastAiError = error;
         console.error("Financial assessment model failed:", modelId, error);
-        if (!isRetryableAiError(error)) throw error;
+        if (!isRetryableAiError(error) && !(error instanceof Error && /abort|timeout/i.test(error.name + " " + error.message))) throw error;
       }
     }
     if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
@@ -750,6 +749,8 @@ export async function POST(request: Request) {
       try {
         orchestrated = await generateObject({
           model: google(modelId),
+          maxRetries: 0,
+          abortSignal: AbortSignal.timeout(20_000),
           schema: FinancialAssessment,
           system: orchestratorSystem,
           prompt: orchestratorPrompt,

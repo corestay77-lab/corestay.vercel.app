@@ -15,18 +15,52 @@ body { background: var(--background); color: var(--foreground); font-family: Ari
   .assessment-theme { margin-left: 0 !important; padding-left: 264px !important; }
 }
 
-/* Align only Financial Assessment content exactly with the shared 264px sidebar. */
+/* Financial Assessment: match the Project Experience visual language without changing report content or behavior. */
+.assessment-theme main.financial-assessment-page {
+  background: #f8f8f6 !important;
+  color: #102f5b !important;
+  margin-left: 0 !important;
+  width: 100% !important;
+  padding-left: 0 !important;
+}
+.assessment-theme main.financial-assessment-page h1,
+.assessment-theme main.financial-assessment-page h2,
+.assessment-theme main.financial-assessment-page h3 {
+  color: #102f5b !important;
+}
+.assessment-theme main.financial-assessment-page section.rounded-3xl,
+.assessment-theme main.financial-assessment-page section.rounded-2xl {
+  border-color: #eadfca !important;
+  box-shadow: 0 12px 32px rgba(16, 47, 91, .07) !important;
+}
+.assessment-theme main.financial-assessment-page .financial-assessment-content {
+  color: #102f5b;
+}
+.assessment-theme main.financial-assessment-page .bg-white {
+  background-color: #fff !important;
+}
+.assessment-theme main.financial-assessment-page [class*="border-slate-200"] {
+  border-color: #eadfca !important;
+}
+.assessment-theme main.financial-assessment-page [class*="text-[#172a4d]"],
+.assessment-theme main.financial-assessment-page [class*="text-[#17243d]"] {
+  color: #102f5b !important;
+}
+.assessment-theme main.financial-assessment-page [class*="text-[#9b7439]"] {
+  color: #b47d12 !important;
+}
+.assessment-theme main.financial-assessment-page > footer {
+  border-color: #eadfca !important;
+}
 @media (min-width: 1024px) {
   .assessment-theme main.financial-assessment-page {
-    margin-left: 0 !important;
-    width: 100% !important;
-    padding-left: 264px !important;
+    margin-left: 18px !important;
+    width: calc(100% - 18px) !important;
   }
 }
 @media (max-width: 1023px) {
   .assessment-theme main.financial-assessment-page {
     margin-left: 0 !important;
     width: 100% !important;
-    padding-left: 0 !important;
   }
 }

@@ -141,6 +141,7 @@ export default function PreOpeningResultPage() {
           <p className="mt-3 text-slate-400">
             {lead?.kota || "-"} • {lead?.kamar || "-"} kamar
           </p>
+          <div className="no-print mt-5 flex justify-end"><button type="button" onClick={() => window.print()} className="rounded-xl bg-cyan-400 px-5 py-3 font-bold text-slate-950">Cetak / Simpan PDF</button></div>
         </header>
 
         <section className="mt-8 grid gap-5 md:grid-cols-3">
@@ -432,6 +433,32 @@ export default function PreOpeningResultPage() {
         </footer>
 
       </div>
+      <style jsx global>{`@page { size: A4 portrait; margin: 12mm; }
+@media print {
+html, body { background: #fff !important; color: #111827 !important; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+body { margin: 0 !important; font-size: 10pt !important; }
+.no-print, button { display: none !important; }
+main, main > div { background: #fff !important; color: #111827 !important; min-height: 0 !important; }
+main > div { max-width: none !important; width: 100% !important; padding: 0 !important; margin: 0 !important; }
+header, section, footer { color: #111827 !important; }
+header { margin-bottom: 8mm !important; padding-bottom: 5mm !important; }
+h1 { font-size: 22pt !important; line-height: 1.2 !important; } h2 { font-size: 14pt !important; line-height: 1.25 !important; } h3 { font-size: 10.5pt !important; }
+p, li, td, th { color: #273244 !important; overflow-wrap: anywhere !important; word-break: normal !important; }
+section { margin-top: 6mm !important; }
+.rounded-3xl, .rounded-2xl, .rounded-xl { border-radius: 3mm !important; box-shadow: none !important; }
+.bg-slate-950, .bg-slate-900, .bg-slate-800 { background: #fff !important; }
+[class*="text-slate-"], [class*="text-cyan-"], [class*="text-orange-"], [class*="text-green-"], [class*="text-yellow-"], [class*="text-red-"] { color: #1f2937 !important; }
+[class*="border-white"], [class*="border-cyan-"], [class*="border-orange-"] { border-color: #d1d5db !important; }
+.overflow-x-auto, .overflow-hidden { overflow: visible !important; }
+table { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; border-collapse: collapse !important; font-size: 8pt !important; }
+th, td { padding: 2.2mm !important; border: 1px solid #d1d5db !important; vertical-align: top !important; white-space: normal !important; }
+tr { break-inside: avoid !important; page-break-inside: avoid !important; } thead { display: table-header-group !important; }
+.grid { gap: 3mm !important; }
+.rounded-3xl, .rounded-2xl, .rounded-xl { break-inside: auto; page-break-inside: auto; }
+img { max-width: 42mm !important; max-height: 16mm !important; object-fit: contain !important; }
+footer { margin-top: 8mm !important; padding-top: 3mm !important; border-color: #d1d5db !important; }
+a { color: #111827 !important; text-decoration: none !important; }
+}`}</style>
     </main>
   );
 }

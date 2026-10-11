@@ -24,13 +24,6 @@ type Result = {
   priorityActions: string[];
 };
 
-type Orchestration = {
-  version: string; completed: boolean; validatedAt: string; scorePreserved: boolean;
-  overallScore: number; review: { status: "PASSED" | "PASSED_WITH_WARNINGS"; summary: string;
-  checks: { name: string; status: "PASS" | "WARNING"; detail: string }[]; warnings: string[] };
-  deterministicChecks: { passed: boolean; errors: string[]; warnings: string[] };
-};
-
 function getScoreStyle(score: number) {
   if (score >= 80) return { color: "#22c55e", label: "READY", text: "text-green-400" };
   if (score >= 60) return { color: "#eab308", label: "NEED IMPROVEMENT", text: "text-yellow-400" };
@@ -50,9 +43,6 @@ type Lead = {
 export default function PreOpeningResultPage() {
   const [result, setResult] = useState<Result | null>(null);
   const [lead, setLead] = useState<Lead | null>(null);
-  const [orchestration, setOrchestration] = useState<Orchestration | null>(null);
-  const [orchestrationLoading, setOrchestrationLoading] = useState(false);
-  const [orchestrationError, setOrchestrationError] = useState("");
 
   useEffect(() => {
     const storedResult = sessionStorage.getItem(
@@ -67,7 +57,6 @@ export default function PreOpeningResultPage() {
       try {
         const parsedResult = JSON.parse(storedResult) as Result;
         setResult(parsedResult);
-        void runOrchestrator(parsedResult);
 
         async function saveAssessment() {
           const savedKey = "corestay_preopening_report_saved";
@@ -120,26 +109,6 @@ export default function PreOpeningResultPage() {
       }
     }
   }, []);
-
-  async function runOrchestrator(parsed: Result) {
-    setOrchestrationLoading(true);
-    setOrchestrationError("");
-    try {
-      const response = await fetch("/api/assessment/pre-opening/orchestrate", {
-        method: "POST", headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(parsed), cache: "no-store",
-      });
-      const data = await response.json();
-      if (!response.ok || data.success !== true || !data.orchestration) {
-        throw new Error(data.error || "AI Orchestrator belum menyelesaikan validasi.");
-      }
-      setOrchestration(data.orchestration as Orchestration);
-    } catch (error) {
-      setOrchestrationError(error instanceof Error ? error.message : "Validasi AI Orchestrator gagal.");
-    } finally {
-      setOrchestrationLoading(false);
-    }
-  }
 
   if (!result) {
     return (
@@ -457,47 +426,6 @@ export default function PreOpeningResultPage() {
           </p>
         </section>
 
-
-        <section className="mt-8 rounded-3xl border border-cyan-400/20 bg-slate-900 p-7" aria-live="polite">
-          <p className="text-sm font-semibold uppercase tracking-wider text-cyan-400">CoreStay AI Orchestrator</p>
-          <h2 className="mt-2 text-2xl font-bold">Validasi Hasil Assessment</h2>
-          {orchestrationLoading ? (
-            <p className="mt-4 text-slate-300">Memeriksa konsistensi hasil dan narasi assessment...</p>
-          ) : orchestration ? (
-            <>
-              <p className={`mt-4 font-bold ${orchestration.review.status === "PASSED" ? "text-green-400" : "text-amber-400"}`}>
-                {orchestration.review.status === "PASSED" ? "PASSED — AI ORCHESTRATOR + AUTOMATED CHECKS" : "PASSED WITH WARNINGS — AI ORCHESTRATOR"}
-              </p>
-              <p className="mt-3 leading-7 text-slate-300">{orchestration.review.summary}</p>
-              <div className="mt-5 space-y-3">
-                {orchestration.review.checks.map((check, index) => (
-                  <div key={`${check.name}-${index}`} className="rounded-xl border border-white/10 bg-slate-950 p-4">
-                    <p className={`font-semibold ${check.status === "PASS" ? "text-green-400" : "text-amber-400"}`}>{check.status} — {check.name}</p>
-                    <p className="mt-1 text-sm leading-6 text-slate-300">{check.detail}</p>
-                  </div>
-                ))}
-              </div>
-              {orchestration.review.warnings.length > 0 && (
-                <div className="mt-5 rounded-xl border border-amber-400/20 bg-amber-400/5 p-4">
-                  <p className="font-semibold text-amber-300">Catatan validasi</p>
-                  <ul className="mt-2 list-disc space-y-1 pl-5 text-sm leading-6 text-slate-300">
-                    {orchestration.review.warnings.map((warning, index) => <li key={index}>{warning}</li>)}
-                  </ul>
-                </div>
-              )}
-              <p className="mt-5 text-xs leading-5 text-slate-500">
-                Skor asli dipertahankan: {orchestration.scorePreserved ? "Ya" : "Perlu ditinjau"} · Validasi: {new Date(orchestration.validatedAt).toLocaleString("id-ID")}.
-                Review ini memeriksa konsistensi hasil self-assessment, bukan audit independen atas dokumen atau kondisi hotel.
-              </p>
-            </>
-          ) : (
-            <>
-              <p className="mt-4 text-amber-300">Validasi AI belum berhasil diselesaikan.</p>
-              <p className="mt-2 text-sm leading-6 text-slate-400">{orchestrationError || "Silakan coba ulang."}</p>
-              <button onClick={() => void runOrchestrator(result)} className="mt-4 rounded-xl bg-cyan-400 px-4 py-2 font-bold text-slate-950">Coba Validasi Lagi</button>
-            </>
-          )}
-        </section>
 
         <footer className="mt-12 border-t border-white/10 pt-6 text-center text-xs text-slate-600">
           CoreStay Advisory — Pre-opening Hotel Readiness Assessment

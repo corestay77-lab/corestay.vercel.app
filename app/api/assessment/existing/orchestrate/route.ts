@@ -66,7 +66,7 @@ export async function POST(request: Request) {
     const data = parsed.data;
     const expectedWeights = { business: 20, revenue: 25, operations: 20, people: 15, profitability: 20 };
     const errors: string[] = [];
-    const warnings: string[] = [];
+    const warnings: string[] = ["Hasil ini berasal dari self-assessment; dokumen pendukung operasional belum diperiksa dalam proses ini."];
 
     for (const [key, expected] of Object.entries(expectedWeights)) {
       if (data.weights[key] !== expected) errors.push(`Bobot area ${key} tidak sesuai standar (${expected}%).`);
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false, error: "AI Orchestrator belum menyelesaikan review. Hasil tetap merupakan self-assessment dan belum mendapat validasi AI.", retryable: true }, { status: 503 });
     }
 
-    if (warnings.length) {
+    if (warnings.length || review.warnings.length || review.checks.some((check) => check.status === "WARNING")) {
       review.status = "PASSED_WITH_WARNINGS";
       review.warnings = [...new Set([...review.warnings, ...warnings])].slice(0, 5);
     }

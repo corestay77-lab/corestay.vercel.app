@@ -177,13 +177,10 @@ export default function FinancialAssessmentPage() {
   }
 
   async function downloadPdf() {
-    // Anonymous users receive the generated PDF directly in the response.
-    // They must not need a login just to view/download their current result.
-    if (!reportId) {
-      if (!pdfBase64) {
-        setError("PDF tidak tersedia.");
-        return;
-      }
+    // Prefer the PDF generated alongside the currently displayed report.
+    // This ensures the latest embedded charts are included even when the report
+    // has also been saved to the user's account.
+    if (pdfBase64) {
       const binary = atob(pdfBase64);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
@@ -194,6 +191,12 @@ export default function FinancialAssessmentPage() {
       anchor.download = "CoreStay-Financial-Assessment.pdf";
       anchor.click();
       URL.revokeObjectURL(url);
+      return;
+    }
+
+    // Fallback for reports opened without a fresh PDF payload.
+    if (!reportId) {
+      setError("PDF tidak tersedia. Jalankan ulang assessment untuk membuat PDF terbaru.");
       return;
     }
 

@@ -280,6 +280,7 @@ export default function FinancialAssessmentPage() {
               </button>
             </div>
             <ReportHeader result={result} />
+            <FinancialOverview result={result} />
 
             <ReportCard eyebrow="01" title="Executive Financial Summary" subtitle="Overall Financial Condition">
               <div className="rounded-2xl bg-slate-50 p-5">
@@ -441,6 +442,95 @@ function scoreStatus(score: number) {
   if (score >= 80) return { icon: "🟢", label: "Good", className: "text-emerald-700 bg-emerald-50" };
   if (score >= 60) return { icon: "🟡", label: "Moderate", className: "text-amber-700 bg-amber-50" };
   return { icon: "🔴", label: "High", className: "text-red-700 bg-red-50" };
+}
+
+function FinancialOverview({ result }: { result: AssessmentResult }) {
+  const score = Math.max(0, Math.min(100, Number(result.financialHealthScore) || 0));
+  const indicators = [
+    { label: "Revenue Health", score: result.revenueHealthScore },
+    { label: "Profitability", score: result.profitabilityHealthScore },
+    { label: "Cost Control", score: result.costControlScore },
+    { label: "Cash Flow", score: result.cashFlowScore },
+    { label: "Data Completeness", score: result.dataCompletenessScore },
+    { label: "Internal Control", score: result.internalControlScore },
+  ].map((item) => ({ ...item, score: Math.max(0, Math.min(100, Number(item.score) || 0)) }));
+  const figures = [
+    { label: "Total Revenue", labels: ["Revenue", "Total Revenue"] },
+    { label: "GOP", labels: ["GOP", "Gross Operating Profit"] },
+    { label: "GOP Margin", labels: ["GOP Margin", "GOP %", "GOP Margin %"] },
+    { label: "Operating Cost", labels: ["Operating Cost", "Operating Costs", "Total Operating Cost"] },
+  ];
+  const status = score >= 80 ? "HEALTHY" : score >= 60 ? "NEEDS IMPROVEMENT" : "NEEDS ATTENTION";
+
+  return (
+    <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+      <div className="bg-[#10284b] px-6 py-6 text-white sm:px-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-[10px] font-bold uppercase tracking-[0.24em] text-[#d8b985]">Financial Intelligence Snapshot</p>
+            <h2 className="mt-2 text-xl font-bold sm:text-2xl">Financial Performance at a Glance</h2>
+            <p className="mt-1 max-w-xl text-sm leading-6 text-white/65">Ringkasan visual indikator utama berdasarkan data dan skor assessment pada laporan ini.</p>
+          </div>
+          <div className="flex items-center gap-4 self-start rounded-2xl border border-white/10 bg-white/[0.06] px-4 py-3 sm:self-auto">
+            <div className="relative h-[76px] w-[76px] shrink-0 rounded-full p-[6px]" style={{ background: `conic-gradient(#d8b985 ${score * 3.6}deg, rgba(255,255,255,.14) 0deg)` }}>
+              <div className="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#10284b]">
+                <span className="text-xl font-bold leading-none">{score}</span>
+                <span className="mt-1 text-[9px] text-white/60">/ 100</span>
+              </div>
+            </div>
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-white/55">Financial Health</p>
+              <p className="mt-1 max-w-[150px] text-sm font-bold text-[#f0d7a5]">{status}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="grid gap-0 lg:grid-cols-[1.1fr_0.9fr]">
+        <div className="border-b border-slate-100 p-5 sm:p-7 lg:border-b-0 lg:border-r">
+          <div className="flex items-center justify-between gap-3">
+            <h3 className="text-sm font-bold text-[#172a4d]">Financial Health Indicators</h3>
+            <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400">Score / 100</span>
+          </div>
+          <div className="mt-5 space-y-4">
+            {indicators.map((item) => {
+              const color = item.score >= 80 ? "#16856b" : item.score >= 60 ? "#c08a36" : "#c45b55";
+              return <div key={item.label}>
+                <div className="mb-2 flex items-center justify-between gap-3">
+                  <span className="text-xs font-medium text-slate-600">{item.label}</span>
+                  <span className="text-xs font-bold tabular-nums text-[#172a4d]">{item.score}</span>
+                </div>
+                <div className="h-2 overflow-hidden rounded-full bg-slate-100">
+                  <div className="h-full rounded-full transition-all" style={{ width: `${item.score}%`, backgroundColor: color }} />
+                </div>
+              </div>;
+            })}
+          </div>
+          <p className="mt-4 text-[11px] leading-5 text-slate-400">Skor lebih tinggi menunjukkan kondisi indikator yang dinilai lebih kuat. Interpretasi tetap perlu melihat temuan dan keterbatasan data pada bagian berikutnya.</p>
+        </div>
+
+        <div className="p-5 sm:p-7">
+          <h3 className="text-sm font-bold text-[#172a4d]">Key Figures</h3>
+          <p className="mt-1 text-xs text-slate-400">Angka yang berhasil diidentifikasi dari laporan sumber</p>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+            {figures.map((item, index) => {
+              const figure = getFigure(result.extractedFigures, item.labels);
+              return <div key={item.label} className="rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-slate-400">{item.label}</p>
+                <p className="mt-2 break-words text-base font-bold text-[#172a4d]">{figure.value}</p>
+                <p className="mt-1 truncate text-[10px] text-slate-400">{figure.period || "Periode tidak tersedia"}</p>
+                <div className="mt-3 h-1 w-10 rounded-full" style={{ backgroundColor: index === 1 || index === 2 ? "#c5a36a" : "#203b68" }} />
+              </div>;
+            })}
+          </div>
+          <div className="mt-4 flex items-start gap-2 rounded-xl bg-[#fbf8f2] p-3">
+            <span className="mt-0.5 text-[#9b7439]" aria-hidden="true">◆</span>
+            <p className="text-[11px] leading-5 text-slate-600">Gunakan ringkasan ini sebagai pintu masuk; analisis, risiko, dan rekomendasi terperinci tersedia pada bagian laporan di bawah.</p>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 function ReportHeader({ result }: { result: AssessmentResult }) {

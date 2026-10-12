@@ -208,7 +208,9 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   function listBlock(items: string[], numbered = false) {
     items.forEach((item, i) => {
       const size = 9.1;
-      const lines = wrap(String(item || ""), size, CONTENT_W - (numbered ? 30 : 24));
+      const cleanItem = String(item || "").replace(/^\\s*(?:\\d{1,2}[.)]|[-•*])\\s+/, "").trim();
+      if (!cleanItem) return;
+      const lines = wrap(cleanItem, size, CONTENT_W - (numbered ? 30 : 24));
       const lineHeight = size + 3.4;
       y -= numbered ? 8 : 0;
       let firstLine = true;

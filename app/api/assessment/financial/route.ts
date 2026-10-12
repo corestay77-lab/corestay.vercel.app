@@ -887,17 +887,36 @@ export async function POST(request: Request) {
 
     let result: Awaited<ReturnType<typeof generateObject<typeof FinancialAssessment>>> | null = null;
     let lastAiError: unknown = null;
+    // Retry each model once on temporary capacity/rate-limit/timeout failures,
+    // with a short backoff, before moving to the next configured fallback model.
     for (const modelId of models) {
-      try {
-        result = await withTimeout(generateObject({ model: google(modelId), schema: FinancialAssessment, system, prompt, maxRetries: 0, abortSignal: AbortSignal.timeout(18_000) }), 18_000);
-        break;
-      } catch (error) {
-        lastAiError = error;
-        console.error("Financial assessment model failed:", modelId, error);
-        if (!isRetryableAiError(error) && !(error instanceof Error && /abort|timeout/i.test(error.name + " " + error.message))) throw error;
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          result = await withTimeout(generateObject({
+            model: google(modelId),
+            schema: FinancialAssessment,
+            system,
+            prompt,
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(18_000),
+          }), 18_000);
+          break;
+        } catch (error) {
+          lastAiError = error;
+          console.error("Financial assessment model failed:", modelId, "attempt", attempt + 1, error);
+          const retryable = isRetryableAiError(error) || (error instanceof Error && /abort|timeout/i.test(error.name + " " + error.message));
+          if (!retryable) throw error;
+          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 1_200));
+        }
       }
+      if (result) break;
     }
-    if (!result) return NextResponse.json({ error: "Layanan AI sedang penuh. CoreStay sudah mencoba beberapa model Gemini. Silakan ulangi beberapa saat lagi." }, { status: 503 });
+    if (!result) {
+      return NextResponse.json({
+        error: "Layanan AI sedang sibuk setelah percobaan ulang otomatis pada beberapa model. Silakan coba lagi beberapa saat. File sumber tidak perlu diunggah ulang jika masih tersedia pada halaman ini.",
+        retryable: true,
+      }, { status: 503 });
+    }
 
     // AI Orchestrator: a second pass reviews the draft against the source document.
     // The orchestrator may correct unsupported narrative/figures, but component scores
@@ -912,20 +931,27 @@ export async function POST(request: Request) {
     let orchestratorLastError: unknown = null;
     const orchestratorModels = ["gemini-3.8-flash", "gemini-3.5-flash-lite"];
     for (const modelId of orchestratorModels) {
-      try {
-        orchestrated = await withTimeout(generateObject({
-          model: google(modelId),
-          maxRetries: 0,
-          abortSignal: AbortSignal.timeout(20_000),
-          schema: FinancialAssessment,
-          system: orchestratorSystem,
-          prompt: orchestratorPrompt,
-        }), 18_000);
-        break;
-      } catch (orchestratorError) {
-        orchestratorLastError = orchestratorError;
-        console.error("Financial orchestrator review failed:", modelId, orchestratorError);
+      for (let attempt = 0; attempt < 2; attempt++) {
+        try {
+          orchestrated = await withTimeout(generateObject({
+            model: google(modelId),
+            maxRetries: 0,
+            abortSignal: AbortSignal.timeout(20_000),
+            schema: FinancialAssessment,
+            system: orchestratorSystem,
+            prompt: orchestratorPrompt,
+          }), 18_000);
+          break;
+        } catch (orchestratorError) {
+          orchestratorLastError = orchestratorError;
+          console.error("Financial orchestrator review failed:", modelId, "attempt", attempt + 1, orchestratorError);
+          const retryable = isRetryableAiError(orchestratorError) ||
+            (orchestratorError instanceof Error && /abort|timeout/i.test(orchestratorError.name + " " + orchestratorError.message));
+          if (!retryable) break;
+          if (attempt === 0) await new Promise((resolve) => setTimeout(resolve, 1_200));
+        }
       }
+      if (orchestrated) break;
     }
     if (!orchestrated) {
       return NextResponse.json({

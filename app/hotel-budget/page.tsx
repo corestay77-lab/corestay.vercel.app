@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
 
 type BudgetForm = {
   hotelName: string; period: string; days: string; rooms: string; roomSold: string;
@@ -30,8 +29,7 @@ const num = (value: string) => { const n = Number(value); return value.trim() ==
 const fmt = (value: number) => new Intl.NumberFormat("id-ID", { maximumFractionDigits: 2 }).format(value);
 
 export default function HotelBudgetPage() {
-  const search = useSearchParams();
-  const activeTab = sections.some(s => s.id === search.get("tab")) ? (search.get("tab") as typeof sections[number]["id"]) : "statistics";
+  const [activeTab, setActiveTab] = useState<typeof sections[number]["id"]>("statistics");
   const [form, setForm] = useState<BudgetForm>(blank);
   const [loaded, setLoaded] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -43,6 +41,8 @@ export default function HotelBudgetPage() {
   const [orchestrator, setOrchestrator] = useState<"idle" | "checking" | "passed" | "failed">("idle");
 
   useEffect(() => {
+    const tab = new URLSearchParams(window.location.search).get("tab");
+    if (sections.some(s => s.id === tab)) setActiveTab(tab as typeof sections[number]["id"]);
     try {
       const raw = localStorage.getItem("corestay-hotel-budget-pnl-v1");
       if (raw) {
@@ -201,7 +201,7 @@ export default function HotelBudgetPage() {
             <div className="mt-7 flex flex-wrap gap-3 border-t border-slate-100 pt-5 print:hidden">
               <button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button>
               <button type="button" disabled={saving || !loaded} onClick={validateAndSave} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving ? "Validasi final berjalan…" : "Validasi AI & Simpan"}</button>
-              <button type="button" onClick={window.print} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Print / PDF</button>
+              <button type="button" onClick={() => window.print()} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Print / PDF</button>
               <button type="button" onClick={downloadCsv} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download CSV</button>
             </div>
             {message && <div className={"mt-4 rounded-xl border p-4 text-sm leading-6 " + (orchestrator === "passed" ? "border-emerald-200 bg-emerald-50 text-emerald-900" : orchestrator === "failed" ? "border-rose-200 bg-rose-50 text-rose-900" : "border-sky-200 bg-sky-50 text-sky-900")}>{message}</div>}

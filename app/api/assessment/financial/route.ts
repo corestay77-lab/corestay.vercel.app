@@ -123,7 +123,8 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
       .replace(/\\n/g, "\n")
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
-      .replace(/[ \t]+(?=\d{1,2}[.)]\s+[A-ZÀ-Ý])/g, "\n");
+      .replace(/[ \t]+(?=\d{1,2}[.)]\s+\S)/g, "\n")
+      .replace(/\n{3,}/g, "\n\n");
     const paragraphs = normalized.split("\n").map((x) => x.trim()).filter(Boolean);
     for (const paragraph of paragraphs) {
       const numbered = paragraph.match(/^(\d{1,2})[.)]\s+(.+)$/);

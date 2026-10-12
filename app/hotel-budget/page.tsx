@@ -72,12 +72,10 @@ export default function HotelBudgetPage() {
       if(!response.ok) throw new Error(data.error||"Daftar laporan tidak dapat dibaca.");
       const list=Array.isArray(data.reports)?data.reports:[];
       setReports(list);
-      if(list.length&&!selectedReport){
-        setSelectedReport(list[0].id);
-      }
+      if(list.length) setSelectedReport(prev=>prev||list[0].id);
     }catch(e){setMessage(e instanceof Error?e.message:"Gagal membaca laporan tersimpan.");}
     finally{setLoadingReports(false);}
-  },[selectedReport]);
+  },[]);
 
   useEffect(()=>{
     let alive=true;

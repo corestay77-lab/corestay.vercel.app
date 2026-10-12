@@ -244,7 +244,36 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   y -= 28;
   scoreCard(result.financialHealthScore);
 
-  // The legacy top-of-report bar chart was removed; keep the newer indicator composition donut below.
+  // Printable financial overview chart: included in the generated PDF, not just the web page.
+  ensure(174);
+  const chartTop = y;
+  const chartHeight = 158;
+  page.drawRectangle({ x: MARGIN, y: chartTop - chartHeight, width: CONTENT_W, height: chartHeight, color: WHITE, borderColor: BORDER, borderWidth: 0.8 });
+  page.drawRectangle({ x: MARGIN, y: chartTop - 4, width: CONTENT_W, height: 4, color: GOLD });
+  page.drawText("FINANCIAL HEALTH INDICATORS", { x: MARGIN + 13, y: chartTop - 22, size: 8, font: bold, color: NAVY });
+  page.drawText("Component score / 100", { x: MARGIN + 13, y: chartTop - 34, size: 6.5, font: regular, color: MUTED });
+  const chartIndicators: Array<[string, number]> = [
+    ["Revenue Health", result.revenueHealthScore],
+    ["Profitability", result.profitabilityHealthScore],
+    ["Cost Control", result.costControlScore],
+    ["Cash Flow", result.cashFlowScore],
+    ["Data Completeness", result.dataCompletenessScore],
+    ["Internal Control", result.internalControlScore],
+  ];
+  const labelX = MARGIN + 13;
+  const barX = MARGIN + 142;
+  const barWidth = CONTENT_W - 190;
+  chartIndicators.forEach(([name, rawScore], index) => {
+    const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
+    const rowY = chartTop - 51 - index * 16;
+    const barColor = score >= 80 ? GREEN : score >= 60 ? GOLD : RED;
+    page.drawText(name, { x: labelX, y: rowY, size: 7, font: regular, color: TEXT });
+    page.drawRectangle({ x: barX, y: rowY - 1, width: barWidth, height: 6, color: LIGHT });
+    if (score > 0) page.drawRectangle({ x: barX, y: rowY - 1, width: barWidth * score / 100, height: 6, color: barColor });
+    page.drawText(String(score), { x: barX + barWidth + 8, y: rowY - 1, size: 7, font: bold, color: NAVY });
+  });
+  y = chartTop - chartHeight - 12;
+
   // Indicator composition donut: mirror the six equal segments shown on the dashboard.
   ensure(174);
   const compositionTop = y;

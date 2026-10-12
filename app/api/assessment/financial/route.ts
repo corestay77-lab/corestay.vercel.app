@@ -508,6 +508,40 @@ function parseFinancialNumber(value: string): number | null {
   const number = Number(normalized.replace(/[()]/g, ""));
   return Number.isFinite(number) ? (negative ? -number : number) : null;}
 
+function normalizeRequiredFinancialFigures(result: z.infer<typeof FinancialAssessment>) {
+  const required: Array<{ label: string; aliases: string[] }> = [
+    { label: "Revenue", aliases: ["revenue", "total revenue", "total income", "total operating revenue", "room revenue", "total sales"] },
+    { label: "GOP", aliases: ["gop", "gross operating profit", "gross operating income"] },
+    { label: "GOP Margin", aliases: ["gop margin", "gop %", "gop margin %", "gop percentage"] },
+    { label: "Operating Cost", aliases: ["operating cost", "operating costs", "total operating cost", "total operating costs", "total expenses", "operating expenses"] },
+    { label: "Net Profit", aliases: ["net profit", "net profit/loss", "net income", "net loss"] },
+    { label: "Cash Flow", aliases: ["cash flow", "operating cash flow", "net cash flow", "cash flows from operating activities"] },
+  ];
+  const figures = [...result.extractedFigures];
+  const unavailable = "Tidak tersedia – indikator tidak dapat dihitung secara valid.";
+  for (const item of required) {
+    const target = item.label.toLowerCase();
+    let index = figures.findIndex((figure) => item.aliases.includes(figure.label.trim().toLowerCase()));
+    const exactIndex = figures.findIndex((figure) => figure.label.trim().toLowerCase() === target);
+    if (exactIndex >= 0) continue;
+    if (index >= 0) {
+      figures[index] = { ...figures[index], label: item.label };
+    } else {
+      figures.push({ label: item.label, value: unavailable, period: "—" });
+    }
+  }
+  // Prevent duplicate labels from causing a publication failure. Keep the first
+  // source-extracted value and preserve all unique additional indicators.
+  const seen = new Set<string>();
+  const deduplicated = figures.filter((figure) => {
+    const key = figure.label.trim().toLowerCase();
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+  return { ...result, extractedFigures: deduplicated.slice(0, 40) };
+}
+
 function validateFinancialReconciliation(result: z.infer<typeof FinancialAssessment>) {
   const warnings: string[] = [];
   const find = (label: string) => result.extractedFigures.find((f) => f.label.trim().toLowerCase() === label.toLowerCase());
@@ -853,10 +887,13 @@ export async function POST(request: Request) {
       // exact extracted source text. This prevents model wording/temperature drift.
       ...deterministicComponentScores(text),
     };
-    const finalResult = {
+    const scoredResult = {
       ...stableResultWithoutMeta,
       financialHealthScore: calculateDeterministicFinancialHealthScore(stableResultWithoutMeta),
     };
+    // Normalize required scorecard labels before strict validation. Missing values
+    // remain explicitly unavailable; no financial figures are invented.
+    const finalResult = normalizeRequiredFinancialFigures(scoredResult);
 
     const validation = validateFinancialAssessmentResult(finalResult);
     const reconciliationWarnings = validateFinancialReconciliation(finalResult);

@@ -412,9 +412,8 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   computeFinancialRatios(result.extractedFigures).forEach((group) => {
     label(group.title);
     group.rows.forEach((row) => {
-      ensure(30);
-      textBlock(row.name + ": " + row.value, 7.3, NAVY, 1);
-      textBlock("Rumus: " + row.formula, 6.2, MUTED, 2);
+      ensure(18);
+      textBlock(row.name + ": " + row.value, 7.3, NAVY, 2);
     });
     y -= 3;
   });

@@ -404,11 +404,11 @@ export default function FinancialAssessmentPage() {
                     <h3 className="mb-3 text-sm font-extrabold tracking-wide text-[#172a4d]">{group.title}</h3>
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="w-full min-w-[680px] text-left text-sm">
-                        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Indikator</th><th className="px-4 py-3">Rumus</th><th className="px-4 py-3">Hasil</th></tr></thead>
+                        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Indikator</th><th className="px-4 py-3">Hasil</th></tr></thead>
                         <tbody className="divide-y divide-slate-100">
                           {group.rows.map((row) => <tr key={row.name}>
                             <td className="px-4 py-3 font-semibold text-slate-800">{row.name}</td>
-                            <td className="px-4 py-3 text-slate-600">{row.formula}</td>
+                            
                             <td className="px-4 py-3 font-bold text-[#172a4d]">{row.value}</td>
                           </tr>)}
                         </tbody>

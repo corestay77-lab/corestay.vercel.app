@@ -76,6 +76,8 @@ export async function POST(request: NextRequest) {
     if (days === null || days <= 0 || days > 366) return NextResponse.json({ passed: false, issues: ["Hari operasional harus diisi antara 1–366."], warnings: [] }, { status: 422 });
     if (rooms === null || rooms <= 0 || rooms > 100000) return NextResponse.json({ passed: false, issues: ["Jumlah kamar harus berupa angka positif yang masuk akal."], warnings: [] }, { status: 422 });
     const totalRoomBuild = days * rooms;
+    const issues: string[] = [];
+    const warnings: string[] = [];
     const statKeys = ["outInventory","houseUse","outOfOrder","complimentary","roomPaid"] as const;
     for (const key of statKeys) {
       const raw = stats[key];
@@ -83,8 +85,6 @@ export async function POST(request: NextRequest) {
       else if (numeric(raw) === null) issues.push("Statistik "+key+" harus berupa angka yang valid.");
     }
     const deductions: [string,number][] = ["outInventory","houseUse","outOfOrder"].map(k => [k,numeric(stats[k]) ?? 0] as [string,number]);
-    const issues: string[] = [];
-    const warnings: string[] = [];
     for (const [key,value] of deductions) if (!Number.isFinite(value) || value < 0) issues.push("Statistik "+key+" tidak boleh negatif atau tidak valid.");
     if (deductions.reduce((s,x)=>s+x[1],0)>totalRoomBuild) issues.push("Out of Inventory + House Use + Out of Order melebihi Total Room Build.");
     const roomAvailable=totalRoomBuild-deductions.reduce((s,x)=>s+x[1],0);

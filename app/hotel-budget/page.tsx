@@ -67,7 +67,7 @@ export default function HotelBudgetPage() {
   const loadReports=useCallback(async(token:string)=>{
     setLoadingReports(true);
     try{
-      const response=await fetch("/api/hotel-budget/reports",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
+      const response=await fetch("/api/hotel-budget/final-reports",{headers:{Authorization:"Bearer "+token},cache:"no-store"});
       const data=await response.json();
       if(!response.ok) throw new Error(data.error||"Daftar laporan tidak dapat dibaca.");
       const list=Array.isArray(data.reports)?data.reports:[];
@@ -136,7 +136,7 @@ export default function HotelBudgetPage() {
     if(!form.hotelName.trim()||!form.period.trim()){setOrchestrator("failed");setIssues(["Nama hotel dan periode wajib diisi."]);setMessage("Lengkapi identitas laporan terlebih dahulu.");return;}
     setSaving(true);
     try{
-      const response=await fetch("/api/hotel-budget/reports",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+accessToken},body:JSON.stringify({form})});
+      const response=await fetch("/api/hotel-budget/final-reports",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+accessToken},body:JSON.stringify({form})});
       const raw=await response.text();let data:any={};
       try{data=raw?JSON.parse(raw):{};}catch{throw new Error("Respons server tidak valid. Data tetap berada di form dan belum disimpan.");}
       if(!response.ok||data.passed!==true){
@@ -155,7 +155,7 @@ export default function HotelBudgetPage() {
   async function deleteSaved(report:SavedReport){
     if(!accessToken||!window.confirm("Hapus laporan "+report.hotel_name+" — "+report.period_label+"? Tindakan ini tidak dapat dibatalkan."))return;
     try{
-      const response=await fetch("/api/hotel-budget/reports?id="+encodeURIComponent(report.id),{method:"DELETE",headers:{Authorization:"Bearer "+accessToken}});
+      const response=await fetch("/api/hotel-budget/final-reports?id="+encodeURIComponent(report.id),{method:"DELETE",headers:{Authorization:"Bearer "+accessToken}});
       const data=await response.json();if(!response.ok)throw new Error(data.error||"Laporan gagal dihapus.");
       const rest=reports.filter(r=>r.id!==report.id);setReports(rest);if(selectedReport===report.id)setSelectedReport(rest[0]?.id||"");setMessage("Laporan berhasil dihapus dari akun Anda.");
     }catch(e){setMessage(e instanceof Error?e.message:"Laporan gagal dihapus.");}

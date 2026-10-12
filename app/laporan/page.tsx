@@ -42,6 +42,7 @@ export default function LaporanPage() {
       .from("assessment_reports")
       .select("id,score,created_at,assessment_type,report_json")
       .eq("user_id", user.id)
+      .in("assessment_type", ["existing", "pre-opening", "financial"])
       .order("created_at", { ascending: false });
 
     if (error) {

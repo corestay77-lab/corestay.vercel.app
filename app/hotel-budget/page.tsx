@@ -166,7 +166,7 @@ export default function HotelBudgetPage() {
     try{
       const response=await fetch("/api/hotel-budget/final-reports?id="+encodeURIComponent(report.id),{method:"DELETE",headers:{Authorization:"Bearer "+accessToken}});
       const data=await response.json();if(!response.ok)throw new Error(data.error||"Laporan gagal dihapus.");
-      const rest=reports.filter(r=>r.id!==report.id);setReports(rest);if(selectedReport===report.id)setSelectedReport(rest[0]?.id||"");setMessage("Laporan berhasil dihapus dari akun Anda.");
+      const rest=reports.filter(r=>r.id!==report.id);setReports(rest);if(selectedReport===report.id){if(rest[0])openSaved(rest[0]);else setSelectedReport("");}setMessage("Laporan berhasil dihapus dari akun Anda.");
     }catch(e){setMessage(e instanceof Error?e.message:"Laporan gagal dihapus.");}
   }
 

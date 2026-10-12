@@ -15,6 +15,13 @@ const ReviewSchema = z.object({
   summary: z.string().max(500)
 });
 
+const isValidIsoDate = (value: unknown) => {
+  if (typeof value !== "string" || !/^\\d{4}-\\d{2}-\\d{2}$/.test(value)) return false;
+  const [year, month, day] = value.split("-").map(Number);
+  const date = new Date(Date.UTC(year, month - 1, day));
+  return date.getUTCFullYear() === year && date.getUTCMonth() === month - 1 && date.getUTCDate() === day;
+};
+
 async function authenticatedClient(request: NextRequest) {
   const auth = request.headers.get("authorization") || "";
   if (!auth.startsWith("Bearer ")) return { error: NextResponse.json({ error: "Silakan login untuk menyimpan dan membuka laporan." }, { status: 401 }) };
@@ -141,7 +148,7 @@ export async function POST(request: NextRequest) {
     if (actionStatus === "Selesai" && actionProgress !== 100) issues.push("Status Selesai hanya boleh dipilih jika progress 100%.");
     if (actionStatus === "Sedang berjalan" && (actionProgress === null || actionProgress <= 0 || actionProgress >= 100)) issues.push("Status Sedang berjalan memerlukan progress 1–99%.");
     if (actionStatus === "Terhambat" && (actionProgress === null || actionProgress >= 100)) issues.push("Status Terhambat memerlukan progress di bawah 100%.");
-    if (form.actionDue && (!/^\\d{4}-\\d{2}-\\d{2}$/.test(form.actionDue) || Number.isNaN(Date.parse(form.actionDue+"T00:00:00")))) issues.push("Deadline harus berupa tanggal yang valid.");
+    if (form.actionDue && !isValidIsoDate(form.actionDue)) issues.push("Deadline harus berupa tanggal kalender yang valid.");
     if (actionStatus !== "Belum dimulai") {
       if (!String(form.actionRecommendation || "").trim()) issues.push("Rekomendasi/tindakan wajib diisi jika status sudah berubah dari Belum dimulai.");
       if (!String(form.actionOwner || "").trim()) issues.push("PIC wajib diisi jika status tindakan sudah berubah.");

@@ -334,7 +334,7 @@ export default function FinancialAssessmentPage() {
               <ReportText text={result.profitAnalysis} />
               <div className="mt-6 rounded-2xl bg-slate-50 p-5">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#9b7439]">Margin Analysis</p>
-                <p className="mt-2 text-2xl font-bold text-[#172a4d]">{getFigure(result.extractedFigures, ["GOP Margin", "GOP %", "GOP Margin %"]).value}</p>
+                {hasUsableFinancialValue(getFigure(result.extractedFigures, ["GOP Margin", "GOP %", "GOP Margin %"]).value) && <p className="mt-2 text-2xl font-bold text-[#172a4d]">{getFigure(result.extractedFigures, ["GOP Margin", "GOP %", "GOP Margin %"]).value}</p>}
                 <ReportText text={result.ratioAnalysis} />
               </div>
             </ReportCard>
@@ -399,23 +399,24 @@ export default function FinancialAssessmentPage() {
             <ReportCard eyebrow="13" title="Detailed Financial Ratios" subtitle="Hotel Performance & Financial Health">
               <p className="mb-5 text-sm leading-6 text-slate-600">Rasio dihitung otomatis dari angka yang berhasil diekstrak dari dokumen. Jika data pembilang atau penyebut tidak tersedia, nilainya ditandai agar tidak ada angka yang diasumsikan.</p>
               <div className="space-y-6">
-                {computeFinancialRatios(result.extractedFigures).map((group) => (
-                  <div key={group.title}>
+                {computeFinancialRatios(result.extractedFigures).map((group) => {
+                  const availableRows = group.rows.filter((row) => hasUsableFinancialValue(row.value));
+                  if (!availableRows.length) return null;
+                  return <div key={group.title}>
                     <h3 className="mb-3 text-sm font-extrabold tracking-wide text-[#172a4d]">{group.title}</h3>
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
                       <table className="w-full min-w-[680px] text-left text-sm">
                         <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Indikator</th><th className="px-4 py-3">Hasil</th></tr></thead>
                         <tbody className="divide-y divide-slate-100">
-                          {group.rows.map((row) => <tr key={row.name}>
+                          {availableRows.map((row) => <tr key={row.name}>
                             <td className="px-4 py-3 font-semibold text-slate-800">{row.name}</td>
-                            
                             <td className="px-4 py-3 font-bold text-[#172a4d]">{row.value}</td>
                           </tr>)}
                         </tbody>
                       </table>
                     </div>
-                  </div>
-                ))}
+                  </div>;
+                })}
               </div>
             </ReportCard>
 
@@ -463,6 +464,12 @@ function financialStatus(score: number) {
 function getFigure(figures: AssessmentResult["extractedFigures"], labels: string[]) {
   const found = figures.find((item) => labels.some((label) => item.label.toLowerCase().trim() === label.toLowerCase().trim()));
   return found || { label: labels[0], value: "Tidak tersedia – indikator tidak dapat dihitung secara valid.", period: "—" };
+}
+
+function hasUsableFinancialValue(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return false;
+  return !/^(?:-|—|–|n\/?a|na|not available|undefined|null|nan|tidak tersedia|tidak dapat dihitung(?: secara valid)?)(?:\b|\s|[-–—])/i.test(text);
 }
 
 function scoreStatus(score: number) {

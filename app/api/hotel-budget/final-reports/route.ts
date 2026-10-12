@@ -65,8 +65,9 @@ export async function DELETE(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
-  const auth = await authenticatedClient(request);
-  if ("error" in auth) return auth.error;
+  const hasBearer = (request.headers.get("authorization") || "").startsWith("Bearer ");
+  const auth = hasBearer ? await authenticatedClient(request) : null;
+  if (auth && "error" in auth) return auth.error;
   try {
     const contentLength = Number(request.headers.get("content-length") || 0);
     if (contentLength > 1_500_000) return NextResponse.json({ error: "Data form terlalu besar." }, { status: 413 });
@@ -183,6 +184,10 @@ export async function POST(request: NextRequest) {
     const allWarnings=[...new Set([...warnings,...review.warnings])];
     if (!review.passed || allIssues.length) return NextResponse.json({ passed:false, issues:allIssues.length?allIssues:["AI Orchestrator belum menyetujui laporan."], warnings:allWarnings, summary:review.summary }, { status:422 });
     const validation={passed:true,summary:review.summary,warnings:allWarnings,orchestrator:"CORESTAY HOTEL BUDGET ORCHESTRATOR",deterministicChecks:true,aiReview:true,validatedAt:new Date().toISOString()};
+    if (!auth) {
+      const report = { id:"local-"+crypto.randomUUID(), hotel_name:hotelName, period_label:period, calculated_data:calculations, validation_data:validation, created_at:new Date().toISOString(), form_data:form, storage:"local" };
+      return NextResponse.json({ passed:true, report, warnings:allWarnings, summary:review.summary, orchestrator:validation.orchestrator });
+    }
     const { data: saved, error: saveError } = await auth.client.from("assessment_reports").insert({
       user_id:auth.user.id, assessment_type:"hotel-budget", file_name:(hotelName+" - "+period).slice(0,240), score:null,
       report_json:{ form_data:form, calculated_data:calculations, validation_data:validation }, pdf_base64:""
@@ -191,7 +196,7 @@ export async function POST(request: NextRequest) {
       console.error("Hotel budget report save failed",saveError);
       return NextResponse.json({ passed:false, issues:["Validasi lolos, tetapi database menolak penyimpanan. Pastikan tabel assessment_reports dan izin akun tersedia."], warnings:allWarnings, error:"Gagal menyimpan laporan. Tidak ditampilkan sebagai tersimpan." }, { status:503 });
     }
-    const report = { id:saved.id, hotel_name:hotelName, period_label:period, calculated_data:calculations, validation_data:validation, created_at:saved.created_at, form_data:form };
+    const report = { id:saved.id, hotel_name:hotelName, period_label:period, calculated_data:calculations, validation_data:validation, created_at:saved.created_at, form_data:form, storage:"account" };
     return NextResponse.json({ passed:true, report, warnings:allWarnings, summary:review.summary, orchestrator:validation.orchestrator });
   } catch(error) {
     console.error("Hotel Budget report POST failed",error);

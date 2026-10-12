@@ -342,7 +342,10 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
 
   section("05", "Profitability Analysis", "Profit Performance");
   textBlock(result.profitAnalysis);
-  textBlock("GOP Margin: " + figure(["GOP Margin", "GOP %", "GOP Margin %"]).value, 10, NAVY, 4);
+  const gopMarginFigure = figure(["GOP Margin", "GOP %", "GOP Margin %"]);
+  if (hasUsableFinancialValue(gopMarginFigure.value)) {
+    textBlock("GOP Margin: " + gopMarginFigure.value, 10, NAVY, 4);
+  }
   textBlock(result.ratioAnalysis);
 
   section("06", "Cash Flow & Liquidity", "Liquidity & Working Capital");
@@ -421,8 +424,10 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   section("13", "Detailed Financial Ratios", "Hotel Performance & Financial Health");
   textBlock("Rasio dihitung dari angka sumber yang berhasil diekstrak. Jika data tidak lengkap atau penyebut nol, hasil ditandai tidak tersedia; tidak ada angka yang diasumsikan.", 7.5, MUTED, 5);
   computeFinancialRatios(result.extractedFigures).forEach((group) => {
+    const availableRows = group.rows.filter((row) => hasUsableFinancialValue(row.value));
+    if (!availableRows.length) return;
     label(group.title);
-    group.rows.forEach((row) => {
+    availableRows.forEach((row) => {
       ensure(18);
       textBlock(row.name + ": " + row.value, 7.3, NAVY, 2);
     });
@@ -464,6 +469,12 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
 function getFigureForPdf(figures: { label: string; value: string; period: string }[], labels: string[]) {
   const found = figures.find((item) => labels.some((label) => item.label.toLowerCase().trim() === label.toLowerCase().trim()));
   return found || { label: labels[0], value: "Tidak tersedia – indikator tidak dapat dihitung secara valid.", period: "—" };
+}
+
+function hasUsableFinancialValue(value: unknown) {
+  const text = String(value ?? "").trim();
+  if (!text) return false;
+  return !/^(?:-|—|–|n\/?a|na|not available|undefined|null|nan|tidak tersedia|tidak dapat dihitung(?: secara valid)?)(?:\b|\s|[-–—])/i.test(text);
 }
 
 function scoreLabel(score: number) {

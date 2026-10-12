@@ -15,6 +15,7 @@ type BudgetForm = {
   confirmAccountReview: boolean; notes: string; actionRecommendation: string; actionOwner: string; actionDue: string; actionTarget: string; actionStatus: string; actionProgress: string;
 };
 type SavedReport = { id: string; hotel_name: string; period_label: string; created_at: string; form_data: BudgetForm; calculated_data: any; validation_data: any };
+const LOCAL_REPORTS_KEY = "corestay-hotel-budget-local-reports-v1";
 const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const makeMonthly = (year: number): ForecastMonth[] => monthNames.map((label,i)=>({label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""}));
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>({label:String(year+i),days:String((year+i)%4===0?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""}));
@@ -74,8 +75,11 @@ export default function HotelBudgetPage() {
       const data=await response.json();
       if(!response.ok) throw new Error(data.error||"Daftar laporan tidak dapat dibaca.");
       const list=Array.isArray(data.reports)?data.reports:[];
-      setReports(list);
-      if(list.length) setSelectedReport(prev=>prev||list[0].id);
+      let local: SavedReport[] = [];
+      try { const parsed=JSON.parse(window.localStorage.getItem(LOCAL_REPORTS_KEY)||"[]"); if(Array.isArray(parsed)) local=parsed; } catch {}
+      const combined=[...local,...list];
+      setReports(combined);
+      if(combined.length) setSelectedReport(prev=>prev||combined[0].id);
     }catch(e){setMessage(e instanceof Error?e.message:"Gagal membaca laporan tersimpan.");}
     finally{setLoadingReports(false);}
   },[]);
@@ -87,6 +91,7 @@ export default function HotelBudgetPage() {
       const token=data.session?.access_token||"";
       setAccessToken(token);setAuthStatus(token?"authenticated":"unauthenticated");
       if(token) void loadReports(token);
+      else { try { const local=JSON.parse(window.localStorage.getItem(LOCAL_REPORTS_KEY)||"[]"); if(Array.isArray(local)){setReports(local);if(local.length)setSelectedReport(prev=>prev||local[0].id);} } catch {} }
     }).catch(()=>{if(alive)setAuthStatus("unauthenticated");});
     const {data:{subscription}}=supabase.auth.onAuthStateChange((_event,session)=>{
       const token=session?.access_token||"";
@@ -141,19 +146,28 @@ export default function HotelBudgetPage() {
 
   async function saveFinal(){
     setMessage("");setIssues([]);setWarnings([]);setSummary("");setOrchestrator("checking");
-    if(!accessToken){setOrchestrator("failed");setIssues(["Login diperlukan untuk menyimpan laporan secara aman ke akun."]);setMessage("Silakan login, lalu kembali ke Hotel Budget & P&L. Form yang sedang terbuka tetap ada sampai halaman ditutup.");return;}
     if(!form.hotelName.trim()||!form.period.trim()){setOrchestrator("failed");setIssues(["Nama hotel dan periode wajib diisi."]);setMessage("Lengkapi identitas laporan terlebih dahulu.");return;}
     setSaving(true);
     try{
-      const response=await fetch("/api/hotel-budget/final-reports",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+accessToken},body:JSON.stringify({form})});
+      const headers:Record<string,string>={"Content-Type":"application/json"};if(accessToken)headers.Authorization="Bearer "+accessToken;
+      const response=await fetch("/api/hotel-budget/final-reports",{method:"POST",headers,body:JSON.stringify({form})});
       const raw=await response.text();let data:any={};
       try{data=raw?JSON.parse(raw):{};}catch{throw new Error("Respons server tidak valid. Data tetap berada di form dan belum disimpan.");}
       if(!response.ok||data.passed!==true){
         setOrchestrator("failed");setIssues(Array.isArray(data.issues)&&data.issues.length?data.issues:[data.error||"Validasi final belum lolos."]);setWarnings(data.warnings||[]);setMessage(data.error||"Validasi final gagal. Laporan belum disimpan.");return;
       }
       setOrchestrator("passed");setWarnings(data.warnings||[]);setSummary(data.summary||"");setSelectedReport(data.report.id);
-      setMessage("Laporan lolos pemeriksaan matematis dan AI Orchestrator, lalu tersimpan pada akun Anda.");
-      await loadReports(accessToken);
+      if(data.report.storage==="local"){
+        const localReport={...data.report,form_data:form};
+        const existingLocal=reports.filter(r=>String(r.id).startsWith("local-")&&r.id!==localReport.id);
+        const allLocal=[localReport,...existingLocal];
+        window.localStorage.setItem(LOCAL_REPORTS_KEY,JSON.stringify(allLocal));
+        setReports([...allLocal,...reports.filter(r=>!String(r.id).startsWith("local-"))]);
+        setMessage("Laporan lolos pemeriksaan matematis dan AI Orchestrator, lalu tersimpan di browser/perangkat ini. Data tidak masuk ke database akun.");
+      } else {
+        setMessage("Laporan lolos pemeriksaan matematis dan AI Orchestrator, lalu tersimpan pada akun Anda.");
+        await loadReports(accessToken);
+      }
     }catch(e){setOrchestrator("failed");setIssues([e instanceof Error?e.message:"Validasi final gagal."]);setMessage("Laporan belum disimpan. Data tetap berada di form; coba kembali setelah masalah teratasi.");}
     finally{setSaving(false);}
   }
@@ -162,6 +176,11 @@ export default function HotelBudgetPage() {
     if(report?.form_data){setForm({...makeBlank(),...report.form_data,accounts:Object.fromEntries(ACCOUNT_LINES.map(line=>[line.code,{...emptyAccounts()[line.code],...(report.form_data.accounts?.[line.code]||{})}]))});setSelectedReport(report.id);setOrchestrator("passed");setWarnings(report.validation_data?.warnings||[]);setSummary(report.validation_data?.summary||"");setMessage("Laporan tersimpan dibuka. Perubahan pada form belum tersimpan sampai Anda menjalankan validasi dan simpan lagi.");setIssues([]);}
   }
   async function deleteSaved(report:SavedReport){
+    if(String(report.id).startsWith("local-")){
+      if(!window.confirm("Hapus laporan lokal "+report.hotel_name+" — "+report.period_label+"? Tindakan ini tidak dapat dibatalkan."))return;
+      const next=reports.filter(r=>r.id!==report.id);const nextLocal=next.filter(r=>String(r.id).startsWith("local-"));
+      window.localStorage.setItem(LOCAL_REPORTS_KEY,JSON.stringify(nextLocal));setReports(next);if(selectedReport===report.id){if(next[0])openSaved(next[0]);else setSelectedReport("");}setMessage("Laporan lokal dihapus dari browser ini.");return;
+    }
     if(!accessToken||!window.confirm("Hapus laporan "+report.hotel_name+" — "+report.period_label+"? Tindakan ini tidak dapat dibatalkan."))return;
     try{
       const response=await fetch("/api/hotel-budget/final-reports?id="+encodeURIComponent(report.id),{method:"DELETE",headers:{Authorization:"Bearer "+accessToken}});
@@ -223,17 +242,16 @@ export default function HotelBudgetPage() {
       <header className="mb-6 overflow-hidden rounded-[28px] bg-gradient-to-r from-[#173b67] via-[#245b8c] to-[#6554b7] p-5 text-white shadow-xl sm:p-8">
         <div className="flex flex-col justify-between gap-5 lg:flex-row lg:items-end">
           <div><p className="mb-2 text-xs font-bold uppercase tracking-[.2em] text-sky-100">CORESTAY ADVISORY · HOTEL FINANCE WORKSPACE</p><h1 className="text-2xl font-black tracking-tight sm:text-4xl">Hotel Budget &amp; P&amp;L</h1><p className="mt-3 max-w-3xl text-sm leading-6 text-blue-50">Satu workspace untuk statistik hotel, rincian akun P&amp;L, perbandingan Actual vs Budget vs Last Year, proyeksi, dan tindakan manajemen.</p></div>
-          <div className="min-w-[190px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur"><p className="text-xs text-blue-100">Status final validation</p><p className="mt-1 font-bold">{orchestrator==="passed"?"Lolos & tersimpan":orchestrator==="checking"?"Memvalidasi…":orchestrator==="failed"?"Perlu diperiksa":"Belum divalidasi"}</p><p className="mt-1 text-[11px] text-blue-100">{authStatus==="checking"?"Memeriksa sesi login":authStatus==="authenticated"?"Akun terhubung":"Login diperlukan untuk menyimpan"}</p></div>
+          <div className="min-w-[190px] rounded-2xl border border-white/20 bg-white/10 px-4 py-3 backdrop-blur"><p className="text-xs text-blue-100">Status final validation</p><p className="mt-1 font-bold">{orchestrator==="passed"?"Lolos & tersimpan":orchestrator==="checking"?"Memvalidasi…":orchestrator==="failed"?"Perlu diperiksa":"Belum divalidasi"}</p><p className="mt-1 text-[11px] text-blue-100">{authStatus==="checking"?"Memeriksa sesi login":authStatus==="authenticated"?"Akun terhubung":"Bisa digunakan tanpa login"}</p></div>
         </div>
       </header>
 
       <section className="mb-6 rounded-2xl border border-white bg-white/90 p-4 shadow-sm sm:p-5">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end">
-          <div className="min-w-0 flex-1"><label className="mb-1.5 block text-sm font-bold text-slate-700">Laporan tersimpan di akun</label><select className={inputClass} value={selectedReport} onChange={e=>{const id=e.target.value;setSelectedReport(id);const report=reports.find(r=>r.id===id);if(report)openSaved(report);}} disabled={authStatus!=="authenticated"||loadingReports||reports.length===0}><option value="">{authStatus==="unauthenticated"?"Login untuk melihat laporan":loadingReports?"Memuat laporan…":reports.length?"Pilih laporan tersimpan":"Belum ada laporan tersimpan"}</option>{reports.map(r=><option key={r.id} value={r.id}>{r.hotel_name} — {r.period_label} ({new Date(r.created_at).toLocaleDateString("id-ID")})</option>)}</select></div>
+          <div className="min-w-0 flex-1"><label className="mb-1.5 block text-sm font-bold text-slate-700">Laporan tersimpan di akun</label><select className={inputClass} value={selectedReport} onChange={e=>{const id=e.target.value;setSelectedReport(id);const report=reports.find(r=>r.id===id);if(report)openSaved(report);}} disabled={loadingReports||reports.length===0}><option value="">{loadingReports?"Memuat laporan…":reports.length?"Pilih laporan tersimpan":"Belum ada laporan tersimpan"}</option>{reports.map(r=><option key={r.id} value={r.id}>{r.hotel_name} — {r.period_label} ({new Date(r.created_at).toLocaleDateString("id-ID")})</option>)}</select></div>
           {selectedSaved&&<button type="button" onClick={()=>void deleteSaved(selectedSaved)} className="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm font-bold text-rose-700 hover:bg-rose-100">Hapus laporan terpilih</button>}
-          {authStatus==="unauthenticated"&&<a href="/login?next=/hotel-budget" className="rounded-xl bg-sky-700 px-4 py-3 text-center text-sm font-bold text-white hover:bg-sky-800">Login untuk menyimpan</a>}
         </div>
-        <p className="mt-2 text-xs leading-5 text-slate-500">Laporan final tersimpan di Supabase dan terikat pada akun Anda. Data laporan akun lain tidak dapat dibuka melalui menu ini. Data yang belum disimpan hanya berada di form aktif.</p>
+        <p className="mt-2 text-xs leading-5 text-slate-500">Tanpa login, laporan final disimpan hanya di browser/perangkat ini. Jika login, laporan tersimpan di akun Anda dan tidak dapat diakses oleh akun lain.</p>
       </section>
 
       <nav className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
@@ -303,7 +321,7 @@ export default function HotelBudgetPage() {
 
           <div className="mt-7 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
             <button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button>
-            <button type="button" disabled={saving||authStatus==="checking"} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final AI & Simpan"}</button>
+            <button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final AI & Simpan"}</button>
             <button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button>
           </div>
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
@@ -313,7 +331,7 @@ export default function HotelBudgetPage() {
         <aside className="space-y-4">
           <div className="rounded-[24px] bg-white p-5 shadow-md ring-1 ring-slate-100"><p className="text-xs font-bold uppercase tracking-widest text-slate-500">Live summary</p><p className="mt-2 break-words text-sm text-slate-500">{form.hotelName||"Nama hotel belum diisi"}</p><div className="mt-4 space-y-3">{[["Total Revenue",idr(values.revenue)],["Operating Cost",idr(values.costs)],["GOP — estimasi",idr(values.gop)],["GOP Margin",values.gopMargin===null?"—":fmt(values.gopMargin)+"%"],["Occupancy",values.occupancy===null?"—":fmt(values.occupancy)+"%"]].map(([label,value])=><div key={label} className="flex items-start justify-between gap-3 border-b border-slate-100 pb-3 last:border-0 last:pb-0"><span className="text-xs text-slate-500">{label}</span><span className="max-w-[60%] break-words text-right text-sm font-extrabold tabular-nums">{value}</span></div>)}</div></div>
           <div className="rounded-[24px] bg-gradient-to-br from-slate-900 to-blue-950 p-5 text-white"><div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-white/10">✓</span><h3 className="font-extrabold">CORESTAY BUDGET ORCHESTRATOR</h3></div><p className="mt-3 text-sm leading-6 text-blue-100">Validasi matematis di server, pemeriksaan kapasitas kamar, rekonsiliasi akun, pemeriksaan forecast, lalu AI review. Penyimpanan hanya dilakukan setelah semua pemeriksaan wajib lolos.</p><p className="mt-3 text-xs text-blue-200">AI adalah lapisan review tambahan; angka final tetap harus dicocokkan dengan sumber akuntansi.</p></div>
-          <div className="rounded-[24px] border border-sky-100 bg-sky-50 p-5"><p className="font-bold text-sky-950">Data &amp; privasi</p><p className="mt-2 text-sm leading-6 text-sky-900">Laporan final disimpan di Supabase dengan Row Level Security. Pengguna hanya dapat membaca dan menghapus laporan milik akunnya sendiri. Form yang belum disimpan tidak dikirim ke database.</p><p className="mt-3 text-xs leading-5 text-sky-800">Penyimpanan memerlukan sesi login yang valid. Laporan final tersimpan pada akun Anda dan dapat dibuka kembali dari daftar laporan.</p></div>
+          <div className="rounded-[24px] border border-sky-100 bg-sky-50 p-5"><p className="font-bold text-sky-950">Data &amp; privasi</p><p className="mt-2 text-sm leading-6 text-sky-900">Laporan final disimpan di Supabase dengan Row Level Security. Pengguna hanya dapat membaca dan menghapus laporan milik akunnya sendiri. Form yang belum disimpan tidak dikirim ke database.</p><p className="mt-3 text-xs leading-5 text-sky-800">Login tidak wajib. Tanpa login, laporan disimpan lokal di browser/perangkat ini; data lokal dapat hilang jika data browser dihapus atau perangkat diganti. Jika login, laporan tersimpan di akun Anda.</p></div>
         </aside>
       </div>
     </div>

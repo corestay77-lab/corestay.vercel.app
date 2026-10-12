@@ -2,6 +2,7 @@
 
 import { useRef, useState, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
+import { computeFinancialRatios } from "@/lib/financial-ratios";
 
 type AssessmentResult = {
   financialHealthScore: number;
@@ -394,6 +395,29 @@ export default function FinancialAssessmentPage() {
               <p className="mt-4 text-sm font-bold uppercase tracking-[0.18em] text-[#d8b985]">Status: {financialStatus(result.financialHealthScore)}</p>
               <button type="button" onClick={downloadPdf} className="mt-7 rounded-xl bg-white px-6 py-3 text-sm font-bold text-[#172a4d]">Download Financial Assessment PDF</button>
             </div>
+
+            <ReportCard eyebrow="13" title="Detailed Financial Ratios" subtitle="Hotel Performance & Financial Health">
+              <p className="mb-5 text-sm leading-6 text-slate-600">Rasio dihitung otomatis dari angka yang berhasil diekstrak dari dokumen. Jika data pembilang atau penyebut tidak tersedia, nilainya ditandai agar tidak ada angka yang diasumsikan.</p>
+              <div className="space-y-6">
+                {computeFinancialRatios(result.extractedFigures).map((group) => (
+                  <div key={group.title}>
+                    <h3 className="mb-3 text-sm font-extrabold tracking-wide text-[#172a4d]">{group.title}</h3>
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="w-full min-w-[680px] text-left text-sm">
+                        <thead className="bg-slate-50 text-xs uppercase tracking-wide text-slate-500"><tr><th className="px-4 py-3">Indikator</th><th className="px-4 py-3">Rumus</th><th className="px-4 py-3">Hasil</th></tr></thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {group.rows.map((row) => <tr key={row.name}>
+                            <td className="px-4 py-3 font-semibold text-slate-800">{row.name}</td>
+                            <td className="px-4 py-3 text-slate-600">{row.formula}</td>
+                            <td className="px-4 py-3 font-bold text-[#172a4d]">{row.value}</td>
+                          </tr>)}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </ReportCard>
 
             <div className="rounded-2xl border border-emerald-300 bg-emerald-50 p-5 shadow-sm" role="status" aria-label="Automated validation passed">
               <div className="flex items-start gap-3">

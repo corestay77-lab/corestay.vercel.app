@@ -76,7 +76,13 @@ export async function POST(request: NextRequest) {
     if (days === null || days <= 0 || days > 366) return NextResponse.json({ passed: false, issues: ["Hari operasional harus diisi antara 1–366."], warnings: [] }, { status: 422 });
     if (rooms === null || rooms <= 0 || rooms > 100000) return NextResponse.json({ passed: false, issues: ["Jumlah kamar harus berupa angka positif yang masuk akal."], warnings: [] }, { status: 422 });
     const totalRoomBuild = days * rooms;
-    const deductions: [string,number][] = ["outInventory","houseUse","outOfOrder"].map(k => [k,numeric(stats[k]) ?? 0]);
+    const statKeys = ["outInventory","houseUse","outOfOrder","complimentary","roomPaid"] as const;
+    for (const key of statKeys) {
+      const raw = stats[key];
+      if (raw === "" || raw === null || raw === undefined) issues.push("Statistik "+key+" wajib diisi. Masukkan 0 jika telah dipastikan tidak ada nilai.");
+      else if (numeric(raw) === null) issues.push("Statistik "+key+" harus berupa angka yang valid.");
+    }
+    const deductions: [string,number][] = ["outInventory","houseUse","outOfOrder"].map(k => [k,numeric(stats[k]) ?? 0] as [string,number]);
     const issues: string[] = [];
     const warnings: string[] = [];
     for (const [key,value] of deductions) if (!Number.isFinite(value) || value < 0) issues.push("Statistik "+key+" tidak boleh negatif atau tidak valid.");
@@ -107,8 +113,8 @@ export async function POST(request: NextRequest) {
     if (calculations.costs===null) issues.push("Total biaya operasional tidak dapat dihitung dari akun Actual yang diisi.");
     const actualBlankCount=ACCOUNT_LINES.filter(line=>numeric(accounts[line.code]?.actual)===null).length;
     if (actualBlankCount) warnings.push(actualBlankCount+" baris akun Actual kosong. Baris kosong tidak otomatis dianggap nol; pastikan akun yang tidak berlaku sudah ditinjau.");
-    if (form.forecast?.monthly && form.forecast.monthly.length!==12) issues.push("Forecast bulanan harus memuat tepat 12 bulan.");
-    if (form.forecast?.annual && form.forecast.annual.length!==10) issues.push("Forecast multi-tahun harus memuat tepat 10 tahun.");
+    if (!Array.isArray(form.forecast?.monthly) || form.forecast.monthly.length!==12) issues.push("Forecast bulanan harus memuat tepat 12 bulan.");
+    if (!Array.isArray(form.forecast?.annual) || form.forecast.annual.length!==10) issues.push("Forecast multi-tahun harus memuat tepat 10 tahun.");
     for (const [label,rows,keys] of [
       ["Forecast bulanan",form.forecast?.monthly||[],["occupancy","adr","fbRevenue","otherRevenue","operatingCosts"]],
       ["Forecast tahunan",form.forecast?.annual||[],["occupancy","adr","fbRevenue","otherRevenue","operatingCosts"]]

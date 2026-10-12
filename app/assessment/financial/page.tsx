@@ -225,7 +225,7 @@ export default function FinancialAssessmentPage() {
 
   return (
     <main className="min-h-screen bg-[#e0f2fe] text-[#17243d] lg:pl-[250px]">
-<div className="mx-auto w-full max-w-7xl px-6 py-6 sm:px-6 lg:px-8 lg:py-10">
+<div className="w-full max-w-7xl px-6 py-6 sm:px-6 lg:px-8 lg:py-10">
         <div className="mb-4 flex w-full items-center justify-center bg-transparent px-0 pt-2"><img src="/logo-corestay.png" alt="Brand logo" width="280" height="112" className="block h-[88px] w-[280px] max-w-full bg-transparent object-contain object-center" /></div>
         <h1 className="mt-3 ml-0 w-full pl-0 text-left text-3xl font-bold tracking-tight sm:text-5xl">Financial Check</h1>
         <p className="mt-4 ml-0 max-w-3xl pl-0 text-left text-base leading-7 text-slate-500">

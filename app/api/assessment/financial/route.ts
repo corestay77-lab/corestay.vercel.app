@@ -274,6 +274,57 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
   });
   y = chartTop - chartHeight - 12;
 
+  // Indicator composition donut: mirror the six equal segments shown on the dashboard.
+  ensure(174);
+  const compositionTop = y;
+  const compositionHeight = 112;
+  page.drawRectangle({ x: MARGIN, y: compositionTop - compositionHeight, width: CONTENT_W, height: compositionHeight, color: WHITE, borderColor: BORDER, borderWidth: 0.8 });
+  page.drawRectangle({ x: MARGIN, y: compositionTop - 4, width: CONTENT_W, height: 4, color: GOLD });
+  page.drawText("INDICATOR COMPOSITION", { x: MARGIN + 13, y: compositionTop - 22, size: 8, font: bold, color: NAVY });
+  const compositionItems: Array<[string, number]> = [
+    ["Revenue Health", result.revenueHealthScore],
+    ["Profitability", result.profitabilityHealthScore],
+    ["Cost Control", result.costControlScore],
+    ["Cash Flow", result.cashFlowScore],
+    ["Data Completeness", result.dataCompletenessScore],
+    ["Internal Control", result.internalControlScore],
+  ];
+  const compositionColors = [NAVY, GOLD, GREEN, RED, rgb(0.25, 0.55, 0.72), rgb(0.55, 0.42, 0.68)];
+  const cx = MARGIN + 61;
+  const cy = compositionTop - 68;
+  const outerR = 29;
+  const innerR = 16;
+  for (let segment = 0; segment < compositionItems.length; segment++) {
+    const start = -Math.PI / 2 + segment * Math.PI / 3;
+    const end = start + Math.PI / 3;
+    const commands: string[] = [];
+    const steps = 8;
+    for (let step = 0; step <= steps; step++) {
+      const a = start + (end - start) * step / steps;
+      const px = cx + outerR * Math.cos(a);
+      const py = cy + outerR * Math.sin(a);
+      commands.push((step === 0 ? "M" : "L") + px.toFixed(2) + " " + py.toFixed(2));
+    }
+    for (let step = steps; step >= 0; step--) {
+      const a = start + (end - start) * step / steps;
+      const px = cx + innerR * Math.cos(a);
+      const py = cy + innerR * Math.sin(a);
+      commands.push("L" + px.toFixed(2) + " " + py.toFixed(2));
+    }
+    commands.push("Z");
+    page.drawSvgPath(commands.join(" "), { color: compositionColors[segment] });
+  }
+  page.drawText(String(Math.max(0, Math.min(100, Number(result.financialHealthScore) || 0))), { x: cx - 9, y: cy - 3, size: 9, font: bold, color: NAVY });
+  page.drawText("Overall", { x: cx - 12, y: cy - 12, size: 5.5, font: regular, color: MUTED });
+  compositionItems.forEach(([name, rawScore], index) => {
+    const rowY = compositionTop - 37 - index * 11;
+    page.drawRectangle({ x: MARGIN + 117, y: rowY - 1, width: 6, height: 6, color: compositionColors[index] });
+    page.drawText(name, { x: MARGIN + 128, y: rowY, size: 6.5, font: regular, color: TEXT });
+    const score = Math.max(0, Math.min(100, Number(rawScore) || 0));
+    page.drawText(String(score) + "/100", { x: MARGIN + CONTENT_W - 43, y: rowY, size: 6.5, font: bold, color: NAVY });
+  });
+  y = compositionTop - compositionHeight - 12;
+
   section("01", "Executive Financial Summary", "Overall Financial Condition");
   const condition = statusFor(result.financialHealthScore);
   page.drawRectangle({ x: MARGIN, y: y - 54, width: CONTENT_W, height: 54, color: condition.bg });

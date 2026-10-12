@@ -124,6 +124,7 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
       .replace(/\\n/g, "\n")
       .replace(/\r\n/g, "\n")
       .replace(/\r/g, "\n")
+      .replace(/\u2212/g, "-")
       .replace(/[ \t]+(?=\d{1,2}[.)]\s+\S)/g, "\n")
       .replace(/\n{3,}/g, "\n\n");
     const paragraphs = normalized.split("\n").map((x) => x.trim()).filter(Boolean);

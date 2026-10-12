@@ -189,8 +189,19 @@ async function makePdf(fileName: string, result: z.infer<typeof FinancialAssessm
         page.drawRectangle({ x, y: y - h, width: w, height: h, color: WHITE, borderColor: BORDER, borderWidth: 0.7 });
         page.drawRectangle({ x, y: y - 4, width: w, height: 4, color: GOLD });
         page.drawText(title.toUpperCase(), { x: x + 11, y: y - 18, size: 6.7, font: bold, color: MUTED });
-        const valueLines = wrap(value, 10.5, w - 22, bold).slice(0, 2);
-        valueLines.forEach((line, n) => page.drawText(line, { x: x + 11, y: y - 36 - n * 12, size: 10.5, font: bold, color: NAVY }));
+        // Keep each financial amount intact on one line. Shrink the type gently
+        // for long figures rather than wrapping or silently truncating digits.
+        let valueSize = 10.5;
+        while (valueSize > 6.4 && bold.widthOfTextAtSize(String(value || ""), valueSize) > w - 22) {
+          valueSize -= 0.25;
+        }
+        page.drawText(String(value || ""), {
+          x: x + 11,
+          y: y - 42,
+          size: valueSize,
+          font: bold,
+          color: NAVY,
+        });
         if (status) page.drawText(status, { x: x + 11, y: y - 61, size: 6.8, font: bold, color: GOLD });
       });
       y -= h + 9;

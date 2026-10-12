@@ -14,7 +14,6 @@ const mainItems = [
   ["Dashboard", "/", "dashboard"],
   ["Hasil Assessment", "/laporan", "chart"],
   ["Paket & Harga", "/paket-harga", "package"],
-  ["CoreStay Hotel Toolkit", "/hotel-toolkit", "toolkit"],
   ["Project Experience", "/project-experience", "briefcase"],
 ] as const;
 function MenuIcon({ name }: { name: "dashboard" | "clipboard" | "hotel" | "construction" | "money" | "chart" | "package" | "toolkit" | "briefcase" | "profile" | "login" | "signup" | "logout" }) {

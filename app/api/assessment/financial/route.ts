@@ -774,17 +774,23 @@ async function emailFinancialAssessment(
     `<section style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #e2e8f0"><h2 style="font-size:16px;color:#172a4d;margin:0 0 8px">${esc(title)}</h2><div style="font-size:13px;line-height:1.7;color:#475569;white-space:pre-wrap;overflow-wrap:anywhere">${esc(body)}</div></section>`
   ).join("");
 
-  const response = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
-    body: JSON.stringify({
+  let response: Response;
+  try {
+    response = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({
       from,
       to: ["corestay77@gmail.com"],
       subject: `CoreStay Financial Assessment — ${fileName}`,
       html: `<div style="max-width:760px;margin:0 auto;font-family:Arial,sans-serif;color:#172a4d"><header style="background:#172a4d;color:#fff;padding:24px;border-radius:12px"><div style="font-size:12px;letter-spacing:2px;color:#d8b985;font-weight:bold">CORESTAY ADVISORY</div><h1 style="font-size:23px;margin:12px 0 8px">Financial Assessment Report</h1><p style="font-size:13px;margin:0;overflow-wrap:anywhere">${esc(fileName)}</p></header><div style="margin:18px 0;padding:18px;border:1px solid #e2e8f0;border-radius:12px"><div style="font-size:12px;color:#64748b">FINANCIAL HEALTH SCORE</div><div style="font-size:30px;font-weight:bold;margin:5px 0">${score} / 100</div><div style="font-size:14px;font-weight:bold">${esc(status)}</div></div>${htmlSections}<p style="font-size:11px;color:#64748b">Automatically generated from the uploaded financial file by CoreStay Advisory.</p></div>`,
-      attachments: [{ filename: `CoreStay-Financial-Assessment.pdf`, content: pdfBase64 }],
-    }),
-  });
+        attachments: [{ filename: `CoreStay-Financial-Assessment.pdf`, content: pdfBase64 }],
+      }),
+    });
+  } catch (error) {
+    console.error("Financial assessment email request failed:", error instanceof Error ? error.message : "Unknown error");
+    return false;
+  }
   if (!response.ok) {
     const detail = await response.text().catch(() => "");
     console.error("Financial assessment email delivery failed:", response.status, detail.slice(0, 500));

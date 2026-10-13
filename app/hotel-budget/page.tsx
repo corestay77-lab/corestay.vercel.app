@@ -116,19 +116,17 @@ export default function HotelBudgetPage() {
   },[form.yearStart]);
 
   const allAccountLines=useMemo(()=>{
-    const source=Array.isArray(form.accountLines)&&form.accountLines.length?form.accountLines:[...ACCOUNT_LINES,...(form.customAccounts||[])];
-    return source.map((line,index)=>{
-      const canonical=ACCOUNT_LINES.find(item=>item.code===line.code)||ACCOUNT_LINES[index];
-      if(!canonical)return line;
-      return {
-        ...canonical,
-        ...line,
-        code:typeof line.code==="string"&&line.code.trim()?line.code:canonical.code,
-        label:typeof line.label==="string"&&line.label.trim()?line.label:canonical.label,
-        group:line.group||canonical.group,
-        section:line.section||canonical.section
-      };
+    const savedLines=Array.isArray(form.accountLines)?form.accountLines:[];
+    const customLines=Array.isArray(form.customAccounts)?form.customAccounts:[];
+    // Always render built-in accounts from the canonical chart of accounts.
+    // Legacy saved forms can contain blank/malformed labels or codes.
+    const builtIn=ACCOUNT_LINES.map(canonical=>{
+      const saved=savedLines.find(line=>line?.code===canonical.code);
+      return {...canonical,...(saved||{}),code:canonical.code,label:canonical.label,group:canonical.group,section:canonical.section};
     });
+    const extra=[...savedLines.filter(line=>line?.code&&!ACCOUNT_LINES.some(item=>item.code===line.code)&&line?.label?.trim()),...customLines]
+      .filter((line,index,arr)=>arr.findIndex(item=>item.code===line.code)===index);
+    return [...builtIn,...extra];
   },[form.accountLines,form.customAccounts]);
   const allAccountSections=useMemo(()=>[...new Set(allAccountLines.map(line=>line.section))],[allAccountLines]);
   const values=useMemo(()=>calculateBudget({...form, accountLines: form.accountLines}),[form]);

@@ -953,7 +953,7 @@ export async function POST(request: Request) {
         ...stableResult,
         _sourceHash: sourceFingerprint,
         _sourceTextNormalized: normalizedSourceText,
-        _orchestratorVersion: "corestay-financial-orchestrator-v4",
+        _orchestratorVersion: orchestratorFallbackUsed ? "corestay-financial-fallback-v1" : "corestay-financial-orchestrator-v4",
       };
       const pdfBase64 = await makePdf(action === "analyze" ? submittedFileName : (file as File).name, stableResult);
       let saved: any = null;
@@ -1011,9 +1011,12 @@ export async function POST(request: Request) {
       if (result) break;
     }
     if (!result) {
+      // Keep provider failures out of the UI; do not expose vendor/capacity errors.
+      // No report is fabricated when the primary extraction/analysis pass did not produce a valid result.
       return NextResponse.json({
-        error: "Layanan AI sedang sibuk setelah percobaan ulang otomatis pada beberapa model. Silakan coba lagi beberapa saat. File sumber tidak perlu diunggah ulang jika masih tersedia pada halaman ini.",
+        error: "Analisis otomatis belum dapat diselesaikan saat ini. File yang masih tersedia tidak perlu diunggah ulang; silakan jalankan analisis kembali.",
         retryable: true,
+        stage: "analysis",
       }, { status: 503 });
     }
 
@@ -1052,14 +1055,14 @@ export async function POST(request: Request) {
       }
       if (orchestrated) break;
     }
-    if (!orchestrated) {
-      return NextResponse.json({
-        error: "Tahap review AI Orchestrator gagal setelah mencoba beberapa model. Laporan tidak diterbitkan karena validasi belum selesai.",
-        retryable: isRetryableAiError(orchestratorLastError),
-      }, { status: 503 });
+    // Graceful fallback: the first-pass structured report is still subjected to
+    // deterministic scoring, source reconciliation, and strict schema validation below.
+    // Do not fail the entire assessment only because the optional second AI review is unavailable.
+    const orchestratorFallbackUsed = !orchestrated;
+    if (orchestratorFallbackUsed) {
+      console.warn("Financial orchestrator unavailable; applying deterministic validation to first-pass report.");
     }
-
-    const reviewed = orchestrated.object;
+    const reviewed = orchestrated?.object ?? firstPass;
     const stableResultWithoutMeta = {
       ...reviewed,
       // Replace model-generated scores with a reproducible rubric derived from the
@@ -1124,8 +1127,9 @@ export async function POST(request: Request) {
       pdfBase64,
       deterministic: true,
       orchestration: {
-        version: "corestay-financial-orchestrator-v3",
-        completed: true,
+        version: orchestratorFallbackUsed ? "corestay-financial-fallback-v1" : "corestay-financial-orchestrator-v4",
+        completed: !orchestratorFallbackUsed,
+        fallbackUsed: orchestratorFallbackUsed,
         scoringMethod: "deterministic-source-rubric-v1",
         reconciliationWarnings,
         scoreFormula: "revenue 20%, profitability 20%, cost control 15%, cash flow 15%, internal control 10%, revenue integrity 10%, data completeness 10%",

@@ -72,7 +72,7 @@ export const numeric = (value: unknown): number | null => {
   return Number.isFinite(n) ? n : null;
 };
 export const sumGroup = (accounts: Record<string,AccountValue>, group: AccountGroup, column: keyof AccountValue, customLines: AccountLine[] = []): number | null => {
-  const lines=[...ACCOUNT_LINES,...customLines].filter(x=>x.group===group);
+  const lines=(customLines.length?customLines:ACCOUNT_LINES).filter(x=>x.group===group);
   const present=lines.map(x=>numeric(accounts?.[x.code]?.[column])).filter((x):x is number=>x!==null);
   return present.length ? present.reduce((a,b)=>a+b,0) : null;
 };
@@ -84,7 +84,7 @@ export const calculateBudget = (form: any) => {
   const roomAvailable=totalRoomBuild===null||!deductionsComplete?null:totalRoomBuild-outInventory-houseUse-outOfOrder;
   const complimentary=numeric(form?.statistics?.complimentary), paid=numeric(form?.statistics?.roomPaid);
   const occupied=complimentary!==null&&paid!==null?complimentary+paid:null;
-  const customLines: AccountLine[] = Array.isArray(form?.customAccounts) ? form.customAccounts : [];
+  const customLines: AccountLine[] = Array.isArray(form?.accountLines) ? form.accountLines : [...ACCOUNT_LINES,...(Array.isArray(form?.customAccounts)?form.customAccounts:[])];
   const roomRevenue=sumGroup(form?.accounts||{},"roomRevenue","actual",customLines);
   const revenueGroups=["roomRevenue","fbRevenue","otherRevenue"] as const;
   const revenueValues=revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
@@ -100,7 +100,7 @@ export const calculateBudget = (form: any) => {
   const belowGopGroups=["otherExpenses","operatorFees","provisions","depreciation","amortization","interest"] as const;
   const belowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const belowGopExpenses=belowGopValues.some(v=>v!==null)?belowGopValues.reduce<number>((s,v)=>s+(v??0),0):null;
-  const tax=sumGroup(form?.accounts||{},"tax","actual");
+  const tax=sumGroup(form?.accounts||{},"tax","actual",customLines);
   const ownerCashItems=sumGroup(form?.accounts||{},"ownerCashItems","actual",customLines);
   const otherExpenseGroups=[...belowGopGroups,"tax"] as const;
   const otherExpenseValues=otherExpenseGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));

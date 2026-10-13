@@ -130,23 +130,20 @@ function buildEmailHtml(payload: NotifyPayload) {
       </div>
 
       <div style="padding:18px 14px;box-sizing:border-box;width:100%;overflow-wrap:anywhere;word-break:normal">
-        <div style="display:inline-block;border-radius:999px;background:#fef2f2;color:#dc2626;padding:7px 11px;font-size:11px;font-weight:800;letter-spacing:.04em">
+        <div style="display:inline-block;max-width:100%;box-sizing:border-box;border-radius:999px;background:#f1f5f9;color:#0f172a;padding:7px 11px;font-size:11px;font-weight:800;letter-spacing:.04em;overflow-wrap:anywhere">
           ${escapeHtml(status)}
         </div>
 
-        <table role="presentation" style="width:100%;margin-top:16px;border-collapse:collapse">
-          <tr>
-            <td style="width:50%;vertical-align:top;padding:18px;background:#ecfeff;border-radius:14px">
-              <div style="font-size:12px;color:#0e7490;font-weight:700">${isExisting ? "OVERALL BUSINESS HEALTH" : "OVERALL READINESS"}</div>
-              <div style="font-size:42px;line-height:1.1;color:#0891b2;font-weight:900;margin-top:4px">${overall}<span style="font-size:18px">/100</span></div>
-            </td>
-            <td style="width:16px"></td>
-            <td style="vertical-align:top;padding:18px;background:#f8fafc;border-radius:14px">
-              <div style="font-size:12px;color:#64748b;font-weight:700">${isExisting ? "BUSINESS RISK" : "OPENING RISK"}</div>
-              <div style="font-size:22px;font-weight:900;margin-top:8px;color:#dc2626">${escapeHtml(payload.risk || (overall < 40 ? "HIGH" : overall < 60 ? "HIGH" : overall < 80 ? "MEDIUM" : "LOW"))}</div>
-            </td>
-          </tr>
-        </table>
+        <div style="margin-top:16px;width:100%;box-sizing:border-box">
+          <div style="box-sizing:border-box;width:100%;padding:14px;background:#ecfeff;border-radius:12px;overflow-wrap:anywhere">
+            <div style="font-size:12px;color:#0e7490;font-weight:700">${isExisting ? "OVERALL BUSINESS HEALTH" : "OVERALL READINESS"}</div>
+            <div style="font-size:38px;line-height:1.1;color:#0891b2;font-weight:900;margin-top:4px">${overall}<span style="font-size:18px">/100</span></div>
+          </div>
+          <div style="box-sizing:border-box;width:100%;margin-top:10px;padding:14px;background:#f8fafc;border-radius:12px;overflow-wrap:anywhere">
+            <div style="font-size:12px;color:#64748b;font-weight:700">${isExisting ? "BUSINESS RISK" : "OPENING RISK"}</div>
+            <div style="font-size:20px;line-height:1.35;font-weight:900;margin-top:8px;color:#dc2626">${escapeHtml(payload.risk || (overall < 40 ? "HIGH" : overall < 60 ? "HIGH" : overall < 80 ? "MEDIUM" : "LOW"))}</div>
+          </div>
+        </div>
 
         ${payload.diagnosis ? `
         <div style="margin-top:22px;padding:18px;border-left:4px solid #06b6d4;background:#f8fafc">
@@ -156,7 +153,7 @@ function buildEmailHtml(payload: NotifyPayload) {
 
         <div style="margin-top:24px">
           <div style="font-size:17px;font-weight:800;color:#0f172a">${isExisting ? "Existing Hotel Performance Score" : "Pre-opening Readiness Score"}</div>
-          <div style="font-size:12px;color:#64748b;margin-top:4px">${isExisting ? "Perbandingan kondisi enam area utama bisnis hotel berdasarkan jawaban assessment Anda." : "Nilai kesiapan hotel berdasarkan setiap area strategis."}</div>
+          <div style="font-size:12px;color:#64748b;margin-top:4px">${isExisting ? "Ringkasan skor area utama bisnis hotel berdasarkan jawaban assessment Anda." : "Nilai kesiapan hotel berdasarkan setiap area strategis."}</div>
           <table role="presentation" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;margin-top:12px"><tbody>${renderAreaRows(areas)}</tbody></table>
         </div>
 

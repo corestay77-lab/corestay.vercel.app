@@ -918,6 +918,7 @@ export async function POST(request: Request) {
 
     // Reuse the previously generated result for an identical source. This prevents
     // Gemini wording/model variance from changing scores or percentages on re-upload.
+    const orchestratorFallbackUsed = false;
     const previousReports: Array<{ report_json?: any }> = [];
     if (userId && supabase) {
       const { data } = await supabase
@@ -1058,7 +1059,10 @@ export async function POST(request: Request) {
     // Graceful fallback: the first-pass structured report is still subjected to
     // deterministic scoring, source reconciliation, and strict schema validation below.
     // Do not fail the entire assessment only because the optional second AI review is unavailable.
-    const orchestratorFallbackUsed = !orchestrated;
+    // Keep the flag declared before the cached-report branch; update it after orchestration.
+    // The flag is declared before the cached-report branch and finalized here.
+    // eslint-disable-next-line prefer-const
+    orchestratorFallbackUsed = !orchestrated;
     if (orchestratorFallbackUsed) {
       console.warn("Financial orchestrator unavailable; applying deterministic validation to first-pass report.");
     }

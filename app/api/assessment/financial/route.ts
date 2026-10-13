@@ -918,7 +918,7 @@ export async function POST(request: Request) {
 
     // Reuse the previously generated result for an identical source. This prevents
     // Gemini wording/model variance from changing scores or percentages on re-upload.
-    const orchestratorFallbackUsed = false;
+    let orchestratorFallbackUsed = false;
     const previousReports: Array<{ report_json?: any }> = [];
     if (userId && supabase) {
       const { data } = await supabase

@@ -71,8 +71,8 @@ export const numeric = (value: unknown): number | null => {
   const n = typeof value === "number" ? value : Number(value);
   return Number.isFinite(n) ? n : null;
 };
-export const sumGroup = (accounts: Record<string,AccountValue>, group: AccountGroup, column: keyof AccountValue): number | null => {
-  const lines=ACCOUNT_LINES.filter(x=>x.group===group);
+export const sumGroup = (accounts: Record<string,AccountValue>, group: AccountGroup, column: keyof AccountValue, customLines: AccountLine[] = []): number | null => {
+  const lines=[...ACCOUNT_LINES,...customLines].filter(x=>x.group===group);
   const present=lines.map(x=>numeric(accounts?.[x.code]?.[column])).filter((x):x is number=>x!==null);
   return present.length ? present.reduce((a,b)=>a+b,0) : null;
 };
@@ -84,32 +84,33 @@ export const calculateBudget = (form: any) => {
   const roomAvailable=totalRoomBuild===null||!deductionsComplete?null:totalRoomBuild-outInventory-houseUse-outOfOrder;
   const complimentary=numeric(form?.statistics?.complimentary), paid=numeric(form?.statistics?.roomPaid);
   const occupied=complimentary!==null&&paid!==null?complimentary+paid:null;
-  const roomRevenue=sumGroup(form?.accounts||{},"roomRevenue","actual");
+  const customLines: AccountLine[] = Array.isArray(form?.customAccounts) ? form.customAccounts : [];
+  const roomRevenue=sumGroup(form?.accounts||{},"roomRevenue","actual",customLines);
   const revenueGroups=["roomRevenue","fbRevenue","otherRevenue"] as const;
-  const revenueValues=revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"actual"));
+  const revenueValues=revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const revenue=revenueValues.some(v=>v!==null)?revenueValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const costGroups=["costOfSales","payroll","operatingExpenses","overhead"] as const;
-  const costValues=costGroups.map(g=>sumGroup(form?.accounts||{},g,"actual"));
+  const costValues=costGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const costs=costValues.some(v=>v!==null)?costValues.reduce<number>((s,v)=>s+(v??0),0):null;
-  const ytdRevenueValues=revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual"));
+  const ytdRevenueValues=revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual",customLines));
   const ytdRevenue=ytdRevenueValues.some(v=>v!==null)?ytdRevenueValues.reduce<number>((s,v)=>s+(v??0),0):null;
-  const ytdCostValues=costGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual"));
+  const ytdCostValues=costGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual",customLines));
   const ytdCosts=ytdCostValues.some(v=>v!==null)?ytdCostValues.reduce<number>((s,v)=>s+(v??0),0):null;
-  const otherIncome=sumGroup(form?.accounts||{},"otherIncome","actual")??0;
+  const otherIncome=sumGroup(form?.accounts||{},"otherIncome","actual",customLines)??0;
   const belowGopGroups=["otherExpenses","operatorFees","provisions","depreciation","amortization","interest"] as const;
-  const belowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"actual"));
+  const belowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const belowGopExpenses=belowGopValues.some(v=>v!==null)?belowGopValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const tax=sumGroup(form?.accounts||{},"tax","actual");
-  const ownerCashItems=sumGroup(form?.accounts||{},"ownerCashItems","actual");
+  const ownerCashItems=sumGroup(form?.accounts||{},"ownerCashItems","actual",customLines);
   const otherExpenseGroups=[...belowGopGroups,"tax"] as const;
-  const otherExpenseValues=otherExpenseGroups.map(g=>sumGroup(form?.accounts||{},g,"actual"));
+  const otherExpenseValues=otherExpenseGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const otherExpenses=otherExpenseValues.some(v=>v!==null)?otherExpenseValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const gop=revenue!==null&&costs!==null?revenue-costs:null;
   const ownerShareProfitBeforeTax=gop!==null?gop+otherIncome-(belowGopExpenses??0):null;
   const netProfit=ownerShareProfitBeforeTax!==null?ownerShareProfitBeforeTax-(tax??0):null;
   const ownerCashAfterCapex=netProfit!==null?netProfit-(ownerCashItems??0):null;
   const ytdOtherIncome=sumGroup(form?.accounts||{},"otherIncome","ytdActual")??0;
-  const ytdBelowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual"));
+  const ytdBelowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual",customLines));
   const ytdBelowGopExpenses=ytdBelowGopValues.some(v=>v!==null)?ytdBelowGopValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const ytdTax=sumGroup(form?.accounts||{},"tax","ytdActual");
   const ytdOwnerCashItems=sumGroup(form?.accounts||{},"ownerCashItems","ytdActual");
@@ -125,11 +126,11 @@ export const calculateBudget = (form: any) => {
     roomRevenue,revenue,costs,gop,gopMargin:revenue!==null&&revenue>0&&gop!==null?gop/revenue*100:null,
     otherIncome,otherExpenses,ownerShareProfitBeforeTax,ownerCashItems,ownerCashAfterCapex,netProfit,
     ytdRevenue,ytdCosts,ytdGop,ytdGopMargin,ytdOtherIncome,ytdOwnerShareProfitBeforeTax,ytdNetProfit,ytdOwnerCashItems,ytdOwnerCashAfterCapex,
-    revenueGroups:Object.fromEntries(revenueGroups.map(g=>[g,sumGroup(form?.accounts||{},g,"actual")])),
-    costGroups:Object.fromEntries(costGroups.map(g=>[g,sumGroup(form?.accounts||{},g,"actual")])),
-    budgetRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"budget")).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"budget")??0),0):null,
-    lastYearRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"lastYear")).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"lastYear")??0),0):null,
-    ytdBudgetRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdBudget")).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"ytdBudget")??0),0):null,
-    lastYearYtdRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"lastYearYtd")).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"lastYearYtd")??0),0):null
+    revenueGroups:Object.fromEntries(revenueGroups.map(g=>[g,sumGroup(form?.accounts||{},g,"actual",customLines)])),
+    costGroups:Object.fromEntries(costGroups.map(g=>[g,sumGroup(form?.accounts||{},g,"actual",customLines)])),
+    budgetRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"budget",customLines)).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"budget",customLines)??0),0):null,
+    lastYearRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"lastYear",customLines)).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"lastYear",customLines)??0),0):null,
+    ytdBudgetRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdBudget",customLines)).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"ytdBudget",customLines)??0),0):null,
+    lastYearYtdRevenue: revenueGroups.map(g=>sumGroup(form?.accounts||{},g,"lastYearYtd",customLines)).some(v=>v!==null)?revenueGroups.reduce((s,g)=>s+(sumGroup(form?.accounts||{},g,"lastYearYtd",customLines)??0),0):null
   };
 };

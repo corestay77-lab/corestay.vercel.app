@@ -736,6 +736,63 @@ function validateFinancialAssessmentResult(input: unknown): FinancialValidation 
   return { valid: errors.length === 0, errors, warnings };
 }
 
+
+async function emailFinancialAssessment(
+  fileName: string,
+  result: z.infer<typeof FinancialAssessment>,
+  pdfBase64: string,
+) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const from = process.env.RESEND_FROM_EMAIL;
+  if (!apiKey || !from) {
+    console.error("Financial assessment email not sent: RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.");
+    return false;
+  }
+
+  const score = Math.round(result.financialHealthScore);
+  const status = score >= 80 ? "Good" : score >= 60 ? "Needs Improvement" : "Needs Attention";
+  const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
+  }[char] || char));
+  const sections: Array<[string, string]> = [
+    ["Executive Summary", result.executiveSummary],
+    ["Revenue Analysis", result.revenueAnalysis],
+    ["Cost & Expense Analysis", result.costAnalysis],
+    ["Profitability Analysis", result.profitAnalysis],
+    ["Comparative Analysis", result.comparativeAnalysis],
+    ["Cash Flow & Ratio Analysis", result.ratioAnalysis],
+    ["Variance Analysis", result.varianceAnalysis],
+    ["Key Findings", result.auditFindings.map((item, index) => `${index + 1}. ${item}`).join("\n")],
+    ["Financial Risks", result.risks.map((item, index) => `${index + 1}. ${item}`).join("\n")],
+    ["Recommendations", result.recommendations.map((item, index) => `${index + 1}. ${item}`).join("\n")],
+    ["90-Day Action Plan", result.actionPlan.map((item, index) => `${index + 1}. ${item}`).join("\n")],
+    ["Conclusion", result.conclusion],
+    ["Data Limitations", result.dataLimitations.join("\n")],
+  ].filter(([, body]) => Boolean(body && body.trim()));
+
+  const htmlSections = sections.map(([title, body]) =>
+    `<section style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #e2e8f0"><h2 style="font-size:16px;color:#172a4d;margin:0 0 8px">${esc(title)}</h2><div style="font-size:13px;line-height:1.7;color:#475569;white-space:pre-wrap;overflow-wrap:anywhere">${esc(body)}</div></section>`
+  ).join("");
+
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from,
+      to: ["corestay77@gmail.com"],
+      subject: `CoreStay Financial Assessment — ${fileName}`,
+      html: `<div style="max-width:760px;margin:0 auto;font-family:Arial,sans-serif;color:#172a4d"><header style="background:#172a4d;color:#fff;padding:24px;border-radius:12px"><div style="font-size:12px;letter-spacing:2px;color:#d8b985;font-weight:bold">CORESTAY ADVISORY</div><h1 style="font-size:23px;margin:12px 0 8px">Financial Assessment Report</h1><p style="font-size:13px;margin:0;overflow-wrap:anywhere">${esc(fileName)}</p></header><div style="margin:18px 0;padding:18px;border:1px solid #e2e8f0;border-radius:12px"><div style="font-size:12px;color:#64748b">FINANCIAL HEALTH SCORE</div><div style="font-size:30px;font-weight:bold;margin:5px 0">${score} / 100</div><div style="font-size:14px;font-weight:bold">${esc(status)}</div></div>${htmlSections}<p style="font-size:11px;color:#64748b">Automatically generated from the uploaded financial file by CoreStay Advisory.</p></div>`,
+      attachments: [{ filename: `CoreStay-Financial-Assessment.pdf`, content: pdfBase64 }],
+    }),
+  });
+  if (!response.ok) {
+    const detail = await response.text().catch(() => "");
+    console.error("Financial assessment email delivery failed:", response.status, detail.slice(0, 500));
+    return false;
+  }
+  return true;
+}
+
 export async function POST(request: Request) {
   let pdf: any = null;
 
@@ -912,6 +969,7 @@ export async function POST(request: Request) {
       if (blobPath) {
         try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
       }
+      await emailFinancialAssessment(file?.name || submittedFileName, stableResult, pdfBase64);
       return NextResponse.json({ success: true, reportId: saved?.id || null, createdAt: saved?.created_at || null, fileName: file?.name || submittedFileName, result: stableResult, pdfBase64, deterministic: true });
     }
 
@@ -1050,6 +1108,7 @@ export async function POST(request: Request) {
     if (blobPath) {
       try { await del(blobPath, { token: process.env.BLOB_READ_WRITE_TOKEN }); } catch (cleanupError) { console.error("Financial source cleanup failed:", cleanupError); }
     }
+    await emailFinancialAssessment(file?.name || submittedFileName, finalResult, pdfBase64);
     return NextResponse.json({
       success: true,
       reportId: saved?.id || null,

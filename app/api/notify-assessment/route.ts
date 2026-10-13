@@ -58,7 +58,7 @@ function normalizeAreas(areas: AreaScore[] = []) {
 
 function renderAreaRows(areas: AreaScore[] = []) {
   if (!areas.length) {
-    return "<tr><td colspan='5' style='padding:14px;color:#94a3b8'>Tidak ada data area.</td></tr>";
+    return "<tr><td style='padding:14px;color:#64748b'>Tidak ada data area.</td></tr>";
   }
 
   return areas
@@ -66,20 +66,16 @@ function renderAreaRows(areas: AreaScore[] = []) {
       const status = getStatus(area.score);
       return `
         <tr>
-          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;color:#0f172a;font-size:13px">
-            ${escapeHtml(area.title)}
-          </td>
-          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:#0f172a;font-weight:800;font-size:13px">
-            ${area.score}%
-          </td>
-          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;text-align:right;color:${status.color};font-weight:800;font-size:11px">
-            ${status.label}
-          </td>
-          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;color:#475569;font-size:12px;line-height:1.55">
-            ${escapeHtml(area.diagnosis || "")}
-          </td>
-          <td style="padding:12px 10px;border-bottom:1px solid #e2e8f0;color:#475569;font-size:12px;line-height:1.55">
-            ${escapeHtml(area.recommendation || "")}
+          <td style="padding:0 0 12px;border:0">
+            <div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;background:#ffffff;overflow-wrap:anywhere;word-break:normal">
+              <div style="font-size:14px;font-weight:800;line-height:1.45;color:#0f172a">${escapeHtml(area.title)}</div>
+              <div style="margin-top:8px">
+                <span style="display:inline-block;font-size:20px;font-weight:900;color:#0891b2">${area.score}%</span>
+                <span style="display:inline-block;margin-left:8px;font-size:10px;font-weight:800;color:${status.color}">${status.label}</span>
+              </div>
+              ${area.diagnosis ? `<div style="margin-top:10px;font-size:12px;line-height:1.65;color:#334155"><strong>Diagnosis:</strong> ${escapeHtml(area.diagnosis)}</div>` : ""}
+              ${area.recommendation ? `<div style="margin-top:8px;font-size:12px;line-height:1.65;color:#475569"><strong>Rekomendasi:</strong> ${escapeHtml(area.recommendation)}</div>` : ""}
+            </div>
           </td>
         </tr>
       `;
@@ -92,7 +88,7 @@ function renderPriorityCards(priorities: AreaScore[] = []) {
     .map((area, index) => {
       const status = getStatus(area.score);
       return `
-        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-top:10px;background:#ffffff">
+        <div style="border:1px solid #e2e8f0;border-radius:12px;padding:14px;margin-top:10px;background:#ffffff;overflow-wrap:anywhere;word-break:normal">
           <div style="font-size:11px;color:#64748b;font-weight:700;text-transform:uppercase;letter-spacing:.08em">
             Priority ${index + 1}
           </div>
@@ -121,9 +117,9 @@ function buildEmailHtml(payload: NotifyPayload) {
       : "Pre-opening Readiness Report";
 
   return `
-  <div style="margin:0;background:#f1f5f9;padding:28px 12px;font-family:Arial,Helvetica,sans-serif;color:#0f172a">
-    <div style="max-width:720px;margin:0 auto;background:#ffffff;border-radius:18px;overflow:hidden;border:1px solid #e2e8f0">
-      <div style="background:#0f172a;padding:28px 30px;color:#ffffff">
+  <div style="margin:0;background:#f1f5f9;padding:16px 8px;font-family:Arial,Helvetica,sans-serif;color:#0f172a;box-sizing:border-box;width:100%">
+    <div style="width:100%;max-width:640px;box-sizing:border-box;margin:0 auto;background:#ffffff;border-radius:14px;overflow:hidden;border:1px solid #e2e8f0">
+      <div style="background:#0f172a;padding:22px 16px;color:#ffffff;overflow-wrap:anywhere">
         <div style="font-size:12px;color:#67e8f9;font-weight:800;letter-spacing:.14em;text-transform:uppercase">
           CoreStay Advisory
         </div>
@@ -133,7 +129,7 @@ function buildEmailHtml(payload: NotifyPayload) {
         </div>
       </div>
 
-      <div style="padding:26px 30px">
+      <div style="padding:18px 14px;box-sizing:border-box;width:100%;overflow-wrap:anywhere;word-break:normal">
         <div style="display:inline-block;border-radius:999px;background:#fef2f2;color:#dc2626;padding:7px 11px;font-size:11px;font-weight:800;letter-spacing:.04em">
           ${escapeHtml(status)}
         </div>
@@ -161,16 +157,7 @@ function buildEmailHtml(payload: NotifyPayload) {
         <div style="margin-top:24px">
           <div style="font-size:17px;font-weight:800;color:#0f172a">${isExisting ? "Existing Hotel Performance Score" : "Pre-opening Readiness Score"}</div>
           <div style="font-size:12px;color:#64748b;margin-top:4px">${isExisting ? "Perbandingan kondisi enam area utama bisnis hotel berdasarkan jawaban assessment Anda." : "Nilai kesiapan hotel berdasarkan setiap area strategis."}</div>
-          <table style="width:100%;border-collapse:collapse;margin-top:10px">
-            <thead>
-              <tr style="background:#f8fafc">
-                <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">AREA</th>
-                <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">SCORE</th>
-                <th style="padding:10px;text-align:right;font-size:11px;color:#64748b">STATUS</th>\n                <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">DIAGNOSIS</th>\n                <th style="padding:10px;text-align:left;font-size:11px;color:#64748b">REKOMENDASI</th>
-              </tr>
-            </thead>
-            <tbody>${renderAreaRows(areas)}</tbody>
-          </table>
+          <table role="presentation" style="width:100%;max-width:100%;table-layout:fixed;border-collapse:separate;border-spacing:0;margin-top:12px"><tbody>${renderAreaRows(areas)}</tbody></table>
         </div>
 
         ${priorities.length ? `
@@ -186,7 +173,7 @@ function buildEmailHtml(payload: NotifyPayload) {
         <div style="margin-top:26px;padding:18px;background:#ecfeff;border:1px solid #a5f3fc;border-radius:12px"><div style="font-size:17px;font-weight:800;color:#0f172a">Rekomendasi CoreStay Advisory</div><div style="font-size:12px;line-height:1.7;color:#334155;margin-top:8px">${escapeHtml(payload.recommendation)}</div></div>` : ""}
 
         ${payload.contact ? `
-        <div style="margin-top:26px;padding:18px;background:#f8fafc;border-radius:12px">
+        <div style="margin-top:22px;padding:14px;background:#f8fafc;border-radius:12px;overflow-wrap:anywhere;word-break:normal">
           <div style="font-size:14px;font-weight:800">Data Kontak</div>
           <div style="font-size:12px;line-height:1.8;color:#475569;margin-top:6px">
             Nama: ${escapeHtml(payload.contact.nama || "-")}<br>

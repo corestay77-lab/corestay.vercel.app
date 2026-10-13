@@ -743,9 +743,9 @@ async function emailFinancialAssessment(
   pdfBase64: string,
 ) {
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
-  if (!apiKey || !from) {
-    console.error("Financial assessment email not sent: RESEND_API_KEY or RESEND_FROM_EMAIL is not configured.");
+  const from = process.env.RESEND_FROM_EMAIL || "CoreStay Advisory <onboarding@resend.dev>";
+  if (!apiKey) {
+    console.error("Financial assessment email not sent: RESEND_API_KEY is not configured.");
     return false;
   }
 

@@ -754,7 +754,7 @@ async function emailFinancialAssessment(
   const esc = (value: unknown) => String(value ?? "").replace(/[&<>"']/g, (char) => ({
     "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;",
   }[char] || char));
-  const sections: Array<[string, string]> = [
+  const sections = ([
     ["Executive Summary", result.executiveSummary],
     ["Revenue Analysis", result.revenueAnalysis],
     ["Cost & Expense Analysis", result.costAnalysis],
@@ -768,7 +768,7 @@ async function emailFinancialAssessment(
     ["90-Day Action Plan", result.actionPlan.map((item, index) => `${index + 1}. ${item}`).join("\n")],
     ["Conclusion", result.conclusion],
     ["Data Limitations", result.dataLimitations.join("\n")],
-  ].filter(([, body]) => Boolean(body && body.trim()));
+  ] as Array<[string, string]>).filter(([, body]) => Boolean(body && body.trim()));
 
   const htmlSections = sections.map(([title, body]) =>
     `<section style="margin:0 0 20px;padding:0 0 16px;border-bottom:1px solid #e2e8f0"><h2 style="font-size:16px;color:#172a4d;margin:0 0 8px">${esc(title)}</h2><div style="font-size:13px;line-height:1.7;color:#475569;white-space:pre-wrap;overflow-wrap:anywhere">${esc(body)}</div></section>`

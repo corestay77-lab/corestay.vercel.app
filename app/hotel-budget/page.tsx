@@ -234,7 +234,26 @@ export default function HotelBudgetPage() {
     {id:"action-plan",label:"Management Action Plan",sub:"PIC dan target",color:"from-pink-500 to-rose-600"},
     {id:"export",label:"Export PDF & Excel",sub:"Preview dan unduh",color:"from-indigo-500 to-blue-700"}
   ];
+  const sectionIndex=tabItems.findIndex(x=>x.id===activeTab);
   const sectionLabel=tabItems.find(x=>x.id===activeTab)?.label||tabItems[0].label;
+  const goNextStep=()=>{
+    let problem="";
+    if(activeTab==="statistics"){
+      if(!form.hotelName.trim()||!form.period.trim()) problem="Isi Nama hotel dan Periode laporan sebelum melanjutkan.";
+      else if(!form.statistics.days.trim()||!form.statistics.rooms.trim()) problem="Isi No. of Days dan No. of Room Build sebelum melanjutkan.";
+    } else if(activeTab==="pnl"){
+      const hasPnl=Object.values(form.accounts).some(row=>Object.values(row||{}).some(value=>String(value??"").trim()!==""));
+      if(!hasPnl) problem="Isi minimal nilai P&L dari laporan sumber (Actual, Budget, Last Year, atau YTD) sebelum melanjutkan.";
+    } else if(activeTab==="forecast"){
+      const hasForecast=[...form.forecast.monthly,...form.forecast.annual].some(row=>Object.entries(row).some(([key,value])=>key!=="label"&&String(value??"").trim()!==""));
+      if(!hasForecast) problem="Isi minimal satu nilai pada Monthly atau Annual Forecast sebelum melanjutkan.";
+    }
+    if(problem){setIssues([problem]);setMessage(problem);return;}
+    setIssues([]);setMessage("");
+    setActiveTab(tabItems[Math.min(sectionIndex+1,tabItems.length-1)].id);
+    if(sectionIndex===tabItems.length-2) window.scrollTo({top:0,behavior:"smooth"});
+  };
+  const goPreviousStep=()=>{setIssues([]);setMessage("");setActiveTab(tabItems[Math.max(sectionIndex-1,0)].id);};
   const roomStats=[
     ["Total Room Build",values.totalRoomBuild],["Room Available / Saleable",values.roomAvailable],
     ["Occupancy",values.occupancy],["ADR / ARR",values.adr],["RevPAR",values.revpar]
@@ -258,8 +277,8 @@ export default function HotelBudgetPage() {
         <p className="mt-2 text-xs leading-5 text-slate-500">Tanpa login, laporan final disimpan hanya di browser/perangkat ini. Jika login, laporan tersimpan di akun Anda dan tidak dapat diakses oleh akun lain.</p>
       </section>
 
-      <nav className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
-        {tabItems.map((tab,i)=><button key={tab.id} type="button" onClick={()=>setActiveTab(tab.id)} aria-current={activeTab===tab.id?"page":undefined} className={"min-w-0 rounded-2xl border p-3 text-left transition hover:-translate-y-0.5 hover:shadow-lg "+(activeTab===tab.id?"border-sky-300 bg-white shadow-md ring-2 ring-sky-100":"border-white bg-white/70 shadow-sm")}><span className={"mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-lg font-black text-white "+tab.color}>{String(i+1).padStart(2,"0")}</span><span className="block text-xs font-bold leading-4 text-slate-800 sm:text-sm">{tab.label}</span><span className="mt-1 block text-[11px] text-slate-500">{tab.sub}</span></button>)}
+      <nav className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6" aria-label="Urutan tahapan pengisian">
+        {tabItems.map((tab,i)=><div key={tab.id} aria-current={activeTab===tab.id?"step":undefined} className={"min-w-0 rounded-2xl border p-3 text-left "+(activeTab===tab.id?"border-sky-300 bg-white shadow-md ring-2 ring-sky-100":i<tabItems.findIndex(x=>x.id===activeTab)?"border-emerald-200 bg-emerald-50/70":"border-white bg-white/70 shadow-sm")}><span className={"mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-lg font-black text-white "+tab.color}>{i<tabItems.findIndex(x=>x.id===activeTab)?"✓":String(i+1).padStart(2,"0")}</span><span className="block text-xs font-bold leading-4 text-slate-800 sm:text-sm">{tab.label}</span><span className="mt-1 block text-[11px] text-slate-500">{tab.sub}</span></div>)}
       </nav>
 
       <div className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_310px]">
@@ -337,10 +356,9 @@ export default function HotelBudgetPage() {
             <div className="rounded-2xl border border-indigo-100 bg-white p-4"><h3 className="font-bold">Ringkasan untuk export</h3><div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{metric("Hotel",form.hotelName||"Belum diisi")}{metric("Periode",form.period||"Belum diisi")}{metric("Total Revenue",idr(values.revenue))}{metric("GOP",idr(values.gop))}{metric("GOP Margin",values.gopMargin===null?"—":fmt(values.gopMargin)+"%")}{metric("Owner Share Profit",idr(values.ownerShareProfitBeforeTax))}{metric("Net Owner Profit",idr(values.netProfit))}{metric("Owner Cash After CapEx",idr(values.ownerCashAfterCapex))}</div></div>
           </div>}
 
-          <div className="mt-7 flex flex-wrap gap-3 border-t border-slate-100 pt-5">
-            <button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button>
-            <button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final Corestay & Simpan"}</button>
-            <button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button>
+          <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
+            <button type="button" onClick={goPreviousStep} disabled={sectionIndex===0} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">← Tahap Sebelumnya</button>
+            {activeTab!=="export"?<button type="button" onClick={goNextStep} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5">Tahap Berikutnya →</button>:<div className="flex flex-wrap gap-3"><button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button><button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final Corestay & Simpan"}</button><button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button></div>}
           </div>
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
           {(issues.length>0||warnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{warnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{warnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}

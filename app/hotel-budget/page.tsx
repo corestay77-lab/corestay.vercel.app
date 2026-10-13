@@ -115,17 +115,31 @@ export default function HotelBudgetPage() {
     }
   },[form.yearStart]);
 
-  const allAccountLines=useMemo(()=>form.accountLines||[...ACCOUNT_LINES,...(form.customAccounts||[])],[form.accountLines,form.customAccounts]);
+  const allAccountLines=useMemo(()=>{
+    const source=Array.isArray(form.accountLines)&&form.accountLines.length?form.accountLines:[...ACCOUNT_LINES,...(form.customAccounts||[])];
+    return source.map((line,index)=>{
+      const canonical=ACCOUNT_LINES.find(item=>item.code===line.code)||ACCOUNT_LINES[index];
+      if(!canonical)return line;
+      return {
+        ...canonical,
+        ...line,
+        code:typeof line.code==="string"&&line.code.trim()?line.code:canonical.code,
+        label:typeof line.label==="string"&&line.label.trim()?line.label:canonical.label,
+        group:line.group||canonical.group,
+        section:line.section||canonical.section
+      };
+    });
+  },[form.accountLines,form.customAccounts]);
   const allAccountSections=useMemo(()=>[...new Set(allAccountLines.map(line=>line.section))],[allAccountLines]);
   const values=useMemo(()=>calculateBudget({...form, accountLines: form.accountLines}),[form]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",form.accountLines);
-  const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",form.accountLines);
+  const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",form.accountLines);
   const costActual=totalColumn(["costOfSales","payroll","operatingExpenses","overhead"],form.accounts,"actual",form.accountLines);
   const costBudget=totalColumn(["costOfSales","payroll","operatingExpenses","overhead"],form.accounts,"budget",form.accountLines);
   const costLastYear=totalColumn(["costOfSales","payroll","operatingExpenses","overhead"],form.accounts,"lastYear",form.accountLines);
   const ytdRevenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"ytdActual",form.accountLines);
-  const ytdRevenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"ytdBudget",form.accountLines);
+  const ytdRevenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"ytdBudget",allAccountLines);
   const ytdRevenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYearYtd",form.accountLines);
   const ytdCostActual=totalColumn(["costOfSales","payroll","operatingExpenses","overhead"],form.accounts,"ytdActual",form.accountLines);
   const ytdCostBudget=totalColumn(["costOfSales","payroll","operatingExpenses","overhead"],form.accounts,"ytdBudget",form.accountLines);

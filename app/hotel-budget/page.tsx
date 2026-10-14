@@ -63,6 +63,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const roomCount=optional(form.statistics.rooms);
   const sumPresent=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
   const sumComplete=(a:(number|null)[])=>a.length&&a.every(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
+  const avgPresent=(a:(number|null)[])=>{const valid=a.filter((v):v is number=>v!==null);return valid.length?valid.reduce((x,y)=>x+y,0)/valid.length:null;};
   const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
   const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
   const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
@@ -177,14 +178,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("INSURANCE GENERAL",monthly("insuranceGeneral"),"money","insuranceGeneral");
   add("TOTAL OTHER NON-OPERATING EXPENSES",nonOp,"sum",undefined,sumPresent(nonOp),revenue);
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
-  add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumComplete(gop),revenueTotal));
+  add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
   section("OTHER EXPENSES / OWNER SHARE PROFIT");
   add("LAND LEASE / HOLD",monthly("landLease"),"money","landLease");
   add("INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance");
   add("MAINTENANCE FEE (SERVICE CHARGE)",monthly("maintenanceFee"),"money","maintenanceFee");
   add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
-  add("OPERATOR SHARE RATE (%)",monthly("operatorSharePercent"),"percent","operatorSharePercent",30);
+  add("OPERATOR SHARE RATE (%)",monthly("operatorSharePercent"),"percent","operatorSharePercent",avgPresent(monthly("operatorSharePercent")));
   add("PT / OPERATOR SHARE (RP)",operatorShare,"sum",undefined,sumPresent(operatorShare),osp);
   add("HOTEL / OWNER SHARE (RP)",ownerShare,"sum",undefined,sumPresent(ownerShare),osp);
   add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
@@ -558,7 +559,7 @@ export default function HotelBudgetPage() {
       const hasPnl=Object.values(form.accounts).some(row=>Object.values(row||{}).some(value=>String(value??"").trim()!==""));
       if(!hasPnl) problem="Isi minimal nilai P&L dari laporan sumber (Actual, Budget, Last Year, atau YTD) sebelum melanjutkan.";
     } else if(activeTab==="forecast"){
-      const hasForecast=[...form.forecast.monthly,...form.forecast.annual].some(row=>Object.entries(row).some(([key,value])=>key!=="label"&&String(value??"").trim()!==""));
+      const hasForecast=[...form.forecast.monthly,...form.forecast.annual].some(row=>Object.entries(row).some(([key,value])=>key!=="label"&&key!=="operatorSharePercent"&&String(value??"").trim()!==""));
       if(!hasForecast) problem="Isi minimal satu nilai pada Monthly atau Annual Forecast sebelum melanjutkan.";
     }
     if(problem){setIssues([problem]);setMessage(problem);return;}

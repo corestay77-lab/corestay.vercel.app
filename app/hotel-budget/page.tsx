@@ -216,6 +216,77 @@ export default function HotelBudgetPage() {
   const [currency,setCurrency]=useState<"IDR"|"USD">("IDR");
   const money=(value:number|null|undefined)=>value===null||value===undefined||!Number.isFinite(value)?"—":new Intl.NumberFormat(currency==="IDR"?"id-ID":"en-US",{style:"currency",currency,maximumFractionDigits:currency==="IDR"?0:2}).format(value);
 
+  const buildTenYearRows=(source:BudgetForm)=>{
+    type R={label:string;section?:boolean;values:(number|null)[];total:number|null;base?:(number|null)[];totalPct:number|null;kind?:"percent"|"count"|"money";inputKey?:keyof Omit<ForecastYear,"label">};
+    const years=source.forecast.annual.map(row=>({row,calc:calcAnnual(row),days:optional(row.days),rooms:optional(row.rooms),occ:optional(row.occupancy)}));
+    const roomAvail=years.map(y=>y.days!==null&&y.rooms!==null?y.days*y.rooms:null);
+    const occupied=years.map((y,i)=>roomAvail[i]!==null&&y.occ!==null?roomAvail[i]!*y.occ/100:null);
+    const roomRevenue=years.map(y=>y.calc.roomRevenue);
+    const fb=years.map(y=>optional(y.row.fbRevenue));
+    const other=years.map(y=>optional(y.row.otherRevenue));
+    const revenue=years.map(y=>y.calc.revenue);
+    const costs=years.map(y=>y.calc.costs);
+    const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
+    const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
+    const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
+    const totalRevenue=sum(revenue), totalRoomRev=sum(roomRevenue), totalAvailable=sum(roomAvail), totalOccupied=sum(occupied);
+    const avg=(a:(number|null)[])=>{const x=a.filter((v):v is number=>v!==null);return x.length?x.reduce((n,v)=>n+v,0)/x.length:null;};
+    const make=(label:string,values:(number|null)[],kind:R["kind"]="money",base?:(number|null)[],inputKey?:R["inputKey"],totalOverride?:number|null):R=>{
+      const total=totalOverride===undefined?sum(values):totalOverride;
+      return {label,values,kind,base,inputKey,total,totalPct:base?pct(total,sum(base)):null};
+    };
+    const section=(label:string):R=>({label,section:true,values:[],total:null,totalPct:null});
+    return [
+      section("STATISTICS"),
+      make("Days",years.map(y=>y.days),"count",undefined,"days",sum(years.map(y=>y.days))),
+      make("# OF ROOMS",years.map(y=>y.rooms),"count",undefined,"rooms",avg(years.map(y=>y.rooms))),
+      make("ROOM AVAILABLE",roomAvail,"count",undefined,undefined,totalAvailable),
+      make("OCCUPIED ROOMS",occupied,"count",undefined,undefined,totalOccupied),
+      make("OCCUPANCY (%)",years.map(y=>y.occ),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),
+      make("AVERAGE ROOM RATE / ADR (RP)",years.map((y,i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(y.row.adr)),"money",undefined,"adr",totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
+      make("REVPAR (RP)",years.map((y,i)=>roomRevenue[i]!==null&&roomAvail[i]!==null&&roomAvail[i]!>0?roomRevenue[i]!/roomAvail[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalAvailable!==null&&totalAvailable>0?totalRoomRev/totalAvailable:null),
+      make("AVERAGE SELLING RATE (RP)",years.map(()=>null),"money"),
+      section("REVENUES"),
+      make("ROOMS",roomRevenue,"money",revenue),
+      make("FOOD & BEVERAGE",fb,"money",revenue,"fbRevenue"),
+      make("MINOR OPERATING DEPARTMENT",other,"money",revenue,"otherRevenue"),
+      make("TOTAL REVENUES (EXCL. TAX)",revenue,"money",revenue,undefined,totalRevenue),
+      make("TOTAL REVENUES (INCL. 21% — reference formula)",revenue.map(v=>v===null?null:v*1.21),"money",undefined,undefined,totalRevenue===null?null:totalRevenue*1.21),
+      section("COST OF SALES"),
+      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",revenue),
+      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL COST OF SALES — detail not entered",years.map(()=>null),"money",revenue),
+      section("PAYROLL & RELATED EXPENSES"),
+      make("ROOM — detail not entered",years.map(()=>null),"money",revenue),
+      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",revenue),
+      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL PAYROLL & RELATED EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
+      section("OTHER DEPARTMENT EXPENSES"),
+      make("ROOM — detail not entered",years.map(()=>null),"money",revenue),
+      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",revenue),
+      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL OTHER DEPARTMENT EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
+      make("DEPARTMENT OPERATING COST & EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL OPERATING COSTS (COMBINED INPUT)",costs,"money",revenue,"operatingCosts"),
+      section("DEPARTMENT INCOME"),
+      make("ROOM — detail not entered",years.map(()=>null),"money",roomRevenue),
+      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",fb),
+      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",other),
+      make("TOTAL DEPARTMENT INCOME — detail not entered",years.map(()=>null),"money",revenue),
+      section("OVERHEAD DEPARTMENT"),
+      make("PAYROLL & RELATED — detail not entered",years.map(()=>null),"money",revenue),
+      make("OTHER EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL OVERHEAD DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
+      make("GROSS OPERATING PROFIT (GOP / CONTRIBUTION)",gop,"money",revenue),
+      make("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,undefined,pct(sum(gop),totalRevenue)),
+      section("OTHER NON-OPERATING / OWNER EXPENSES"),
+      make("MANAGEMENT FEES — detail not entered",years.map(()=>null),"money",revenue),
+      make("PROPERTY INSURANCE — detail not entered",years.map(()=>null),"money",revenue),
+      make("LAND LEASE / CAPEX / OWNER EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
+      make("NET OWNER PROFIT — requires owner-level expenses",years.map(()=>null),"money",revenue)
+    ];
+  };
+
   const loadReports=useCallback(async(token:string)=>{
     setLoadingReports(true);
     try{
@@ -694,7 +765,7 @@ export default function HotelBudgetPage() {
                 </table>
               </div>
             </div>
-                        <div><h3 className="mb-3 text-lg font-extrabold">Annual Forecast — 10 tahun</h3><div className="overflow-x-auto rounded-2xl border border-slate-200"><table className="w-full min-w-[1000px] border-collapse text-xs"><thead className="bg-indigo-800 text-white"><tr>{["Tahun","Days","Rooms","Occupancy %","ADR / ARR (Rp)","F&B Revenue (Rp)","Other Revenue (Rp)","Operating Costs (Rp)","Room Revenue kalkulasi","Total Revenue","GOP / Contribution"].map(x=><th key={x} className="px-3 py-3 text-right first:text-left">{x}</th>)}</tr></thead><tbody>{form.forecast.annual.map((row,i)=>{const c=calcAnnual(row);return <tr key={row.label} className={i%2?"bg-slate-50":"bg-white"}><td className="border-t px-3 py-2 font-bold">{row.label}</td><td className="border-t px-2 py-2">{numberInput(row.days,v=>updateYear(i,"days",v))}</td><td className="border-t px-2 py-2">{numberInput(row.rooms,v=>updateYear(i,"rooms",v))}</td><td className="border-t px-2 py-2">{numberInput(row.occupancy,v=>updateYear(i,"occupancy",v))}</td><td className="border-t px-2 py-2">{numberInput(row.adr,v=>updateYear(i,"adr",v))}</td><td className="border-t px-2 py-2">{numberInput(row.fbRevenue,v=>updateYear(i,"fbRevenue",v))}</td><td className="border-t px-2 py-2">{numberInput(row.otherRevenue,v=>updateYear(i,"otherRevenue",v))}</td><td className="border-t px-2 py-2">{numberInput(row.operatingCosts,v=>updateYear(i,"operatingCosts",v))}</td><td className="border-t px-3 py-2 text-right font-semibold tabular-nums">{money(c.roomRevenue)}</td><td className="border-t px-3 py-2 text-right font-semibold tabular-nums">{money(c.revenue)}</td><td className="border-t px-3 py-2 text-right font-semibold tabular-nums">{money(c.gop)}</td></tr>;})}</tbody></table></div></div>
+                        <div className="rounded-2xl border border-indigo-100 bg-white p-4"><div className="mb-3"><h3 className="text-lg font-extrabold">10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Format 10 tahun mengikuti 1 YEAR CONSOLIDATED: setiap tahun memiliki Value dan %, disertai Total. Isian sumber tetap dapat diedit; detail departemen yang belum tersedia ditampilkan sebagai —.</p></div><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[1900px] border-collapse text-[10px]"><thead><tr className="bg-indigo-900 text-white"><th rowSpan={2} className="sticky left-0 z-10 min-w-[260px] bg-indigo-900 px-2 py-2 text-left">10 YEARS CONSOLIDATED</th>{form.forecast.annual.map(row=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">YEAR {Number(row.label)-Number(form.yearStart)+1}</th>)}<th colSpan={2} className="bg-teal-700 px-2 py-2 text-center">TOTAL</th></tr><tr className="bg-slate-100 text-slate-600">{form.forecast.annual.map(row=><Fragment key={row.label}><th className="px-1 py-1 text-right">Value</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="bg-teal-50 px-2 py-1 text-right">Value</th><th className="bg-teal-50 px-2 py-1 text-right">%</th></tr></thead><tbody>{buildTenYearRows(form).map((line,ri)=>{if(line.section)return <tr key={line.label}><th colSpan={23} className="border-t border-slate-300 bg-slate-200 px-2 py-2 text-left font-black">{line.label}</th></tr>;const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,2)+"%":line.kind==="count"?fmt(v,0):money(v);return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>{line.values.map((v,i)=><Fragment key={i}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.inputKey?numberInput(form.forecast.annual[i][line.inputKey],value=>updateYear(i,line.inputKey!,value)):display(v)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[i]??null):"—"}</td></Fragment>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null?"—":fmt(line.totalPct,2)+"%"}</td></tr>;})}</tbody></table></div></div>
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">
@@ -755,7 +826,7 @@ export default function HotelBudgetPage() {
         </div>
       </section>
       <h3 className="mt-6 mb-2 text-sm font-extrabold">3. P&amp;L Summary</h3><div className="overflow-x-auto"><table className="w-full border-collapse text-xs"><thead><tr className="bg-slate-800 text-white"><th className="px-3 py-2 text-left">Account Group</th><th className="px-3 py-2 text-right">Actual</th><th className="px-3 py-2 text-right">Budget</th><th className="px-3 py-2 text-right">Variance</th><th className="px-3 py-2 text-right">Last Year</th></tr></thead><tbody>{GROUP_ORDER.filter(group=>group!=="ownerCashItems").map((group,i)=>{const a=sumGroup(form.accounts,group,"actual",allAccountLines),b=sumGroup(form.accounts,group,"budget",allAccountLines),l=sumGroup(form.accounts,group,"lastYear",allAccountLines);return <tr key={group} className={i%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-3 py-2 font-semibold">{GROUP_LABELS[group]}</td><td className="border-b border-slate-200 px-3 py-2 text-right tabular-nums">{money(a)}</td><td className="border-b border-slate-200 px-3 py-2 text-right tabular-nums">{money(b)}</td><td className="border-b border-slate-200 px-3 py-2 text-right tabular-nums">{a!==null&&b!==null?money(a-b):"—"}</td><td className="border-b border-slate-200 px-3 py-2 text-right tabular-nums">{money(l)}</td></tr>;})}</tbody></table></div><div className="mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3">{metric("Owner Share Profit — sebelum pajak",money(values.ownerShareProfitBeforeTax))}{metric("Net Owner Profit — estimasi",money(values.netProfit))}{metric("Owner Cash After CapEx — perlu data arus kas",money(values.ownerCashAfterCapex))}</div>
-      <h3 className="mt-6 mb-2 text-sm font-extrabold">4. 10-Year Forecast</h3><div className="overflow-x-auto"><table className="w-full border-collapse text-[10px]"><thead><tr className="bg-indigo-800 text-white"><th className="px-2 py-2 text-left">Year</th><th className="px-2 py-2 text-right">Occupancy</th><th className="px-2 py-2 text-right">ADR</th><th className="px-2 py-2 text-right">Room Revenue</th><th className="px-2 py-2 text-right">Total Revenue</th><th className="px-2 py-2 text-right">Operating Cost</th><th className="px-2 py-2 text-right">GOP</th></tr></thead><tbody>{form.forecast.annual.map((row,i)=>{const c=calcAnnual(row);return <tr key={row.label} className={i%2?"bg-slate-50":""}><td className="border-b px-2 py-1.5">{row.label}</td><td className="border-b px-2 py-1.5 text-right">{row.occupancy?row.occupancy+"%":"—"}</td><td className="border-b px-2 py-1.5 text-right">{money(optional(row.adr))}</td><td className="border-b px-2 py-1.5 text-right">{money(c.roomRevenue)}</td><td className="border-b px-2 py-1.5 text-right">{money(c.revenue)}</td><td className="border-b px-2 py-1.5 text-right">{money(c.costs)}</td><td className="border-b px-2 py-1.5 text-right">{money(c.gop)}</td></tr>;})}</tbody></table></div>
+      <section className="mt-7 break-before-page"><h3 className="mb-1 text-sm font-extrabold">4. 10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3><p className="mb-3 text-[10px] leading-4 text-slate-600">Data menggunakan sumber forecast 10 tahun yang sama dengan form. Value dan persentase menggunakan perhitungan yang sama; rincian departemen yang belum diinput tetap —.</p><div className="overflow-x-auto"><table className="w-full min-w-[1900px] border-collapse text-[8px]"><thead><tr className="bg-indigo-900 text-white"><th rowSpan={2} className="sticky left-0 z-10 min-w-[260px] bg-indigo-900 px-2 py-2 text-left">10 YEARS CONSOLIDATED</th>{form.forecast.annual.map(row=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">YEAR {Number(row.label)-Number(form.yearStart)+1}</th>)}<th colSpan={2} className="bg-teal-700 px-2 py-2 text-center">TOTAL</th></tr><tr className="bg-slate-100 text-slate-600">{form.forecast.annual.map(row=><Fragment key={row.label}><th className="px-1 py-1 text-right">Value</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="bg-teal-50 px-2 py-1 text-right">Value</th><th className="bg-teal-50 px-2 py-1 text-right">%</th></tr></thead><tbody>{buildTenYearRows(form).map((line,ri)=>{if(line.section)return <tr key={line.label} className="bg-slate-200"><th colSpan={23} className="border-t border-slate-300 px-2 py-1.5 text-left font-black">{line.label}</th></tr>;const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,2)+"%":line.kind==="count"?fmt(v,0):money(v);return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>{line.values.map((v,i)=><Fragment key={i}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{display(v)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[i]??null):"—"}</td></Fragment>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null?"—":fmt(line.totalPct,2)+"%"}</td></tr>;})}</tbody></table></div></section>
       <h3 className="mt-6 mb-2 text-sm font-extrabold">5. Management Action Plan</h3><div className="overflow-x-auto"><table className="w-full border-collapse text-xs"><tbody>{[["Catatan / Temuan",form.notes],["Rekomendasi / Tindakan",form.actionRecommendation],["PIC",form.actionOwner],["Deadline",form.actionDue],["Target",form.actionTarget],["Status",form.actionStatus],["Progress (%)",form.actionProgress]].map(([l,v],i)=><tr key={l} className={i%2?"bg-slate-50":""}><th className="w-[35%] border-b px-3 py-2 text-left">{l}</th><td className="whitespace-pre-wrap break-words border-b px-3 py-2">{v||"—"}</td></tr>)}</tbody></table></div>
       {orchestrator==="passed"&&<p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-900 print:border-slate-300 print:bg-white">CORESTAY HOTEL BUDGET ORCHESTRATOR — final validation passed · {summary||"Pemeriksaan matematis dan AI selesai."}</p>}
       <div className="mt-6 flex flex-wrap justify-end gap-3 print:hidden"><button type="button" onClick={()=>setPreviewOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold">Kembali ke form</button><button type="button" onClick={downloadExcel} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">Download Excel (.xlsx)</button><button type="button" onClick={()=>window.print()} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Print / Save PDF</button></div>

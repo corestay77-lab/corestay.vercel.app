@@ -71,6 +71,8 @@ export default function HotelBudgetPage() {
   const [warnings,setWarnings]=useState<string[]>([]);
   const [orchestrator,setOrchestrator]=useState<"idle"|"checking"|"passed"|"failed">("idle");
   const [summary,setSummary]=useState("");
+  const [currency,setCurrency]=useState<"IDR"|"USD">("IDR");
+  const money=(value:number|null|undefined)=>value===null||value===undefined||!Number.isFinite(value)?"—":new Intl.NumberFormat(currency==="IDR"?"id-ID":"en-US",{style:"currency",currency,maximumFractionDigits:currency==="IDR"?0:2}).format(value);
 
   const loadReports=useCallback(async(token:string)=>{
     setLoadingReports(true);
@@ -400,7 +402,7 @@ export default function HotelBudgetPage() {
 
       <div className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_310px]">
         <section className="min-w-0 rounded-[26px] border border-white bg-white/95 p-4 shadow-lg shadow-slate-200/50 sm:p-6">
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-sky-700">Bagian {tabItems.findIndex(x=>x.id===activeTab)+1} dari 6</p><h2 className="mt-1 text-xl font-extrabold sm:text-2xl">{sectionLabel}</h2><p className="mt-1 text-sm text-slate-500">Gunakan data sumber yang sama periodenya. Nilai kosong tidak otomatis diubah menjadi nol.</p></div><span className="rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-700">IDR · Rupiah</span></div>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-sky-700">Bagian {tabItems.findIndex(x=>x.id===activeTab)+1} dari 6</p><h2 className="mt-1 text-xl font-extrabold sm:text-2xl">{sectionLabel}</h2><p className="mt-1 text-sm text-slate-500">Gunakan data sumber yang sama periodenya. Nilai kosong tidak otomatis diubah menjadi nol.</p></div><label className="flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800"><span>Mata uang</span><select aria-label="Pilih mata uang laporan" value={currency} onChange={e=>setCurrency(e.target.value as "IDR"|"USD")} className="rounded-lg border border-sky-200 bg-white px-2 py-1.5 font-bold text-slate-800"><option value="IDR">IDR · Rupiah</option><option value="USD">USD · US Dollar ($)</option></select></label></div>
 
           {activeTab==="statistics"&&<div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

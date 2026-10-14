@@ -524,22 +524,33 @@ export default function HotelBudgetPage() {
                   <thead className="bg-slate-800 text-white"><tr><th className="sticky left-0 z-10 bg-slate-800 px-3 py-2 text-left">STATISTICS / FORECAST</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-2 py-2 text-right">{monthNames[i]}</th>)}<th className="bg-teal-700 px-3 py-2 text-right">TOTAL / RATA-RATA</th></tr></thead>
                   <tbody>
                     {[
+                      {label:"STATISTICS",values:form.forecast.monthly.map(()=>null),kind:"section"},
                       {label:"Days",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).days),kind:"sum"},
+                      {label:"# of Rooms",values:form.forecast.monthly.map(()=>optional(form.statistics.rooms)),kind:"avg"},
+                      {label:"Rooms Available",values:form.forecast.monthly.map((r,i)=>{const d=calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).days;const rooms=optional(form.statistics.rooms);return rooms===null?null:rooms*d;}),kind:"sum"},
                       {label:"Occupancy (%)",values:form.forecast.monthly.map(r=>optional(r.occupancy)),kind:"avg"},
                       {label:"Average Room Rate (ADR/ARR) — Rp",values:form.forecast.monthly.map(r=>optional(r.adr)),kind:"avg"},
-                      {label:"F&B Revenue — Rp",values:form.forecast.monthly.map(r=>optional(r.fbRevenue)),kind:"sum"},
-                      {label:"Other Revenue — Rp",values:form.forecast.monthly.map(r=>optional(r.otherRevenue)),kind:"sum"},
+                      {label:"RevPAR — Rp (calculated)",values:form.forecast.monthly.map((r,i)=>{const c=calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms);return c.roomRevenue!==null&&c.days>0&&optional(form.statistics.rooms)!==null?c.roomRevenue/(c.days*optional(form.statistics.rooms)!):null;}),kind:"avg"},
+                      {label:"REVENUES",values:form.forecast.monthly.map(()=>null),kind:"section"},
                       {label:"Room Revenue — Rp (calculated)",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).roomRevenue),kind:"sum"},
+                      {label:"Food & Beverage Revenue — Rp",values:form.forecast.monthly.map(r=>optional(r.fbRevenue)),kind:"sum"},
+                      {label:"Other Operating Revenue — Rp",values:form.forecast.monthly.map(r=>optional(r.otherRevenue)),kind:"sum"},
                       {label:"TOTAL REVENUE — Rp",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).revenue),kind:"sum"},
-                      {label:"Operating Costs — Rp",values:form.forecast.monthly.map(r=>optional(r.operatingCosts)),kind:"sum"},
+                      {label:"OPERATING COSTS",values:form.forecast.monthly.map(()=>null),kind:"section"},
+                      {label:"Cost of Sales — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"costOfSales","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
+                      {label:"Payroll & Related Expenses — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"payroll","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
+                      {label:"Other Operating Expenses — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"operatingExpenses","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
+                      {label:"Overhead Expenses — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"overhead","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
+                      {label:"Operating Costs (Forecast) — Rp",values:form.forecast.monthly.map(r=>optional(r.operatingCosts)),kind:"sum"},
                       {label:"GOP / Contribution — Rp",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).gop),kind:"sum"}
                     ].map((line,ri)=>{
+                      if(line.kind==="section")return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={14} className="border-t border-slate-300 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
                       const available=line.values.filter((v):v is number=>v!==null);
                       const total=line.kind==="sum"?(available.length?available.reduce((a,b)=>a+b,0):null):(available.length?available.reduce((a,b)=>a+b,0)/available.length:null);
-                      return <tr key={line.label} className={ri===6||ri===8?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
+                      return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUE")||line.label.startsWith("GOP")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
                         <th className="sticky left-0 z-10 border-t border-slate-200 bg-inherit px-3 py-2 text-left">{line.label}</th>
-                        {line.values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{v===null?"—":line.label.includes("(%)")?fmt(v)+"%":line.label.includes("Days")?fmt(v,0):money(v)}</td>)}
-                        <td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-bold tabular-nums">{total===null?"—":line.label.includes("(%)")?fmt(total)+"%":line.label.includes("Days")?fmt(total,0):money(total)}</td>
+                        {line.values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{v===null?"—":line.label.includes("(%)")?fmt(v)+"%":line.label.includes("Days")||line.label==="# of Rooms"||line.label==="Rooms Available"?fmt(v,0):money(v)}</td>)}
+                        <td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-bold tabular-nums">{total===null?"—":line.label.includes("(%)")?fmt(total)+"%":line.label.includes("Days")||line.label==="# of Rooms"||line.label==="Rooms Available"?fmt(total,0):money(total)}</td>
                       </tr>;
                     })}
                   </tbody>

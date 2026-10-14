@@ -54,6 +54,78 @@ const calcAnnual = (row: ForecastYear) => {
   return {roomRevenue,revenue,costs,gop:revenue!==null&&costs!==null?revenue-costs:null};
 };
 
+
+type ConsolidatedRow = { label:string; kind:"section"|"sum"|"avg"|"percent"|"money"; values:(number|null)[]; total?:number|null; base?:(number|null)[]; totalPct?:number|null };
+const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
+  const year=Number(form.yearStart);
+  const months=form.forecast.monthly.map((row,i)=>calcMonthly(row,year,i,form.statistics.rooms));
+  const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
+  const rooms=optional(form.statistics.rooms);
+  const available=months.map(m=>rooms===null?null:rooms*m.days);
+  const occupied=months.map((m,i)=>available[i]===null||optional(form.forecast.monthly[i].occupancy)===null?null:available[i]!*optional(form.forecast.monthly[i].occupancy)!/100);
+  const roomRevenue=months.map(m=>m.roomRevenue);
+  const fb=form.forecast.monthly.map(r=>optional(r.fbRevenue));
+  const other=form.forecast.monthly.map(r=>optional(r.otherRevenue));
+  const revenue=months.map(m=>m.revenue);
+  const costs=months.map(m=>m.costs);
+  const roomTotal=sum(roomRevenue), availableTotal=sum(available), occupiedTotal=sum(occupied), revenueTotal=sum(revenue), costTotal=sum(costs);
+  const ratio=(a:number|null,b:number|null)=>a===null||b===null||b===0?null:a/b*100;
+  const average=(a:(number|null)[])=>{const valid=a.filter((v):v is number=>v!==null);return valid.length?valid.reduce((x,y)=>x+y,0)/valid.length:null;};
+  const addSection=(label:string):ConsolidatedRow=>({label,kind:"section",values:[]});
+  const rows:ConsolidatedRow[]=[
+    addSection("STATISTICS"),
+    {label:"Days",kind:"sum",values:months.map(m=>m.days),total:months.reduce((s,m)=>s+m.days,0)},
+    {label:"# OF ROOMS",kind:"avg",values:months.map(()=>rooms),total:rooms},
+    {label:"ROOM AVAILABLE",kind:"sum",values:available,total:availableTotal},
+    {label:"OCCUPIED ROOMS",kind:"sum",values:occupied,total:occupiedTotal},
+    {label:"OCCUPANCY (%)",kind:"percent",values:form.forecast.monthly.map(r=>optional(r.occupancy)),total:ratio(occupiedTotal,availableTotal)},
+    {label:"AVERAGE ROOM RATE / ADR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)),total:occupiedTotal!==null&&occupiedTotal>0&&roomTotal!==null?roomTotal/occupiedTotal:null},
+    {label:"REVPAR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),total:availableTotal!==null&&availableTotal>0&&roomTotal!==null?roomTotal/availableTotal:null},
+    {label:"EXCHANGE RATE US $ TO RP",kind:"money",values:form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),total:optional(form.statistics.exchangeRate)},
+    {label:"AVERAGE SELLING RATE (RP)",kind:"money",values:form.forecast.monthly.map(()=>optional(form.statistics.averageSellingRate)),total:optional(form.statistics.averageSellingRate)},
+    addSection("REVENUES"),
+    {label:"ROOMS",kind:"money",values:roomRevenue,total:roomTotal,base:revenue,totalPct:ratio(roomTotal,revenueTotal)},
+    {label:"FOOD & BEVERAGE",kind:"money",values:fb,total:sum(fb),base:revenue,totalPct:ratio(sum(fb),revenueTotal)},
+    {label:"MINOR OPERATING DEPARTMENT / OTHER REVENUE",kind:"money",values:other,total:sum(other),base:revenue,totalPct:ratio(sum(other),revenueTotal)},
+    {label:"TOTAL REVENUES (EXCL. TAX)",kind:"money",values:revenue,total:revenueTotal,totalPct:revenueTotal===null?null:100},
+    {label:"TOTAL REVENUES (INCL. 21% — reference workbook formula)",kind:"money",values:revenue.map(v=>v===null?null:v*1.21),total:revenueTotal===null?null:revenueTotal*1.21,totalPct:revenueTotal===null?null:100},
+    addSection("COST OF SALES / DEPARTMENT OPERATING COSTS"),
+    {label:"Cost of Sales — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Payroll & Related Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Other Department Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Department Operating Costs & Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
+    {label:"TOTAL OPERATING COSTS (FORECAST INPUT)",kind:"money",values:costs,total:costTotal,base:revenue,totalPct:ratio(costTotal,revenueTotal)},
+    {label:"DEPARTMENT INCOME / CONTRIBUTION (REVENUE − FORECAST COSTS)",kind:"money",values:months.map(m=>m.revenue!==null&&m.costs!==null?m.revenue-m.costs:null),total:revenueTotal!==null&&costTotal!==null?revenueTotal-costTotal:null},
+    addSection("OVERHEAD DEPARTMENT"),
+    {label:"A&G — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
+    {label:"S&M — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
+    {label:"HRD — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
+    {label:"POMEC — payroll, other expenses & energy",kind:"money",values:months.map(()=>null),total:null},
+    {label:"TOTAL OVERHEAD DEPARTMENT",kind:"money",values:months.map(()=>null),total:null},
+    {label:"HOUSE PROFIT / GROSS OPERATING INCOME",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Basic Management Fee",kind:"money",values:months.map(()=>null),total:null},
+    {label:"GROSS OPERATING INCOME (AFTER MANAGEMENT FEE)",kind:"money",values:months.map(()=>null),total:null},
+    addSection("OTHER NON-OPERATING EXPENSES / GOP"),
+    {label:"Management Fees",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Insurance General",kind:"money",values:months.map(()=>null),total:null},
+    {label:"TOTAL OTHER NON-OPERATING EXPENSES",kind:"money",values:months.map(()=>null),total:null},
+    {label:"GROSS OPERATING PROFIT (GOP) — detail cost allocation required",kind:"money",values:months.map(()=>null),total:null},
+    {label:"% GOP",kind:"percent",values:months.map(()=>null),total:null},
+    addSection("OTHER EXPENSES / OWNER SHARE PROFIT"),
+    {label:"Land Lease / Hold",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Insurance",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Maintenance Fee (Service Charge)",kind:"money",values:months.map(()=>null),total:null},
+    {label:"TOTAL OTHER EXPENSES",kind:"money",values:months.map(()=>null),total:null},
+    {label:"OWNER SHARE PROFIT (OSP)",kind:"money",values:months.map(()=>null),total:null},
+    {label:"PT / Operator Share — percentage/input required",kind:"money",values:months.map(()=>null),total:null},
+    {label:"Hotel / Owner Share — percentage/input required",kind:"money",values:months.map(()=>null),total:null},
+    {label:"TOTAL OWNER EXPENSES",kind:"money",values:months.map(()=>null),total:null},
+    {label:"NET OWNER SHARE PROFIT (NOSP)",kind:"money",values:months.map(()=>null),total:null},
+    {label:"NET OWNER SHARE PROFIT / UNIT",kind:"money",values:months.map(()=>null),total:null}
+  ];
+  return rows;
+};
+
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
   const [activeTab,setActiveTab]=useState("statistics");
@@ -541,38 +613,17 @@ export default function HotelBudgetPage() {
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
                 <table className="w-full min-w-[1200px] border-collapse text-xs">
                   <thead className="bg-slate-800 text-white"><tr><th className="sticky left-0 z-10 bg-slate-800 px-3 py-2 text-left">STATISTICS / FORECAST</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-2 py-2 text-right">{monthNames[i]}</th>)}<th className="bg-teal-700 px-3 py-2 text-right">TOTAL / RATA-RATA</th></tr></thead>
-                  <tbody>
-                    {[
-                      {label:"STATISTICS",values:form.forecast.monthly.map(()=>null),kind:"section"},
-                      {label:"Days",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).days),kind:"sum"},
-                      {label:"# of Rooms",values:form.forecast.monthly.map(()=>optional(form.statistics.rooms)),kind:"avg"},
-                      {label:"Rooms Available",values:form.forecast.monthly.map((r,i)=>{const d=calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).days;const rooms=optional(form.statistics.rooms);return rooms===null?null:rooms*d;}),kind:"sum"},
-                      {label:"Occupancy (%)",values:form.forecast.monthly.map(r=>optional(r.occupancy)),kind:"avg"},
-                      {label:"Average Room Rate (ADR/ARR) — Rp",values:form.forecast.monthly.map(r=>optional(r.adr)),kind:"avg"},
-                      {label:"RevPAR — Rp (calculated)",values:form.forecast.monthly.map((r,i)=>{const c=calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms);return c.roomRevenue!==null&&c.days>0&&optional(form.statistics.rooms)!==null?c.roomRevenue/(c.days*optional(form.statistics.rooms)!):null;}),kind:"avg"},
-                      {label:"REVENUES",values:form.forecast.monthly.map(()=>null),kind:"section"},
-                      {label:"Room Revenue — Rp (calculated)",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).roomRevenue),kind:"sum"},
-                      {label:"Food & Beverage Revenue — Rp",values:form.forecast.monthly.map(r=>optional(r.fbRevenue)),kind:"sum"},
-                      {label:"Other Operating Revenue — Rp",values:form.forecast.monthly.map(r=>optional(r.otherRevenue)),kind:"sum"},
-                      {label:"TOTAL REVENUE — Rp",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).revenue),kind:"sum"},
-                      {label:"OPERATING COSTS",values:form.forecast.monthly.map(()=>null),kind:"section"},
-                      {label:"Cost of Sales — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"costOfSales","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
-                      {label:"Payroll & Related Expenses — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"payroll","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
-                      {label:"Other Operating Expenses — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"operatingExpenses","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
-                      {label:"Overhead Expenses — Rp",values:form.forecast.monthly.map(()=>{const v=sumGroup(form.accounts,"overhead","budget",allAccountLines);return v===null?null:v/12;}),kind:"sum"},
-                      {label:"Operating Costs (Forecast) — Rp",values:form.forecast.monthly.map(r=>optional(r.operatingCosts)),kind:"sum"},
-                      {label:"GOP / Contribution — Rp",values:form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms).gop),kind:"sum"}
-                    ].map((line,ri)=>{
-                      if(line.kind==="section")return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={14} className="border-t border-slate-300 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
-                      const available=line.values.filter((v):v is number=>v!==null);
-                      const total=line.kind==="sum"?(available.length?available.reduce((a,b)=>a+b,0):null):(available.length?available.reduce((a,b)=>a+b,0)/available.length:null);
-                      return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUE")||line.label.startsWith("GOP")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
+                  <tbody>{buildConsolidatedRows(form).map((line,ri)=>{
+                      if(line.kind==="section") return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={14} className="border-t border-slate-300 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
+                      const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="Days"||line.label==="# OF ROOMS"||line.label==="ROOM AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);
+                      const values=line.values;
+                      const total=line.total??null;
+                      return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
                         <th className="sticky left-0 z-10 border-t border-slate-200 bg-inherit px-3 py-2 text-left">{line.label}</th>
-                        {line.values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{v===null?"—":line.label.includes("(%)")?fmt(v)+"%":line.label.includes("Days")||line.label==="# of Rooms"||line.label==="Rooms Available"?fmt(v,0):money(v)}</td>)}
-                        <td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-bold tabular-nums">{total===null?"—":line.label.includes("(%)")?fmt(total)+"%":line.label.includes("Days")||line.label==="# of Rooms"||line.label==="Rooms Available"?fmt(total,0):money(total)}</td>
+                        {values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{display(v)}</td>)}
+                        <td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-bold tabular-nums">{display(total)}</td>
                       </tr>;
-                    })}
-                  </tbody>
+                    })}</tbody>
                 </table>
               </div>
             </div>
@@ -624,53 +675,15 @@ export default function HotelBudgetPage() {
         <div className="overflow-x-auto">
           <table className="w-full min-w-[1800px] border-collapse text-[9px]">
             <thead><tr className="bg-slate-800 text-white"><th className="sticky left-0 z-10 min-w-[210px] bg-slate-800 px-2 py-2 text-left">1 YEAR CONSOLIDATED</th>{form.forecast.monthly.map((row,i)=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-700 px-2 py-2 text-center">TOTAL / YEAR</th></tr><tr className="bg-slate-100 text-slate-600"><th className="sticky left-0 z-10 bg-slate-100 px-2 py-1 text-left">{form.hotelName||"Nama Hotel"} · {form.yearStart}</th>{form.forecast.monthly.map(row=><Fragment key={row.label}><th className="px-1 py-1 text-right">Value</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="bg-teal-50 px-2 py-1 text-right">Value</th><th className="bg-teal-50 px-2 py-1 text-right">%</th></tr></thead>
-            <tbody>{(() => {
-              const months=form.forecast.monthly.map((r,i)=>calcMonthly(r,Number(form.yearStart),i,form.statistics.rooms));
-              const roomCount=optional(form.statistics.rooms);
-              const available=months.map(m=>roomCount===null?null:m.days*roomCount);
-              const occupied=months.map((m,i)=>available[i]!==null&&optional(form.forecast.monthly[i].occupancy)!==null?available[i]!*optional(form.forecast.monthly[i].occupancy)!/100:null);
-              const roomRevenue=months.map(m=>m.roomRevenue), fb= form.forecast.monthly.map(r=>optional(r.fbRevenue)), other=form.forecast.monthly.map(r=>optional(r.otherRevenue)), revenue=months.map(m=>m.revenue), costs=months.map(m=>m.costs), gop=months.map(m=>m.gop);
-              const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
-              const annualAvailable=sum(available), annualOccupied=sum(occupied), annualRoomRevenue=sum(roomRevenue), annualRevenue=sum(revenue), annualCosts=sum(costs), annualGop=sum(gop);
-              const annualPercent=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
-              const average=(a:(number|null)[])=>{const v=a.filter((x):x is number=>x!==null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
-              const adr=months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr));
-              const revpar=months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null);
-              const rows:{label:string;section?:boolean;v:(number|null)[];total?:number|null;fmt?:"count"|"percent"|"money";base?:(number|null)[];totalPct?:number|null}[]=[
-                {label:"STATISTICS",section:true,v:[]},
-                {label:"Days",v:months.map(m=>m.days),total:months.reduce((s,m)=>s+m.days,0),fmt:"count"},
-                {label:"# OF ROOMS",v:months.map(()=>roomCount),total:roomCount,fmt:"count"},
-                {label:"ROOM AVAILABLE",v:available,total:annualAvailable,fmt:"count"},
-                {label:"OCCUPIED ROOMS (EST.)",v:occupied,total:annualOccupied,fmt:"count"},
-                {label:"OCCUPANCY (%)",v:form.forecast.monthly.map(r=>optional(r.occupancy)),total:annualPercent(annualOccupied,annualAvailable),fmt:"percent"},
-                {label:"AVERAGE ROOM RATE / ADR (RP)",v:adr,total:annualOccupied!==null&&annualOccupied>0&&annualRoomRevenue!==null?annualRoomRevenue/annualOccupied:null,fmt:"money"},
-                {label:"REVPAR (RP)",v:revpar,total:annualAvailable!==null&&annualAvailable>0&&annualRoomRevenue!==null?annualRoomRevenue/annualAvailable:null,fmt:"money"},
-                {label:"EXCHANGE RATE US $ TO RP",v:form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),total:optional(form.statistics.exchangeRate),fmt:"money"},
-                {label:"AVERAGE SELLING RATE (RP)",v:form.forecast.monthly.map(()=>optional(form.statistics.averageSellingRate)),total:optional(form.statistics.averageSellingRate),fmt:"money"},
-                {label:"REVENUES",section:true,v:[]},
-                {label:"ROOMS",v:roomRevenue,total:annualRoomRevenue,fmt:"money",base:revenue,totalPct:annualPercent(annualRoomRevenue,annualRevenue)},
-                {label:"FOOD & BEVERAGE",v:fb,total:sum(fb),fmt:"money",base:revenue,totalPct:annualPercent(sum(fb),annualRevenue)},
-                {label:"MINOR OPERATING DEPARTMENT",v:other,total:sum(other),fmt:"money",base:revenue,totalPct:annualPercent(sum(other),annualRevenue)},
-                {label:"TOTAL REVENUES (EXCL. TAX)",v:revenue,total:annualRevenue,fmt:"money",totalPct:annualRevenue===null?null:100},
-                {label:"COST OF SALES / OPERATING COSTS",section:true,v:[]},
-                {label:"TOTAL OPERATING COSTS (FORECAST)",v:costs,total:annualCosts,fmt:"money",base:revenue,totalPct:annualPercent(annualCosts,annualRevenue)},
-                {label:"DEPARTMENT INCOME / GROSS PROFIT",v:months.map(m=>m.revenue!==null&&m.costs!==null?m.revenue-m.costs:null),total:annualRevenue!==null&&annualCosts!==null?annualRevenue-annualCosts:null,fmt:"money"},
-                {label:"UNDISTRIBUTED / OVERHEAD DEPARTMENT",section:true,v:[]},
-                {label:"Payroll, A&G, S&M, HRD, Engineering, Energy — detail not allocated monthly",v:form.forecast.monthly.map(()=>null),total:null,fmt:"money"},
-                {label:"HOUSE PROFIT / GROSS OPERATING INCOME",section:true,v:[]},
-                {label:"GROSS OPERATING PROFIT (GOP)",v:gop,total:annualGop,fmt:"money",base:revenue,totalPct:annualPercent(annualGop,annualRevenue)},
-                {label:"% GOP",v:gop.map((v,i)=>annualPercent(v,revenue[i])),total:annualPercent(annualGop,annualRevenue),fmt:"percent"},
-                {label:"OTHER NON-OPERATING EXPENSES",section:true,v:[]},
-                {label:"Management fee, insurance, land lease — detail not allocated monthly",v:form.forecast.monthly.map(()=>null),total:null,fmt:"money"},
-                {label:"OWNER SHARE PROFIT",section:true,v:[]},
-                {label:"OSP / NOSP — requires owner expense and share inputs",v:form.forecast.monthly.map(()=>null),total:null,fmt:"money"}
-              ];
-              const display=(v:number|null|undefined,f?:string)=>v===null||v===undefined||!Number.isFinite(v)?"—":f==="count"?fmt(v,0):f==="percent"?fmt(v,1)+"%":money(v);
-              return rows.map((line,i)=>{
-                if(line.section)return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={26} className="border-t border-slate-300 px-2 py-1.5 text-left font-black">{line.label}</th></tr>;
-                return <tr key={line.label} className={line.label.startsWith("TOTAL")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>{line.v.map((v,j)=><Fragment key={j}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{display(v,line.fmt)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[j]??null):line.fmt==="percent"?"": "—"}</td></Fragment>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total,line.fmt)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</td></tr>;
-              });
-            })()}</tbody>
+            <tbody>{buildConsolidatedRows(form).map((line,i)=>{
+                if(line.kind==="section") return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={27} className="border-t border-slate-300 px-2 py-1.5 text-left font-black">{line.label}</th></tr>;
+                const display=(v:number|null|undefined,kind:ConsolidatedRow["kind"])=>v===null||v===undefined||!Number.isFinite(v)?"—":kind==="percent"?fmt(v,1)+"%":line.label==="Days"||line.label==="# OF ROOMS"||line.label==="ROOM AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);
+                return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":i%2?"bg-slate-50":"bg-white"}>
+                  <th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>
+                  {line.values.map((v,j)=><Fragment key={j}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{display(v,line.kind)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[j]??null):line.kind==="percent"?"": "—"}</td></Fragment>)}
+                  <td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total,line.kind)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</td>
+                </tr>;
+              })}</tbody>>
           </table>
         </div>
       </section>

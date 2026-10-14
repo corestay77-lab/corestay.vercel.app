@@ -55,7 +55,7 @@ const calcAnnual = (row: ForecastYear) => {
 };
 
 
-type ConsolidatedRow = { label:string; kind:"section"|"sum"|"avg"|"percent"|"money"; values:(number|null)[]; total?:number|null; base?:(number|null)[]; totalPct?:number|null };
+type ConsolidatedRow = { label:string; kind:"section"|"sum"|"avg"|"percent"|"money"; values:(number|null)[]; total?:number|null; base?:(number|null)[]; totalPct?:number|null; inputKey?:keyof Omit<ForecastMonth,"label"> };
 const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const year=Number(form.yearStart);
   const months=form.forecast.monthly.map((row,i)=>calcMonthly(row,year,i,form.statistics.rooms));
@@ -70,7 +70,6 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const costs=months.map(m=>m.costs);
   const roomTotal=sum(roomRevenue), availableTotal=sum(available), occupiedTotal=sum(occupied), revenueTotal=sum(revenue), costTotal=sum(costs);
   const ratio=(a:number|null,b:number|null)=>a===null||b===null||b===0?null:a/b*100;
-  const average=(a:(number|null)[])=>{const valid=a.filter((v):v is number=>v!==null);return valid.length?valid.reduce((x,y)=>x+y,0)/valid.length:null;};
   const addSection=(label:string):ConsolidatedRow=>({label,kind:"section",values:[]});
   const rows:ConsolidatedRow[]=[
     addSection("STATISTICS"),
@@ -78,15 +77,15 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     {label:"# OF ROOMS",kind:"avg",values:months.map(()=>rooms),total:rooms},
     {label:"ROOM AVAILABLE",kind:"sum",values:available,total:availableTotal},
     {label:"OCCUPIED ROOMS",kind:"sum",values:occupied,total:occupiedTotal},
-    {label:"OCCUPANCY (%)",kind:"percent",values:form.forecast.monthly.map(r=>optional(r.occupancy)),total:ratio(occupiedTotal,availableTotal)},
-    {label:"AVERAGE ROOM RATE / ADR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)),total:occupiedTotal!==null&&occupiedTotal>0&&roomTotal!==null?roomTotal/occupiedTotal:null},
+    {label:"OCCUPANCY (%)",kind:"percent",values:form.forecast.monthly.map(r=>optional(r.occupancy)),total:ratio(occupiedTotal,availableTotal),inputKey:"occupancy"},
+    {label:"AVERAGE ROOM RATE / ADR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)),total:occupiedTotal!==null&&occupiedTotal>0&&roomTotal!==null?roomTotal/occupiedTotal:null,inputKey:"adr"},
     {label:"REVPAR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),total:availableTotal!==null&&availableTotal>0&&roomTotal!==null?roomTotal/availableTotal:null},
     {label:"EXCHANGE RATE US $ TO RP",kind:"money",values:form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),total:optional(form.statistics.exchangeRate)},
     {label:"AVERAGE SELLING RATE (RP)",kind:"money",values:form.forecast.monthly.map(()=>optional(form.statistics.averageSellingRate)),total:optional(form.statistics.averageSellingRate)},
     addSection("REVENUES"),
     {label:"ROOMS",kind:"money",values:roomRevenue,total:roomTotal,base:revenue,totalPct:ratio(roomTotal,revenueTotal)},
-    {label:"FOOD & BEVERAGE",kind:"money",values:fb,total:sum(fb),base:revenue,totalPct:ratio(sum(fb),revenueTotal)},
-    {label:"MINOR OPERATING DEPARTMENT / OTHER REVENUE",kind:"money",values:other,total:sum(other),base:revenue,totalPct:ratio(sum(other),revenueTotal)},
+    {label:"FOOD & BEVERAGE",kind:"money",values:fb,total:sum(fb),base:revenue,totalPct:ratio(sum(fb),revenueTotal),inputKey:"fbRevenue"},
+    {label:"MINOR OPERATING DEPARTMENT / OTHER REVENUE",kind:"money",values:other,total:sum(other),base:revenue,totalPct:ratio(sum(other),revenueTotal),inputKey:"otherRevenue"},
     {label:"TOTAL REVENUES (EXCL. TAX)",kind:"money",values:revenue,total:revenueTotal,totalPct:revenueTotal===null?null:100},
     {label:"TOTAL REVENUES (INCL. 21% — reference workbook formula)",kind:"money",values:revenue.map(v=>v===null?null:v*1.21),total:revenueTotal===null?null:revenueTotal*1.21,totalPct:revenueTotal===null?null:100},
     addSection("COST OF SALES / DEPARTMENT OPERATING COSTS"),
@@ -94,7 +93,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     {label:"Payroll & Related Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
     {label:"Other Department Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
     {label:"Department Operating Costs & Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
-    {label:"TOTAL OPERATING COSTS (FORECAST INPUT)",kind:"money",values:costs,total:costTotal,base:revenue,totalPct:ratio(costTotal,revenueTotal)},
+    {label:"TOTAL OPERATING COSTS (FORECAST INPUT)",kind:"money",values:costs,total:costTotal,base:revenue,totalPct:ratio(costTotal,revenueTotal),inputKey:"operatingCosts"},
     {label:"DEPARTMENT INCOME / CONTRIBUTION (REVENUE − FORECAST COSTS)",kind:"money",values:months.map(m=>m.revenue!==null&&m.costs!==null?m.revenue-m.costs:null),total:revenueTotal!==null&&costTotal!==null?revenueTotal-costTotal:null},
     addSection("OVERHEAD DEPARTMENT"),
     {label:"A&G — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
@@ -607,7 +606,7 @@ export default function HotelBudgetPage() {
           </div>}
 
           {activeTab==="forecast"&&<div className="space-y-7">
-            <div className="rounded-2xl bg-teal-50 p-4 text-sm leading-6 text-teal-950">Forecast menggunakan asumsi yang Anda masukkan. Room Revenue dihitung dari hari × jumlah kamar × occupancy × ADR. Kolom F&amp;B, other revenue, dan operating costs diisi terpisah. Angka hasil perhitungan tetap perlu dibandingkan dengan asumsi sumber.</div>
+            <div className="rounded-2xl bg-teal-50 p-4 text-sm leading-6 text-teal-950">Isi langsung sel bulanan pada baris Occupancy, ADR, Food &amp; Beverage, Other Revenue, dan Total Operating Costs. Room Revenue, total revenue, RevPAR, dan total tahunan dihitung otomatis. Baris departemen yang belum memiliki input terpisah tetap —; angka tahunan dari P&amp;L tidak dibagi rata ke bulan.</div>
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
               <div className="mb-3"><h3 className="text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Laporan tahunan Januari–Desember dengan kolom TOTAL / RATA-RATA. Nilai dihitung dari data yang tersedia; data yang belum ada tetap ditampilkan sebagai —.</p></div>
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -620,7 +619,7 @@ export default function HotelBudgetPage() {
                       const total=line.total??null;
                       return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
                         <th className="sticky left-0 z-10 border-t border-slate-200 bg-inherit px-3 py-2 text-left">{line.label}</th>
-                        {values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{display(v)}</td>)}
+                        {values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{line.inputKey?numberInput(form.forecast.monthly[i][line.inputKey],value=>updateMonth(i,line.inputKey!,value)):display(v)}</td>)}
                         <td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-bold tabular-nums">{display(total)}</td>
                       </tr>;
                     })}</tbody>

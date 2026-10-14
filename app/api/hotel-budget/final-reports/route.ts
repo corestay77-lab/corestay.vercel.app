@@ -105,7 +105,11 @@ export async function POST(request: NextRequest) {
     if (comp+paid>roomAvailable) issues.push("Complimentary + Room Paid melebihi Room Available. Periksa room nights dan statistik inventori.");
     if (!form.confirmAccountReview) issues.push("Centang konfirmasi bahwa seluruh akun yang relevan sudah ditinjau dan akun kosong memang tidak berlaku atau tidak memiliki nilai.");
     const accounts = form.accounts as Record<string, any>;
-    for (const line of ACCOUNT_LINES) {
+    const submittedLines = Array.isArray(form.accountLines) ? form.accountLines : [];
+    const submittedCustomLines = Array.isArray(form.customAccounts) ? form.customAccounts : [];
+    const accountLines = [...ACCOUNT_LINES, ...submittedLines.filter((line:any)=>line?.code && !ACCOUNT_LINES.some(item=>item.code===line.code)), ...submittedCustomLines]
+      .filter((line:any,index:number,arr:any[])=>arr.findIndex(item=>item?.code===line?.code)===index);
+    for (const line of accountLines) {
       const row=accounts[line.code] || {};
       for (const column of ["actual","budget","lastYear","ytdActual","ytdBudget","lastYearYtd"] as const) {
         const raw=row[column];
@@ -116,14 +120,14 @@ export async function POST(request: NextRequest) {
       }
     }
     for (const key of ["roomRevenue","fbRevenue","otherRevenue","costOfSales","payroll","operatingExpenses","overhead"] as const) {
-      if (sumGroup(accounts,key,"actual")===null) issues.push("Belum ada nilai Actual pada kelompok "+key+". Isi angka atau masukkan 0 bila telah dipastikan tidak ada transaksi.");
+      if (sumGroup(accounts,key,"actual",accountLines)===null) issues.push("Belum ada nilai Actual pada kelompok "+key+". Isi angka atau masukkan 0 bila telah dipastikan tidak ada transaksi.");
     }
-    const calculations=calculateBudget(form);
+    const calculations=calculateBudget({...form, accountLines});
     if (calculations.roomAvailable!==null && calculations.roomAvailable<0) issues.push("Room Available hasil perhitungan bernilai negatif.");
     if (calculations.occupancy!==null && (calculations.occupancy<0 || calculations.occupancy>100)) issues.push("Occupancy harus berada antara 0% dan 100%.");
     if (calculations.revenue===null || calculations.revenue<=0) issues.push("Total revenue harus lebih dari nol untuk menerbitkan P&L.");
     if (calculations.costs===null) issues.push("Total biaya operasional tidak dapat dihitung dari akun Actual yang diisi.");
-    const actualBlankCount=ACCOUNT_LINES.filter(line=>numeric(accounts[line.code]?.actual)===null).length;
+    const actualBlankCount=accountLines.filter((line:any)=>numeric(accounts[line.code]?.actual)===null).length;
     if (actualBlankCount) warnings.push(actualBlankCount+" baris akun Actual kosong. Baris kosong tidak otomatis dianggap nol; pastikan akun yang tidak berlaku sudah ditinjau.");
     if (!Array.isArray(form.forecast?.monthly) || form.forecast.monthly.length!==12) issues.push("Forecast bulanan harus memuat tepat 12 bulan.");
     if (!Array.isArray(form.forecast?.annual) || form.forecast.annual.length!==10) issues.push("Forecast multi-tahun harus memuat tepat 10 tahun.");

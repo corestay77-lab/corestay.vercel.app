@@ -245,7 +245,7 @@ export default function HotelBudgetPage() {
       make("OCCUPANCY (%)",years.map(y=>y.occ),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),
       make("AVERAGE ROOM RATE / ADR (RP)",years.map((y,i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(y.row.adr)),"money",undefined,"adr",totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
       make("REVPAR (RP)",years.map((y,i)=>roomRevenue[i]!==null&&roomAvail[i]!==null&&roomAvail[i]!>0?roomRevenue[i]!/roomAvail[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalAvailable!==null&&totalAvailable>0?totalRoomRev/totalAvailable:null),
-      make("AVERAGE SELLING RATE (RP)",years.map(()=>null),"money"),
+      make("AVERAGE SELLING RATE (RP)",years.map(y=>optional(y.row.adr)),"money",undefined,"adr",avg(years.map(y=>optional(y.row.adr)))),
       section("REVENUES"),
       make("ROOMS",roomRevenue,"money",revenue),
       make("FOOD & BEVERAGE",fb,"money",revenue,"fbRevenue"),
@@ -352,19 +352,30 @@ export default function HotelBudgetPage() {
       return nums.length?nums.reduce((a,b)=>a+b,0):null;
     };
     const roomBudget=total(["roomRevenue"]);
-    const occupancy=values.occupancy;
-    const days=optional(form.statistics.days);
     const rooms=optional(form.statistics.rooms);
-    const roomNights=days!==null&&rooms!==null&&occupancy!==null?days*rooms*occupancy/100:null;
-    const adr=roomBudget!==null&&roomNights!==null&&roomNights>0?roomBudget/roomNights:values.adr;
+    const year=Number(form.yearStart);
+    const daysInYear=Number.isInteger(year)&&year>=1900&&year<=2200?(year%4===0&&(year%100!==0||year%400===0)?366:365):365;
+    const roomNightsAtFullOccupancy=rooms!==null&&rooms>0?rooms*daysInYear:null;
+    const enteredAdr=optional(form.statistics.averageSellingRate);
+    const sourceOccupancy=values.occupancy;
+    const sourceAdr=values.adr;
+    // Budget room revenue plus a supplied ARR gives a derived occupancy.
+    // If ARR is absent, use observed occupancy (when available) to derive the budget ADR.
+    const occupancyFromBudget=roomBudget!==null&&enteredAdr!==null&&enteredAdr>0&&roomNightsAtFullOccupancy!==null
+      ? roomBudget/(roomNightsAtFullOccupancy*enteredAdr)*100
+      : null;
+    const occupancy=occupancyFromBudget!==null?occupancyFromBudget:sourceOccupancy;
+    const occupiedRoomNights=roomNightsAtFullOccupancy!==null&&occupancy!==null?roomNightsAtFullOccupancy*occupancy/100:null;
+    const adr=enteredAdr!==null&&enteredAdr>0?enteredAdr:
+      roomBudget!==null&&occupiedRoomNights!==null&&occupiedRoomNights>0?roomBudget/occupiedRoomNights:sourceAdr;
     return {
-      occupancy,
-      adr,
+      occupancy:occupancy!==null&&Number.isFinite(occupancy)?occupancy:null,
+      adr:adr!==null&&Number.isFinite(adr)?adr:null,
       fb:total(["fbRevenue"]),
       other:total(["otherRevenue"]),
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
     };
-  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.days,form.statistics.rooms]);
+  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.averageSellingRate,form.statistics.rooms,form.yearStart]);
   useEffect(()=>{
     const startYear=Number(form.yearStart);
     if(!Number.isInteger(startYear)||startYear<1900||startYear>2200)return;
@@ -713,7 +724,7 @@ export default function HotelBudgetPage() {
               {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
               {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
               {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
-              {field("AVERAGE SELLING RATE (RP)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",hint:"Rata-rata harga jual kamar dalam Rupiah.",placeholder:"Isi nilai rata-rata"})}
+              {field("AVERAGE SELLING RATE (RP)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",hint:"ARR acuan dalam Rupiah. Jika diisi, okupansi forecast dihitung otomatis dari Room Revenue Budget ÷ (hari setahun × kamar × ARR). Jika dikosongkan, sistem memakai okupansi/ADR aktual bila tersedia.",placeholder:"Isi nilai rata-rata"})}
             </div>
             <div className="rounded-2xl bg-gradient-to-r from-sky-50 via-indigo-50 to-violet-50 p-4 sm:p-5"><h3 className="font-extrabold text-slate-900">Hotel Statistics — perhitungan otomatis</h3><p className="mt-1 text-xs leading-5 text-slate-500">ROOM AVAILABLE = kapasitas room nights (# OF ROOMS × hari periode) dikurangi Out of Inventory, House Use, dan Out of Order. OCCUPIED ROOMS dihitung dari paid room nights ditambah complimentary room nights. Nilai kosong tetap ditampilkan sebagai belum tersedia, bukan nol.</p><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{roomStats.map(([label,value])=>metric(label,label==="OCCUPANCY (%)"?(value===null?"—":fmt(value)+"%"):label==="AVERAGE ROOM RATE (RP)"||label==="REVPAR"?money(value):fmt(value,0)))}</div></div>
             <div className="rounded-2xl border border-sky-100 bg-white p-4"><h3 className="font-bold">Checklist statistik sebelum finalisasi</h3><ul className="mt-2 grid gap-2 text-sm leading-5 text-slate-600 sm:grid-cols-2"><li>• Gunakan hari operasional sesuai periode.</li><li>• Room nights tidak boleh melebihi Room Available.</li><li>• Isi angka 0 secara eksplisit jika telah dipastikan tidak ada nilai.</li><li>• Cocokkan Room Revenue dengan laporan sumber.</li></ul></div>

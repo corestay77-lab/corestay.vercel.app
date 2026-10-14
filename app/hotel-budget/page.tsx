@@ -78,7 +78,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const overheadPayroll=sumComplete([val(row,"agPayroll"),val(row,"smPayroll"),val(row,"hrdPayroll"),val(row,"pomecPayroll")]);
     const overheadOther=sumComplete([val(row,"agOtherExpenses"),val(row,"smOtherExpenses"),val(row,"hrdOtherExpenses"),val(row,"pomecOtherExpenses"),val(row,"energyCost")]);
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
-    const hasDetail=Object.entries(row).some(([k,v])=>k!=="label"&&k!=="occupancy"&&k!=="adr"&&k!=="fbRevenue"&&k!=="phoneRevenue"&&k!=="otherRevenue"&&k!=="operatingCosts"&&String(v??"").trim()!=="");
+    const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
+    const hasDetail=detailKeys.some(k=>val(row,k)!==null);
     const detailTotal=hasDetail?sumComplete(detailed):null;
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
@@ -183,11 +184,13 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("MAINTENANCE FEE (SERVICE CHARGE)",monthly("maintenanceFee"),"money","maintenanceFee");
   add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
-  add("OPERATOR SHARE RATE (%)",monthly("operatorSharePercent"),"percent","operatorSharePercent",30);\n  add("PT / OPERATOR SHARE (RP)",operatorShare,"sum",undefined,sumPresent(operatorShare),osp);
-  add("HOTEL / OWNER SHARE (%)",ownerShare,"sum",undefined,sumPresent(ownerShare),osp);
+  add("OPERATOR SHARE RATE (%)",monthly("operatorSharePercent"),"percent","operatorSharePercent",30);
+  add("PT / OPERATOR SHARE (RP)",operatorShare,"sum",undefined,sumPresent(operatorShare),osp);
+  add("HOTEL / OWNER SHARE (RP)",ownerShare,"sum",undefined,sumPresent(ownerShare),osp);
   add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
+  add("TOTAL OWNER EXPENSES",form.forecast.monthly.map((r,i)=>sumComplete([operatorShare[i],ownerShare[i],val(r,"ownerOtherExpenses")])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([operatorShare[i],ownerShare[i],val(r,"ownerOtherExpenses")]))),osp);
   add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumPresent(nosp),revenue);
-  add("NET OWNER SHARE PROFIT / UNIT",nosp.map((v)=>v!==null&&roomCount!==null&&roomCount>0?v/roomCount:null),"money",undefined,roomCount!==null&&roomCount>0&&sumComplete(nosp)!==null?sumComplete(nosp)!/roomCount:null);
+  add("NET OWNER SHARE PROFIT / UNIT",nosp.map((v)=>v!==null&&roomCount!==null&&roomCount>0?v/roomCount:null),"money",undefined,roomCount!==null&&roomCount>0&&sumPresent(nosp)!==null?sumPresent(nosp)!/roomCount:null);
   return rows;
 };
 

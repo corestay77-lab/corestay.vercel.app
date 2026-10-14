@@ -109,7 +109,8 @@ export const calculateBudget = (form: any) => {
   const gop=revenue!==null&&costs!==null?revenue-costs:null;
   const ownerShareProfitBeforeTax=gop!==null&&otherIncomeValue!==null&&belowGopExpenses!==null?gop+otherIncome-belowGopExpenses:null;
   const netProfit=ownerShareProfitBeforeTax!==null&&tax!==null?ownerShareProfitBeforeTax-tax:null;
-  const ownerCashAfterCapex=netProfit!==null&&ownerCashItems!==null?netProfit-ownerCashItems:null;
+  // Net profit is not operating cash flow; cash after CapEx requires a reconciled cash-flow statement.
+  const ownerCashAfterCapex:null=null;
   const ytdOtherIncomeValue=sumGroup(form?.accounts||{},"otherIncome","ytdActual",customLines);
   const ytdOtherIncome=ytdOtherIncomeValue??0;
   const ytdBelowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual",customLines));
@@ -120,7 +121,7 @@ export const calculateBudget = (form: any) => {
   const ytdGopMargin=ytdRevenue!==null&&ytdRevenue>0&&ytdGop!==null?ytdGop/ytdRevenue*100:null;
   const ytdOwnerShareProfitBeforeTax=ytdGop!==null&&ytdOtherIncomeValue!==null&&ytdBelowGopExpenses!==null?ytdGop+ytdOtherIncome-ytdBelowGopExpenses:null;
   const ytdNetProfit=ytdOwnerShareProfitBeforeTax!==null&&ytdTax!==null?ytdOwnerShareProfitBeforeTax-ytdTax:null;
-  const ytdOwnerCashAfterCapex=ytdNetProfit!==null&&ytdOwnerCashItems!==null?ytdNetProfit-ytdOwnerCashItems:null;
+  const ytdOwnerCashAfterCapex:null=null;
   return {
     totalRoomBuild,roomAvailable,occupied,occupancy:roomAvailable!==null&&roomAvailable>0&&occupied!==null?occupied/roomAvailable*100:null,
     adr:paid!==null&&paid>0&&roomRevenue!==null?roomRevenue/paid:null,

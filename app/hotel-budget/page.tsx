@@ -376,12 +376,12 @@ export default function HotelBudgetPage() {
   }
 
   const tabItems=[
-    {id:"statistics",label:"Budget & Statistics",sub:"Statistik hotel",color:"from-sky-500 to-blue-600"},
-    {id:"pnl",label:"Budget P&L",sub:"Rincian akun",color:"from-violet-500 to-purple-600"},
-    {id:"forecast",label:"Monthly & Annual Forecast",sub:"12 bulan",color:"from-teal-500 to-emerald-600"},
-    {id:"variance",label:"Variance & Exception Report",sub:"Actual vs Budget",color:"from-amber-500 to-orange-600"},
-    {id:"action-plan",label:"Management Action Plan",sub:"PIC dan target",color:"from-pink-500 to-rose-600"},
-    {id:"export",label:"Export PDF & Excel",sub:"Preview dan unduh",color:"from-indigo-500 to-blue-700"}
+    {id:"statistics",label:"Budget & Statistics",sub:"Identitas hotel dan kapasitas",color:"from-sky-500 to-blue-600",icon:"🏨",detail:"Mulai dari profil hotel, periode, kapasitas kamar, dan statistik operasional."},
+    {id:"pnl",label:"Budget P&L",sub:"Pendapatan dan biaya",color:"from-violet-500 to-purple-600",icon:"📊",detail:"Isi akun Actual, Budget, Last Year, dan YTD. Ringkasan dihitung otomatis dari data yang terisi."},
+    {id:"forecast",label:"Monthly & Annual Forecast",sub:"Proyeksi 12 bulan & 10 tahun",color:"from-teal-500 to-emerald-600",icon:"📈",detail:"Bangun proyeksi berdasarkan hari, kamar, okupansi, ADR, pendapatan lain, dan biaya."},
+    {id:"variance",label:"Variance & Exception Report",sub:"Analisis selisih",color:"from-amber-500 to-orange-600",icon:"🔎",detail:"Temukan selisih Actual vs Budget dan Last Year, termasuk perbandingan YTD."},
+    {id:"action-plan",label:"Management Action Plan",sub:"PIC, target, tenggat",color:"from-pink-500 to-rose-600",icon:"🎯",detail:"Ubah temuan menjadi tindakan terukur dengan penanggung jawab dan deadline."},
+    {id:"export",label:"Export PDF & Excel",sub:"Validasi dan laporan akhir",color:"from-indigo-500 to-blue-700",icon:"📄",detail:"Tinjau ringkasan, jalankan validasi final, lalu cetak PDF atau unduh Excel."}
   ];
   const sectionIndex=tabItems.findIndex(x=>x.id===activeTab);
   const sectionLabel=tabItems.find(x=>x.id===activeTab)?.label||tabItems[0].label;
@@ -426,13 +426,25 @@ export default function HotelBudgetPage() {
         <p className="mt-2 text-xs leading-5 text-slate-500">Tanpa login, laporan final disimpan hanya di browser/perangkat ini. Jika login, laporan tersimpan di akun Anda dan tidak dapat diakses oleh akun lain.</p>
       </section>
 
-      <nav className="mb-6 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6" aria-label="Urutan tahapan pengisian">
-        {tabItems.map((tab,i)=><div key={tab.id} aria-current={activeTab===tab.id?"step":undefined} className={"min-w-0 rounded-2xl border p-3 text-left "+(activeTab===tab.id?"border-sky-300 bg-white shadow-md ring-2 ring-sky-100":i<tabItems.findIndex(x=>x.id===activeTab)?"border-emerald-200 bg-emerald-50/70":"border-white bg-white/70 shadow-sm")}><span className={"mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br text-lg font-black text-white "+tab.color}>{i<tabItems.findIndex(x=>x.id===activeTab)?"✓":String(i+1).padStart(2,"0")}</span><span className="block text-xs font-bold leading-4 text-slate-800 sm:text-sm">{tab.label}</span><span className="mt-1 block text-[11px] text-slate-500">{tab.sub}</span></div>)}
+      <nav className="mb-6" aria-label="Urutan tahapan pengisian">
+        <div className="mb-3 flex items-center justify-between gap-3 px-1">
+          <div><p className="text-xs font-extrabold uppercase tracking-[.16em] text-slate-500">Your workflow</p><p className="mt-1 text-sm font-bold text-slate-800">Langkah {sectionIndex+1} <span className="font-medium text-slate-400">dari 6</span></p></div>
+          <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-slate-600 shadow-sm">{Math.round(((sectionIndex+1)/tabItems.length)*100)}% perjalanan</span>
+        </div>
+        <div className="mb-3 h-1.5 overflow-hidden rounded-full bg-slate-200"><div className="h-full rounded-full bg-gradient-to-r from-sky-500 via-violet-500 to-fuchsia-500 transition-all duration-500" style={{width:(((sectionIndex+1)/tabItems.length)*100)+"%"}} /></div>
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">
+          {tabItems.map((tab,i)=><button type="button" key={tab.id} aria-current={activeTab===tab.id?"step":undefined} onClick={()=>{setActiveTab(tab.id);setIssues([]);setMessage("");window.scrollTo({top:0,behavior:"smooth"});}} className={"group min-w-0 rounded-2xl border p-3 text-left transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg focus:outline-none focus:ring-4 focus:ring-sky-100 "+(activeTab===tab.id?"border-sky-300 bg-white shadow-lg ring-2 ring-sky-100":i<sectionIndex?"border-emerald-200 bg-emerald-50/80 shadow-sm":"border-white bg-white/80 shadow-sm hover:border-slate-200")}>
+            <span className={"mb-3 flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br text-xl shadow-sm "+tab.color}>{i<sectionIndex?<span className="text-sm font-black text-white">✓</span>:<span>{tab.icon}</span>}</span>
+            <span className="block min-h-[2.5rem] text-xs font-extrabold leading-5 text-slate-800 sm:text-sm">{tab.label}</span>
+            <span className="mt-1 block min-h-[2rem] text-[11px] leading-4 text-slate-500">{tab.sub}</span>
+            <span className={"mt-3 block h-1 rounded-full transition-all "+(activeTab===tab.id?"bg-gradient-to-r "+tab.color:i<sectionIndex?"bg-emerald-300":"bg-slate-100 group-hover:bg-slate-200")}></span>
+          </button>)}
+        </div>
       </nav>
 
       <div className="grid items-start gap-5 2xl:grid-cols-[minmax(0,1fr)_310px]">
         <section className="min-w-0 rounded-[26px] border border-white bg-white/95 p-4 shadow-lg shadow-slate-200/50 sm:p-6">
-          <div className="mb-6 flex flex-wrap items-start justify-between gap-3"><div><p className="text-xs font-bold uppercase tracking-[.18em] text-sky-700">Bagian {tabItems.findIndex(x=>x.id===activeTab)+1} dari 6</p><h2 className="mt-1 text-xl font-extrabold sm:text-2xl">{sectionLabel}</h2><p className="mt-1 text-sm text-slate-500">Gunakan data sumber yang sama periodenya. Nilai kosong tidak otomatis diubah menjadi nol.</p></div><label className="flex items-center gap-2 rounded-full bg-sky-50 px-3 py-1.5 text-xs font-bold text-sky-800"><span>Mata uang</span><select aria-label="Pilih mata uang laporan" value={currency} onChange={e=>setCurrency(e.target.value as "IDR"|"USD")} className="rounded-lg border border-sky-200 bg-white px-2 py-1.5 font-bold text-slate-800"><option value="IDR">IDR · Rupiah</option><option value="USD">USD · US Dollar ($)</option></select></label></div>
+          <div className="mb-6 flex flex-wrap items-start justify-between gap-3 rounded-2xl bg-gradient-to-r from-slate-50 via-white to-sky-50 p-4 sm:p-5"><div className="flex min-w-0 items-start gap-3"><div className={"flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-br text-2xl shadow-sm "+(tabItems.find(x=>x.id===activeTab)?.color||"from-sky-500 to-blue-600")}>{tabItems.find(x=>x.id===activeTab)?.icon||"🏨"}</div><div><p className="text-xs font-extrabold uppercase tracking-[.18em] text-sky-700">STEP {tabItems.findIndex(x=>x.id===activeTab)+1} / 6 · CORESTAY WORKFLOW</p><h2 className="mt-1 text-xl font-extrabold sm:text-2xl">{sectionLabel}</h2><p className="mt-1 max-w-2xl text-sm leading-6 text-slate-500">{tabItems.find(x=>x.id===activeTab)?.detail} Nilai kosong tidak otomatis diubah menjadi nol.</p></div></div><label className="flex items-center gap-2 self-start rounded-full border border-sky-100 bg-white px-3 py-1.5 text-xs font-bold text-sky-800 shadow-sm"><span>Mata uang</span><select aria-label="Pilih mata uang laporan" value={currency} onChange={e=>setCurrency(e.target.value as "IDR"|"USD")} className="rounded-lg border border-sky-200 bg-white px-2 py-1.5 font-bold text-slate-800"><option value="IDR">IDR · Rupiah</option><option value="USD">USD · US Dollar ($)</option></select></label></div>
 
           {activeTab==="statistics"&&<div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">

@@ -142,25 +142,53 @@ export default function HotelBudgetPage() {
   },[form.accounts,allAccountLines,values.occupancy,values.adr]);
   useEffect(()=>{
     setForm(prev=>{
-      const monthly=prev.forecast.monthly.map((r,i)=>({
-        ...r,
-        occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
-        adr:r.adr.trim()||forecastSource.adr===null?r.adr:String(Math.round(forecastSource.adr*100)/100),
-        fbRevenue:i===0&&!r.fbRevenue.trim()&&forecastSource.fb!==null?String(forecastSource.fb):r.fbRevenue,
-        otherRevenue:i===0&&!r.otherRevenue.trim()&&forecastSource.other!==null?String(forecastSource.other):r.otherRevenue,
-        operatingCosts:i===0&&!r.operatingCosts.trim()&&forecastSource.costs!==null?String(forecastSource.costs):r.operatingCosts
-      }));
-      const annual=prev.forecast.annual.map((r,i)=>i!==0?r:{
-        ...r,
-        occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
-        adr:r.adr.trim()||forecastSource.adr===null?r.adr:String(Math.round(forecastSource.adr*100)/100),
-        fbRevenue:!r.fbRevenue.trim()&&forecastSource.fb!==null?String(forecastSource.fb):r.fbRevenue,
-        otherRevenue:!r.otherRevenue.trim()&&forecastSource.other!==null?String(forecastSource.other):r.otherRevenue,
-        operatingCosts:!r.operatingCosts.trim()&&forecastSource.costs!==null?String(forecastSource.costs):r.operatingCosts
+      const startYear=Number(prev.yearStart);
+      const monthly=prev.forecast.monthly.map((r,i)=>{
+        const isLeap=new Date(startYear,i+1,0).getDate()===29 && i===1;
+        const distribute=(current:string,source:number|null)=>{
+          if(source===null)return current;
+          const parsed=optional(current);
+          // Re-scale prior auto-filled full-budget values; otherwise preserve user-entered values.
+          if(!current.trim() || (parsed!==null && Math.abs(parsed-source)<0.000001)) return String(Math.round(source/12));
+          return current;
+        };
+        return {
+          ...r,
+          label:monthNames[i]+" "+startYear,
+          occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
+          adr:r.adr.trim()||forecastSource.adr===null?r.adr:String(Math.round(forecastSource.adr*100)/100),
+          fbRevenue:distribute(r.fbRevenue,forecastSource.fb),
+          otherRevenue:distribute(r.otherRevenue,forecastSource.other),
+          operatingCosts:distribute(r.operatingCosts,forecastSource.costs)
+        };
+      });
+      const annual=prev.forecast.annual.map((r,i)=>{
+        const year=startYear+i;
+        const factor=Math.pow(1.02,i);
+        const grow=(current:string,source:number|null)=>{
+          if(source===null)return current;
+          const parsed=optional(current);
+          // Keep existing manual entries; fill missing values from the base budget and apply 2% annual growth.
+          if(!current.trim() && i===0)return String(Math.round(source));
+          if(!current.trim())return String(Math.round(source*factor));
+          if(i===0 && parsed!==null && Math.abs(parsed-source)<0.000001)return current;
+          return current;
+        };
+        return {
+          ...r,
+          label:String(year),
+          days:String(new Date(year,1,29).getMonth()===1?366:365),
+          rooms:r.rooms.trim()||prev.statistics.rooms,
+          occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
+          adr:grow(r.adr,forecastSource.adr),
+          fbRevenue:grow(r.fbRevenue,forecastSource.fb),
+          otherRevenue:grow(r.otherRevenue,forecastSource.other),
+          operatingCosts:grow(r.operatingCosts,forecastSource.costs)
+        };
       });
       return {...prev,forecast:{monthly,annual}};
     });
-  },[forecastSource]);
+  },[forecastSource,form.yearStart,form.statistics.rooms]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",allAccountLines);

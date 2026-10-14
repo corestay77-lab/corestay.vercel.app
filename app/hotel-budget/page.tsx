@@ -682,7 +682,7 @@ export default function HotelBudgetPage() {
                   {line.values.map((v,j)=><Fragment key={j}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{display(v,line.kind)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[j]??null):line.kind==="percent"?"": "—"}</td></Fragment>)}
                   <td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total,line.kind)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</td>
                 </tr>;
-              })}</tbody>>
+              })}</tbody>
           </table>
         </div>
       </section>

@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
 
 type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string };
-type ForecastMonth = { label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string };
+type ForecastMonth = { pomecDetails?:Record<string,string>; label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string };
 type ForecastYear = { label: string; days: string; rooms: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
 type BudgetForm = {
   hotelName: string; period: string; yearStart: string; statistics: Statistics;
@@ -20,7 +20,10 @@ type BudgetForm = {
 type SavedReport = { id: string; hotel_name: string; period_label: string; created_at: string; form_data: BudgetForm; calculated_data: any; validation_data: any };
 const LOCAL_REPORTS_KEY = "corestay-hotel-budget-local-reports-v1";
 const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>({label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",phoneRevenue:"",otherRevenue:"",fbCostOfSales:"",phoneCostOfSales:"",modCostOfSales:"",roomPayroll:"",fbPayroll:"",phonePayroll:"",modPayroll:"",roomOtherExpenses:"",fbOtherExpenses:"",phoneOtherExpenses:"",modOtherExpenses:"",agPayroll:"",smPayroll:"",hrdPayroll:"",pomecPayroll:"",agOtherExpenses:"",smOtherExpenses:"",hrdOtherExpenses:"",pomecOtherExpenses:"",energyCost:"",operatingCosts:"",basicManagementFee:"",otherManagementFee:"",insuranceGeneral:"",landLease:"",ownerInsurance:"",maintenanceFee:"",operatorSharePercent:"30",ownerOtherExpenses:""}));
+const POMEC_LINES = [{key:"salaryWages",label:"SALARY & WAGES",group:"payroll"},{key:"incomeTax",label:"INCOME TAX",group:"payroll"},{key:"jamsostek",label:"JAMSOSTEK",group:"payroll"},{key:"insurancePayroll",label:"INSURANCE",group:"payroll"},{key:"thr",label:"THR (1 YEAR)",group:"payroll"},{key:"mealAllowances",label:"MEAL ALLOWANCES",group:"payroll"},{key:"paintingDecoration",label:"PAINTING & DECORATION",group:"other"},{key:"engineeringSupplies",label:"ENGINEERING SUPPLIES & EQUIPMENT",group:"other"},{key:"bulbsLamp",label:"BULBS & LAMP",group:"other"},{key:"printingStationery",label:"PRINTING & STATIONERY",group:"other"},{key:"laundryUniform",label:"LAUNDRY UNIFORM",group:"other"},{key:"provisionUniform",label:"PROV. FOR UNIFORM",group:"other"},{key:"acMaintenance",label:"AC MAINTENANCE",group:"other"},{key:"buildingMaintenance",label:"BUILDING MAINTENANCE",group:"other"},{key:"electricityMaintenance",label:"ELECTRICITY MAINTENANCE",group:"other"},{key:"floorCovering",label:"FLOOR COVERING",group:"other"},{key:"furnitureFixtureRepair",label:"FURNITURE & FIXTURE REPAIRMENT",group:"other"},{key:"mechanicalElectrical",label:"MECHANICAL & ELECTRICAL MAINT",group:"other"},{key:"kitchenEquipment",label:"KITCHEN EQUIPMENT MAINTENANCE",group:"other"},{key:"refrigerator",label:"REFRIGERATOR MAINTENANCE",group:"other"},{key:"automobileRepair",label:"AUTO MOBILE REPAIR & SERVICES",group:"other"},{key:"plumbingHeating",label:"PLUMBING/HEATING MAINTENANCE",group:"other"},{key:"removalWaste",label:"REMOVAL WASTE",group:"other"},{key:"pomecOthers",label:"OTHERS",group:"other"},{key:"electricityConsumed",label:"ELECTRICITY CONSUMED",group:"energy"},{key:"waterConsumed",label:"WATER CONSUMED",group:"energy"},{key:"fuelDiesel",label:"FUEL / DIESEL CONSUMED",group:"energy"}] as const;
+const pomecValue=(row:ForecastMonth,key:string)=>optional(row.pomecDetails?.[key]||"");
+const pomecTotal=(row:ForecastMonth,group:"payroll"|"other"|"energy")=>{const vals=POMEC_LINES.filter(x=>x.group===group).map(x=>pomecValue(row,x.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
+const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>({pomecDetails:{},label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",phoneRevenue:"",otherRevenue:"",fbCostOfSales:"",phoneCostOfSales:"",modCostOfSales:"",roomPayroll:"",fbPayroll:"",phonePayroll:"",modPayroll:"",roomOtherExpenses:"",fbOtherExpenses:"",phoneOtherExpenses:"",modOtherExpenses:"",agPayroll:"",smPayroll:"",hrdPayroll:"",pomecPayroll:"",agOtherExpenses:"",smOtherExpenses:"",hrdOtherExpenses:"",pomecOtherExpenses:"",energyCost:"",operatingCosts:"",basicManagementFee:"",otherManagementFee:"",insuranceGeneral:"",landLease:"",ownerInsurance:"",maintenanceFee:"",operatorSharePercent:"30",ownerOtherExpenses:""}));
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>({label:String(year+i),days:String((year+i)%4===0?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""}));
 const makeBlank = (): BudgetForm => ({
   hotelName:"",period:"",yearStart:"2027",
@@ -67,6 +70,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
   const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
   const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
+  const pomecMonthly=(group:"payroll"|"other"|"energy")=>form.forecast.monthly.map(r=>pomecTotal(r,group)??(group==="payroll"?val(r,"pomecPayroll"):group==="other"?val(r,"pomecOtherExpenses"):val(r,"energyCost")));
   const roomRevenue=months.map(m=>m.roomRevenue), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
   const revenue=months.map(m=>m.revenue), revenueTotal=sumPresent(revenue);
   const available=months.map(m=>roomCount===null?null:m.days*roomCount);
@@ -79,8 +83,9 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const cos=sumEntered(["fbCostOfSales","phoneCostOfSales","modCostOfSales"]);
     const payroll=sumEntered(["roomPayroll","fbPayroll","phonePayroll","modPayroll"]);
     const deptOther=sumEntered(["roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses"]);
-    const overheadPayroll=sumEntered(["agPayroll","smPayroll","hrdPayroll","pomecPayroll"]);
-    const overheadOther=sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"]);
+    const pomecPayrollDetail=pomecTotal(row,"payroll"),pomecOtherDetail=pomecTotal(row,"other"),pomecEnergyDetail=pomecTotal(row,"energy");
+    const overheadPayroll=sumEntered(["agPayroll","smPayroll","hrdPayroll"])===null&&pomecPayrollDetail===null?null:(sumEntered(["agPayroll","smPayroll","hrdPayroll"])??0)+(pomecPayrollDetail??val(row,"pomecPayroll")??0);
+    const overheadOther=sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses"])===null&&pomecOtherDetail===null&&pomecEnergyDetail===null?null:(sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses"])??0)+(pomecOtherDetail??val(row,"pomecOtherExpenses")??0)+(pomecEnergyDetail??val(row,"energyCost")??0);
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
     const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
     const hasDetail=detailKeys.some(k=>val(row,k)!==null);
@@ -180,14 +185,16 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("A&G",monthly("agPayroll"),"money","agPayroll");
   add("S&M",monthly("smPayroll"),"money","smPayroll");
   add("HRD",monthly("hrdPayroll"),"money","hrdPayroll");
-  add("POMEC / ENGINEERING",monthly("pomecPayroll"),"money","pomecPayroll");
+  add("POMEC / ENGINEERING",pomecMonthly("payroll"),"money","pomecPayroll");
   add("TOTAL OVERHEAD PAYROLL",costParts.map(c=>c.overheadPayroll),"sum",undefined,sumPresent(costParts.map(c=>c.overheadPayroll)),revenue);
   section("OVERHEAD DEPARTMENT — OTHER EXPENSES");
   add("A&G",monthly("agOtherExpenses"),"money","agOtherExpenses");
   add("S&M",monthly("smOtherExpenses"),"money","smOtherExpenses");
   add("HRD",monthly("hrdOtherExpenses"),"money","hrdOtherExpenses");
-  add("POMEC / ENGINEERING",monthly("pomecOtherExpenses"),"money","pomecOtherExpenses");
-  add("ENERGY COST",monthly("energyCost"),"money","energyCost");
+  add("POMEC / ENGINEERING",pomecMonthly("other"),"money","pomecOtherExpenses");
+  add("ENERGY COST",pomecMonthly("energy"),"money","energyCost");
+  section("POMEC / ENGINEERING — DETAIL FORECAST");
+  POMEC_LINES.forEach(line=>add(line.label,form.forecast.monthly.map(row=>pomecValue(row,line.key)),"money",undefined,sumPresent(form.forecast.monthly.map(row=>pomecValue(row,line.key))),revenue));
   add("TOTAL OVERHEAD OTHER EXPENSES",costParts.map(c=>c.overheadOther),"sum",undefined,sumPresent(costParts.map(c=>c.overheadOther)),revenue);
   add("TOTAL OVERHEAD DEPARTMENT",overheadTotal,"sum",undefined,sumPresent(overheadTotal),revenue);
   add("HOUSE PROFIT",houseProfit,"sum",undefined,sumPresent(houseProfit),revenue);
@@ -292,6 +299,8 @@ export default function HotelBudgetPage() {
       make("PAYROLL & RELATED — detail not entered",years.map(()=>null),"money",revenue),
       make("OTHER EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
       make("TOTAL OVERHEAD DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
+      section("POMEC / ENGINEERING — DETAIL FORECAST"),
+      ...POMEC_LINES.map(line=>{const base=source.forecast.monthly.reduce((n,row)=>n+(pomecValue(row,line.key)??0),0);const values=years.map((_,i)=>base===0&&source.forecast.monthly.every(row=>pomecValue(row,line.key)===null)?null:base*Math.pow(1.02,i));return make(line.label,values,"money",revenue);}),
       make("GROSS OPERATING PROFIT (GOP / CONTRIBUTION)",gop,"money",revenue),
       make("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,undefined,pct(sum(gop),totalRevenue)),
       section("OTHER NON-OPERATING / OWNER EXPENSES"),
@@ -410,6 +419,7 @@ export default function HotelBudgetPage() {
       const share=days/yearDays;
       return {
         ...makeMonthly(startYear)[index],
+        pomecDetails:prev.forecast.monthly[index]?.pomecDetails||{},
         label:label+" "+startYear,
         occupancy:baseOccupancy===null?"":String(Math.round(baseOccupancy*100)/100),
         adr:baseAdr===null?"":String(Math.round(baseAdr*100)/100),
@@ -577,6 +587,7 @@ export default function HotelBudgetPage() {
     setMessage("Budget induk "+parentPct+"% ("+money(Math.round(parentAmount))+") berhasil dialokasikan ke "+sectionLines.length+" akun pada "+section+" menggunakan "+allocationMethod+". Angka akhir disesuaikan agar total tepat; nominal tiap akun anak tetap bisa diedit manual. Actual dan Last Year tidak berubah.");
   };
   const updateMonth=(index:number,key:keyof Omit<ForecastMonth,"label">,value:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,monthly:prev.forecast.monthly.map((r,i)=>i===index?{...r,[key]:value}:r)}}));
+  const updatePomecDetail=(monthIndex:number,key:string,value:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,monthly:prev.forecast.monthly.map((row,i)=>i===monthIndex?{...row,pomecDetails:{...(row.pomecDetails||{}),[key]:value}}:row)}}));
   const updateYear=(index:number,key:keyof Omit<ForecastYear,"label">,value:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,annual:prev.forecast.annual.map((r,i)=>i===index?{...r,[key]:value}:r)}}));
 
   const inputClass="w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
@@ -791,6 +802,7 @@ export default function HotelBudgetPage() {
           </div>}
 
           {activeTab==="forecast"&&<div className="space-y-7">
+            <section className="rounded-2xl border border-cyan-200 bg-white p-4 shadow-sm"><div className="mb-3"><h3 className="text-lg font-extrabold text-slate-900">POMEC / ENGINEERING DEPARTMENT — DRAFT FORECASTING YEAR 1</h3><p className="mt-1 text-xs leading-5 text-slate-600">Input per bulan mengikuti format fiskal Desember–November. Data rinci disimpan bersama forecast dan dihitung ke total POMEC, Energy Cost, laporan 1 Year, serta proyeksi 10 Years. Kolom kosong tidak otomatis dianggap nol.</p></div>{(["payroll","other","energy"] as const).map(group=><div key={group} className="mb-5 overflow-x-auto rounded-xl border border-slate-200 last:mb-0"><div className="bg-slate-800 px-3 py-2 text-xs font-black uppercase text-white">{group==="payroll"?"PAYROLL & RELATED":group==="other"?"OTHER EXPENSES":"ENERGY COST"}</div><table className="w-full min-w-[1450px] border-collapse text-[10px]"><thead><tr className="bg-slate-100"><th className="sticky left-0 z-10 min-w-[240px] bg-slate-100 px-2 py-2 text-left">Account / Month</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><th key={i} className="px-1 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="px-2 py-2 text-right">TOTAL</th><th className="px-2 py-2 text-right">%</th></tr></thead><tbody>{POMEC_LINES.filter(line=>line.group===group).map((line,ri)=>{const vals=[11,0,1,2,3,4,5,6,7,8,9,10].map(i=>pomecValue(form.forecast.monthly[i],line.key));const total=vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;const revenueTotal=buildConsolidatedRows(form).find(r=>r.label==="TOTAL REVENUES (EXCL. TAX)")?.total??null;return <tr key={line.key} className={ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><td key={i} className="border-t border-slate-200 px-1 py-1"><input aria-label={`${line.label} ${monthNames[i]}`} type="number" min="0" step="1" className="w-[88px] rounded border border-slate-200 px-1.5 py-1 text-right tabular-nums" value={form.forecast.monthly[i].pomecDetails?.[line.key]||""} onChange={e=>updatePomecDetail(i,line.key,e.target.value)} placeholder="—"/></td>)}<td className="border-t border-slate-200 px-2 py-1.5 text-right font-bold">{total===null?"—":money(total)}</td><td className="border-t border-slate-200 px-2 py-1.5 text-right">{total===null||revenueTotal===null||revenueTotal===0?"—":fmt(total/revenueTotal*100,2)+"%"}</td></tr>})}<tr className="bg-cyan-50 font-black"><th className="sticky left-0 bg-cyan-50 px-2 py-2 text-left">TOTAL {group==="payroll"?"PAYROLL & RELATED":group==="other"?"OTHER EXPENSES":"ENERGY COST"}</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><td key={i} className="px-1 py-2 text-right">{pomecTotal(form.forecast.monthly[i],group)===null?"—":money(pomecTotal(form.forecast.monthly[i],group))}</td>)}<td className="px-2 py-2 text-right">{money(form.forecast.monthly.reduce((n,row)=>n+(pomecTotal(row,group)??0),0))}</td><td className="px-2 py-2 text-right">{(()=>{const rev=buildConsolidatedRows(form).find(r=>r.label==="TOTAL REVENUES (EXCL. TAX)")?.total??null;const total=form.forecast.monthly.reduce((n,row)=>n+(pomecTotal(row,group)??0),0);return rev===null||rev===0?"—":fmt(total/rev*100,2)+"%"})()}</td></tr></tbody></table></div>)}</section>
             <div className="rounded-2xl bg-teal-50 p-4 text-sm leading-6 text-teal-950">Forecast terisi otomatis dari input Budget P&amp;L dan statistik hotel. Room Revenue dihitung dari jumlah hari × kamar × okupansi × ADR. Pendapatan lain dan biaya mengikuti proporsi jumlah hari; proyeksi 10 tahun bertambah 2% per tahun. Tidak perlu menginput ulang angka pada laporan konsolidasi.</div>
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
               <div className="mb-3"><h3 className="text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Laporan tahunan Januari–Desember dengan kolom TOTAL / RATA-RATA. Nilai dihitung dari data yang tersedia; data yang belum ada tetap ditampilkan sebagai —.</p></div>

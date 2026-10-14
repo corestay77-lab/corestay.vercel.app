@@ -45,9 +45,7 @@ const calcMonthly = (row:ForecastMonth,year:number,index:number,rooms:string) =>
   const fb=optional(row.fbRevenue),phone=optional(row.phoneRevenue),other=optional(row.otherRevenue);
   const revenueParts=[roomRevenue,fb,phone,other].filter((v):v is number=>v!==null);
   const revenue=revenueParts.length?revenueParts.reduce((a,b)=>a+b,0):null;
-  const detailCostKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost","basicManagementFee","otherManagementFee","insuranceGeneral","landLease","ownerInsurance","maintenanceFee","ownerOtherExpenses"];
-  const detailCosts=detailCostKeys.map(k=>optional(String(row[k]??""))).filter((v):v is number=>v!==null);
-  const costs=detailCosts.length?detailCosts.reduce((a,b)=>a+b,0):optional(row.operatingCosts);
+  const costs=optional(row.operatingCosts);
   return {days,roomRevenue,revenue,costs,gop:revenue!==null&&costs!==null?revenue-costs:null};
 };
 const calcAnnual = (row: ForecastYear) => {
@@ -61,71 +59,134 @@ const calcAnnual = (row: ForecastYear) => {
 
 type ConsolidatedRow = { label:string; kind:"section"|"sum"|"avg"|"percent"|"money"; values:(number|null)[]; total?:number|null; base?:(number|null)[]; totalPct?:number|null; inputKey?:keyof Omit<ForecastMonth,"label"> };
 const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
-  const year=Number(form.yearStart);
-  const months=form.forecast.monthly.map((row,i)=>calcMonthly(row,year,i,form.statistics.rooms));
-  const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
-  const rooms=optional(form.statistics.rooms);
-  const available=months.map(m=>rooms===null?null:rooms*m.days);
+  const year=Number(form.yearStart), months=form.forecast.monthly.map((r,i)=>calcMonthly(r,year,i,form.statistics.rooms));
+  const roomCount=optional(form.statistics.rooms);
+  const sumPresent=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
+  const sumComplete=(a:(number|null)[])=>a.length&&a.every(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
+  const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
+  const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
+  const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
+  const roomRevenue=months.map(m=>m.roomRevenue), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
+  const revenue=months.map(m=>m.revenue), revenueTotal=sumPresent(revenue);
+  const available=months.map(m=>roomCount===null?null:m.days*roomCount);
   const occupied=months.map((m,i)=>available[i]===null||optional(form.forecast.monthly[i].occupancy)===null?null:available[i]!*optional(form.forecast.monthly[i].occupancy)!/100);
-  const roomRevenue=months.map(m=>m.roomRevenue);
-  const fb=form.forecast.monthly.map(r=>optional(r.fbRevenue));
-  const other=form.forecast.monthly.map(r=>optional(r.otherRevenue));
-  const revenue=months.map(m=>m.revenue);
-  const costs=months.map(m=>m.costs);
-  const roomTotal=sum(roomRevenue), availableTotal=sum(available), occupiedTotal=sum(occupied), revenueTotal=sum(revenue), costTotal=sum(costs);
-  const ratio=(a:number|null,b:number|null)=>a===null||b===null||b===0?null:a/b*100;
-  const addSection=(label:string):ConsolidatedRow=>({label,kind:"section",values:[]});
-  const rows:ConsolidatedRow[]=[
-    addSection("STATISTICS"),
-    {label:"Days",kind:"sum",values:months.map(m=>m.days),total:months.reduce((s,m)=>s+m.days,0)},
-    {label:"# OF ROOMS",kind:"avg",values:months.map(()=>rooms),total:rooms},
-    {label:"ROOM AVAILABLE",kind:"sum",values:available,total:availableTotal},
-    {label:"OCCUPIED ROOMS",kind:"sum",values:occupied,total:occupiedTotal},
-    {label:"OCCUPANCY (%)",kind:"percent",values:form.forecast.monthly.map(r=>optional(r.occupancy)),total:ratio(occupiedTotal,availableTotal),inputKey:"occupancy"},
-    {label:"AVERAGE ROOM RATE / ADR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)),total:occupiedTotal!==null&&occupiedTotal>0&&roomTotal!==null?roomTotal/occupiedTotal:null,inputKey:"adr"},
-    {label:"REVPAR (RP)",kind:"money",values:months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),total:availableTotal!==null&&availableTotal>0&&roomTotal!==null?roomTotal/availableTotal:null},
-    {label:"EXCHANGE RATE US $ TO RP",kind:"money",values:form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),total:optional(form.statistics.exchangeRate)},
-    {label:"AVERAGE SELLING RATE (RP)",kind:"money",values:form.forecast.monthly.map(()=>optional(form.statistics.averageSellingRate)),total:optional(form.statistics.averageSellingRate)},
-    addSection("REVENUES"),
-    {label:"ROOMS",kind:"money",values:roomRevenue,total:roomTotal,base:revenue,totalPct:ratio(roomTotal,revenueTotal)},
-    {label:"FOOD & BEVERAGE",kind:"money",values:fb,total:sum(fb),base:revenue,totalPct:ratio(sum(fb),revenueTotal),inputKey:"fbRevenue"},
-    {label:"MINOR OPERATING DEPARTMENT / OTHER REVENUE",kind:"money",values:other,total:sum(other),base:revenue,totalPct:ratio(sum(other),revenueTotal),inputKey:"otherRevenue"},
-    {label:"TOTAL REVENUES (EXCL. TAX)",kind:"money",values:revenue,total:revenueTotal,totalPct:revenueTotal===null?null:100},
-    {label:"TOTAL REVENUES (INCL. 21% — reference workbook formula)",kind:"money",values:revenue.map(v=>v===null?null:v*1.21),total:revenueTotal===null?null:revenueTotal*1.21,totalPct:revenueTotal===null?null:100},
-    addSection("COST OF SALES / DEPARTMENT OPERATING COSTS"),
-    {label:"Cost of Sales — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Payroll & Related Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Other Department Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Department Operating Costs & Expenses — detail not entered monthly",kind:"money",values:months.map(()=>null),total:null},
-    {label:"TOTAL OPERATING COSTS (FORECAST INPUT)",kind:"money",values:costs,total:costTotal,base:revenue,totalPct:ratio(costTotal,revenueTotal),inputKey:"operatingCosts"},
-    {label:"DEPARTMENT INCOME / CONTRIBUTION (REVENUE − FORECAST COSTS)",kind:"money",values:months.map(m=>m.revenue!==null&&m.costs!==null?m.revenue-m.costs:null),total:revenueTotal!==null&&costTotal!==null?revenueTotal-costTotal:null},
-    addSection("OVERHEAD DEPARTMENT"),
-    {label:"A&G — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
-    {label:"S&M — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
-    {label:"HRD — payroll & other expenses",kind:"money",values:months.map(()=>null),total:null},
-    {label:"POMEC — payroll, other expenses & energy",kind:"money",values:months.map(()=>null),total:null},
-    {label:"TOTAL OVERHEAD DEPARTMENT",kind:"money",values:months.map(()=>null),total:null},
-    {label:"HOUSE PROFIT / GROSS OPERATING INCOME",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Basic Management Fee",kind:"money",values:months.map(()=>null),total:null},
-    {label:"GROSS OPERATING INCOME (AFTER MANAGEMENT FEE)",kind:"money",values:months.map(()=>null),total:null},
-    addSection("OTHER NON-OPERATING EXPENSES / GOP"),
-    {label:"Management Fees",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Insurance General",kind:"money",values:months.map(()=>null),total:null},
-    {label:"TOTAL OTHER NON-OPERATING EXPENSES",kind:"money",values:months.map(()=>null),total:null},
-    {label:"GROSS OPERATING PROFIT (GOP) — detail cost allocation required",kind:"money",values:months.map(()=>null),total:null},
-    {label:"% GOP",kind:"percent",values:months.map(()=>null),total:null},
-    addSection("OTHER EXPENSES / OWNER SHARE PROFIT"),
-    {label:"Land Lease / Hold",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Insurance",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Maintenance Fee (Service Charge)",kind:"money",values:months.map(()=>null),total:null},
-    {label:"TOTAL OTHER EXPENSES",kind:"money",values:months.map(()=>null),total:null},
-    {label:"OWNER SHARE PROFIT (OSP)",kind:"money",values:months.map(()=>null),total:null},
-    {label:"PT / Operator Share — percentage/input required",kind:"money",values:months.map(()=>null),total:null},
-    {label:"Hotel / Owner Share — percentage/input required",kind:"money",values:months.map(()=>null),total:null},
-    {label:"TOTAL OWNER EXPENSES",kind:"money",values:months.map(()=>null),total:null},
-    {label:"NET OWNER SHARE PROFIT (NOSP)",kind:"money",values:months.map(()=>null),total:null},
-    {label:"NET OWNER SHARE PROFIT / UNIT",kind:"money",values:months.map(()=>null),total:null}
-  ];
+  const roomAvailableTotal=sumPresent(available), occupiedTotal=sumPresent(occupied), roomRevenueTotal=sumPresent(roomRevenue);
+  const monthlyCost=(row:ForecastMonth)=>{
+    const cos=sumComplete([val(row,"fbCostOfSales"),val(row,"phoneCostOfSales"),val(row,"modCostOfSales")]);
+    const payroll=sumComplete([val(row,"roomPayroll"),val(row,"fbPayroll"),val(row,"phonePayroll"),val(row,"modPayroll")]);
+    const deptOther=sumComplete([val(row,"roomOtherExpenses"),val(row,"fbOtherExpenses"),val(row,"phoneOtherExpenses"),val(row,"modOtherExpenses")]);
+    const overheadPayroll=sumComplete([val(row,"agPayroll"),val(row,"smPayroll"),val(row,"hrdPayroll"),val(row,"pomecPayroll")]);
+    const overheadOther=sumComplete([val(row,"agOtherExpenses"),val(row,"smOtherExpenses"),val(row,"hrdOtherExpenses"),val(row,"pomecOtherExpenses"),val(row,"energyCost")]);
+    const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
+    const hasDetail=Object.entries(row).some(([k,v])=>k!=="label"&&k!=="occupancy"&&k!=="adr"&&k!=="fbRevenue"&&k!=="phoneRevenue"&&k!=="otherRevenue"&&k!=="operatingCosts"&&String(v??"").trim()!=="");
+    const detailTotal=hasDetail?sumComplete(detailed):null;
+    return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
+  };
+  const costParts=form.forecast.monthly.map(monthlyCost);
+  const totalOperatingCosts=costParts.map(c=>c.hasDetail?c.detailTotal:c.fallback);
+  const deptIncome=form.forecast.monthly.map((r,i)=>{
+    const room=roomRevenue[i], rp=val(r,"roomPayroll"), ro=val(r,"roomOtherExpenses");
+    const f=fb[i], fc=val(r,"fbCostOfSales"), fp=val(r,"fbPayroll"), fo=val(r,"fbOtherExpenses");
+    const ph=phone[i], pc=val(r,"phoneCostOfSales"), pp=val(r,"phonePayroll"), po=val(r,"phoneOtherExpenses");
+    const mo=other[i], mc=val(r,"modCostOfSales"), mp=val(r,"modPayroll"), mx=val(r,"modOtherExpenses");
+    return {
+      room:room!==null&&rp!==null&&ro!==null?room-rp-ro:null,
+      fb:f!==null&&fc!==null&&fp!==null&&fo!==null?f-fc-fp-fo:null,
+      phone:ph!==null&&pc!==null&&pp!==null&&po!==null?ph-pc-pp-po:null,
+      mod:mo!==null&&mc!==null&&mp!==null&&mx!==null?mo-mc-mp-mx:null
+    };
+  });
+  const deptIncomeTotal=deptIncome.map(d=>sumComplete([d.room,d.fb,d.phone,d.mod]));
+  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&costParts[i].overheadPayroll!==null&&costParts[i].overheadOther!==null?v-costParts[i].overheadPayroll-costParts[i].overheadOther:null);
+  const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
+  const nonOp= form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
+  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:null);
+  const otherExpense= form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
+  const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
+  const operatorShare=osp.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"operatorSharePercent")!==null?v*val(form.forecast.monthly[i],"operatorSharePercent")!/100:null);
+  const ownerShare=osp.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"operatorSharePercent")!==null?v*(100-val(form.forecast.monthly[i],"operatorSharePercent")!)/100:null);
+  const nosp=ownerShare.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"ownerOtherExpenses")!==null?v-val(form.forecast.monthly[i],"ownerOtherExpenses")!:null);
+  const rows:ConsolidatedRow[]=[];
+  const section=(label:string)=>rows.push({label,kind:"section",values:[]});
+  const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[])=>{
+    const t=total===undefined?(kind==="sum"?sumPresent(values):kind==="avg"?(values.filter((v):v is number=>v!==null).length?values.filter((v):v is number=>v!==null).reduce((a,b)=>a+b,0)/values.filter((v):v is number=>v!==null).length:null):null):total;
+    rows.push({label,values,kind,inputKey,total:t,base,totalPct:base?pct(t,sumPresent(base)):undefined});
+  };
+  section("STATISTICS");
+  add("Days",months.map(m=>m.days),"sum",undefined,months.reduce((a,m)=>a+m.days,0));
+  add("# OF ROOMS",months.map(()=>roomCount),"avg",undefined,roomCount);
+  add("ROOM AVAILABLE",available,"sum",undefined,roomAvailableTotal);
+  add("OCCUPIED ROOMS",occupied,"sum",undefined,occupiedTotal);
+  add("OCCUPANCY (%)",form.forecast.monthly.map(r=>optional(r.occupancy)),"percent", "occupancy",pct(occupiedTotal,roomAvailableTotal));
+  add("AVERAGE ROOM RATE / ADR (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)),"money","adr",occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:null);
+  add("REVPAR (RP)",months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),"money",undefined,roomAvailableTotal!==null&&roomAvailableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/roomAvailableTotal:null);
+  add("EXCHANGE RATE US $ TO RP",form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),"money",undefined,optional(form.statistics.exchangeRate));
+  add("AVERAGE SELLING RATE (RP)",form.forecast.monthly.map(()=>optional(form.statistics.averageSellingRate)),"money",undefined,optional(form.statistics.averageSellingRate));
+  section("REVENUES");
+  add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
+  add("FOOD & BEVERAGE",fb,"money","fbRevenue",sumPresent(fb),revenue);
+  add("TELEPHONE & FACSIMILE",phone,"money","phoneRevenue",sumPresent(phone),revenue);
+  add("MINOR OPERATING DEPARTMENT",other,"money","otherRevenue",sumPresent(other),revenue);
+  add("TOTAL REVENUES (EXCL. TAX)",revenue,"sum",undefined,revenueTotal);
+  add("TOTAL REVENUES (INCL. 21% — reference workbook formula)",revenue.map(v=>v===null?null:v*1.21),"sum",undefined,revenueTotal===null?null:revenueTotal*1.21);
+  section("COST OF SALES");
+  add("Food & Beverage",monthly("fbCostOfSales"),"money","fbCostOfSales");
+  add("Telephone & Facsimile",monthly("phoneCostOfSales"),"money","phoneCostOfSales");
+  add("Minor Operating Department",monthly("modCostOfSales"),"money","modCostOfSales");
+  add("TOTAL COST OF SALES",costParts.map(c=>c.cos),"sum",undefined,sumPresent(costParts.map(c=>c.cos)),revenue);
+  section("PAYROLL & RELATED EXPENSES");
+  add("ROOM",monthly("roomPayroll"),"money","roomPayroll");
+  add("FOOD & BEVERAGE",monthly("fbPayroll"),"money","fbPayroll");
+  add("TELEPHONE",monthly("phonePayroll"),"money","phonePayroll");
+  add("MINOR OPERATING DEPARTMENT",monthly("modPayroll"),"money","modPayroll");
+  add("TOTAL PAYROLL & RELATED EXPENSES",costParts.map(c=>c.payroll),"sum",undefined,sumPresent(costParts.map(c=>c.payroll)),revenue);
+  section("OTHER DEPARTMENT EXPENSES");
+  add("ROOM",monthly("roomOtherExpenses"),"money","roomOtherExpenses");
+  add("FOOD & BEVERAGE",monthly("fbOtherExpenses"),"money","fbOtherExpenses");
+  add("TELEPHONE & FACSIMILE",monthly("phoneOtherExpenses"),"money","phoneOtherExpenses");
+  add("MINOR OPERATING DEPARTMENT",monthly("modOtherExpenses"),"money","modOtherExpenses");
+  add("TOTAL OTHER DEPARTMENT EXPENSES",costParts.map(c=>c.deptOther),"sum",undefined,sumPresent(costParts.map(c=>c.deptOther)),revenue);
+  add("DEPARTMENT OPERATING COST & EXPENSES",form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].cos,costParts[i].payroll,costParts[i].deptOther])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].cos,costParts[i].payroll,costParts[i].deptOther]))),revenue);
+  section("DEPARTMENT INCOME");
+  add("ROOM",deptIncome.map(d=>d.room),"money",undefined,sumComplete(deptIncome.map(d=>d.room)),roomRevenue);
+  add("FOOD & BEVERAGE",deptIncome.map(d=>d.fb),"money",undefined,sumComplete(deptIncome.map(d=>d.fb)),fb);
+  add("TELEPHONE & FACSIMILE",deptIncome.map(d=>d.phone),"money",undefined,sumComplete(deptIncome.map(d=>d.phone)),phone);
+  add("MINOR OPERATING DEPARTMENT",deptIncome.map(d=>d.mod),"money",undefined,sumComplete(deptIncome.map(d=>d.mod)),other);
+  add("TOTAL DEPARTMENT INCOME",deptIncomeTotal,"sum",undefined,sumComplete(deptIncomeTotal),revenue);
+  section("OVERHEAD DEPARTMENT — PAYROLL & RELATED");
+  add("A&G",monthly("agPayroll"),"money","agPayroll");
+  add("S&M",monthly("smPayroll"),"money","smPayroll");
+  add("HRD",monthly("hrdPayroll"),"money","hrdPayroll");
+  add("POMEC / ENGINEERING",monthly("pomecPayroll"),"money","pomecPayroll");
+  add("TOTAL OVERHEAD PAYROLL",costParts.map(c=>c.overheadPayroll),"sum",undefined,sumPresent(costParts.map(c=>c.overheadPayroll)),revenue);
+  section("OVERHEAD DEPARTMENT — OTHER EXPENSES");
+  add("A&G",monthly("agOtherExpenses"),"money","agOtherExpenses");
+  add("S&M",monthly("smOtherExpenses"),"money","smOtherExpenses");
+  add("HRD",monthly("hrdOtherExpenses"),"money","hrdOtherExpenses");
+  add("POMEC / ENGINEERING",monthly("pomecOtherExpenses"),"money","pomecOtherExpenses");
+  add("ENERGY COST",monthly("energyCost"),"money","energyCost");
+  add("TOTAL OVERHEAD OTHER EXPENSES",costParts.map(c=>c.overheadOther),"sum",undefined,sumPresent(costParts.map(c=>c.overheadOther)),revenue);
+  add("TOTAL OVERHEAD DEPARTMENT",form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].overheadPayroll,costParts[i].overheadOther])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].overheadPayroll,costParts[i].overheadOther]))),revenue);
+  add("HOUSE PROFIT",houseProfit,"sum",undefined,sumComplete(houseProfit),revenue);
+  add("BASIC MANAGEMENT FEE",monthly("basicManagementFee"),"money","basicManagementFee",sumPresent(monthly("basicManagementFee")),revenue);
+  add("GROSS OPERATING INCOME",goi,"sum",undefined,sumComplete(goi),revenue);
+  section("OTHER NON-OPERATING EXPENSES / GOP");
+  add("MANAGEMENT FEES",monthly("otherManagementFee"),"money","otherManagementFee");
+  add("INSURANCE GENERAL",monthly("insuranceGeneral"),"money","insuranceGeneral");
+  add("TOTAL OTHER NON-OPERATING EXPENSES",nonOp,"sum",undefined,sumPresent(nonOp),revenue);
+  add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumComplete(gop),revenue);
+  add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumComplete(gop),revenueTotal));
+  section("OTHER EXPENSES / OWNER SHARE PROFIT");
+  add("LAND LEASE / HOLD",monthly("landLease"),"money","landLease");
+  add("INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance");
+  add("MAINTENANCE FEE (SERVICE CHARGE)",monthly("maintenanceFee"),"money","maintenanceFee");
+  add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
+  add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumComplete(osp),revenue);
+  add("PT / OPERATOR SHARE (%)",operatorShare,"sum",undefined,sumComplete(operatorShare),osp);
+  add("HOTEL / OWNER SHARE (%)",ownerShare,"sum",undefined,sumComplete(ownerShare),osp);
+  add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
+  add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumComplete(nosp),revenue);
+  add("NET OWNER SHARE PROFIT / UNIT",nosp.map((v)=>v!==null&&roomCount!==null&&roomCount>0?v/roomCount:null),"money",undefined,roomCount!==null&&roomCount>0&&sumComplete(nosp)!==null?sumComplete(nosp)!/roomCount:null);
   return rows;
 };
 

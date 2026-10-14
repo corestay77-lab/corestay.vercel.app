@@ -144,7 +144,6 @@ export default function HotelBudgetPage() {
     setForm(prev=>{
       const startYear=Number(prev.yearStart);
       const monthly=prev.forecast.monthly.map((r,i)=>{
-        const isLeap=new Date(startYear,i+1,0).getDate()===29 && i===1;
         const distribute=(current:string,source:number|null)=>{
           if(source===null)return current;
           const parsed=optional(current);

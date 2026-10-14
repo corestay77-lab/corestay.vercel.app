@@ -350,7 +350,7 @@ export default function HotelBudgetPage() {
       setForm(prev=>{
         const monthly=prev.forecast.monthly.map((row,i)=>({...row,label:monthNames[i]+" "+start}));
         const annual=prev.forecast.annual.map((row,i)=>({...row,label:String(start+i),days:String((start+i)%4===0&&((start+i)%100!==0||(start+i)%400===0)?366:365)}));
-        return {...prev,forecast:{monthly,annual}};
+        return {...prev,forecast:{monthly:monthlyWithDetails,annual}};
       });
     }
   },[form.yearStart]);
@@ -419,7 +419,6 @@ export default function HotelBudgetPage() {
       const share=days/yearDays;
       return {
         ...makeMonthly(startYear)[index],
-        pomecDetails:prev.forecast.monthly[index]?.pomecDetails||{},
         label:label+" "+startYear,
         occupancy:baseOccupancy===null?"":String(Math.round(baseOccupancy*100)/100),
         adr:baseAdr===null?"":String(Math.round(baseAdr*100)/100),
@@ -449,7 +448,8 @@ export default function HotelBudgetPage() {
       };
     });
     setForm(prev=>{
-      const sameMonthly=prev.forecast.monthly.length===monthly.length&&prev.forecast.monthly.every((r,i)=>r.label===monthly[i].label&&r.occupancy===monthly[i].occupancy&&r.adr===monthly[i].adr&&r.fbRevenue===monthly[i].fbRevenue&&r.otherRevenue===monthly[i].otherRevenue&&r.operatingCosts===monthly[i].operatingCosts);
+      const monthlyWithDetails=monthly.map((row,i)=>({...row,pomecDetails:prev.forecast.monthly[i]?.pomecDetails||{}}));
+      const sameMonthly=prev.forecast.monthly.length===monthlyWithDetails.length&&prev.forecast.monthly.every((r,i)=>r.label===monthlyWithDetails[i].label&&r.occupancy===monthlyWithDetails[i].occupancy&&r.adr===monthlyWithDetails[i].adr&&r.fbRevenue===monthlyWithDetails[i].fbRevenue&&r.otherRevenue===monthlyWithDetails[i].otherRevenue&&r.operatingCosts===monthlyWithDetails[i].operatingCosts);
       const sameAnnual=prev.forecast.annual.length===annual.length&&prev.forecast.annual.every((r,i)=>r.label===annual[i].label&&r.days===annual[i].days&&r.rooms===annual[i].rooms&&r.occupancy===annual[i].occupancy&&r.adr===annual[i].adr&&r.fbRevenue===annual[i].fbRevenue&&r.otherRevenue===annual[i].otherRevenue&&r.operatingCosts===annual[i].operatingCosts);
       if(sameMonthly&&sameAnnual)return prev;
       return {...prev,forecast:{monthly,annual}};
@@ -757,7 +757,7 @@ export default function HotelBudgetPage() {
               {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari 2027 / FY 2027"})}
               {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
               {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
-              {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",max:"100",step:"0.1",hint:"Masukkan persentase okupansi acuan 0–100%. Digunakan untuk forecast jika okupansi tidak dapat dihitung dari room nights."})}
+              {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",step:"0.1",hint:"Masukkan persentase okupansi acuan 0–100%. Digunakan untuk forecast jika okupansi tidak dapat dihitung dari room nights."})}
               {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
               {field("AVERAGE SELLING RATE (RP)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",hint:"ARR acuan dalam Rupiah. Jika diisi, okupansi forecast dihitung otomatis dari Room Revenue Budget ÷ (hari setahun × kamar × ARR). Jika dikosongkan, sistem memakai okupansi/ADR aktual bila tersedia.",placeholder:"Isi nilai rata-rata"})}
             </div>

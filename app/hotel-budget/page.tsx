@@ -491,7 +491,7 @@ export default function HotelBudgetPage() {
   }
 
   function openSaved(report:SavedReport){
-    if(report?.form_data){setForm({...makeBlank(),...report.form_data,accounts:{...emptyAccounts(),...(report.form_data.accounts||{})},accountLines:report.form_data.accountLines||[...ACCOUNT_LINES,...(report.form_data.customAccounts||[])],customAccounts:report.form_data.customAccounts||[]});setSelectedReport(report.id);setOrchestrator("passed");setWarnings(report.validation_data?.warnings||[]);setSummary(report.validation_data?.summary||"");setMessage("Laporan tersimpan dibuka. Perubahan pada form belum tersimpan sampai Anda menjalankan validasi dan simpan lagi.");setIssues([]);}
+    if(report?.form_data){const year=Number(report.form_data.yearStart||2027);const savedForecast=report.form_data.forecast||makeBlank().forecast;setForm({...makeBlank(),...report.form_data,statistics:{...makeBlank().statistics,...(report.form_data.statistics||{})},forecast:{monthly:makeMonthly(year).map((blank,i)=>({...blank,...(savedForecast.monthly?.[i]||{}),label:monthNames[i]+" "+year})),annual:makeAnnual(year).map((blank,i)=>({...blank,...(savedForecast.annual?.[i]||{}),label:String(year+i)}))},accounts:{...emptyAccounts(),...(report.form_data.accounts||{})},accountLines:report.form_data.accountLines||[...ACCOUNT_LINES,...(report.form_data.customAccounts||[])],customAccounts:report.form_data.customAccounts||[]});setSelectedReport(report.id);setOrchestrator("passed");setWarnings(report.validation_data?.warnings||[]);setSummary(report.validation_data?.summary||"");setMessage("Laporan tersimpan dibuka. Perubahan pada form belum tersimpan sampai Anda menjalankan validasi dan simpan lagi.");setIssues([]);}
   }
   async function deleteSaved(report:SavedReport){
     if(String(report.id).startsWith("local-")){
@@ -559,7 +559,7 @@ export default function HotelBudgetPage() {
       const hasPnl=Object.values(form.accounts).some(row=>Object.values(row||{}).some(value=>String(value??"").trim()!==""));
       if(!hasPnl) problem="Isi minimal nilai P&L dari laporan sumber (Actual, Budget, Last Year, atau YTD) sebelum melanjutkan.";
     } else if(activeTab==="forecast"){
-      const hasForecast=[...form.forecast.monthly,...form.forecast.annual].some(row=>Object.entries(row).some(([key,value])=>key!=="label"&&key!=="operatorSharePercent"&&String(value??"").trim()!==""));
+      const hasForecast=[...form.forecast.monthly,...form.forecast.annual].some(row=>Object.entries(row).some(([key,value])=>key!=="label"&&key!=="operatorSharePercent"&&key!=="days"&&String(value??"").trim()!==""));
       if(!hasForecast) problem="Isi minimal satu nilai pada Monthly atau Annual Forecast sebelum melanjutkan.";
     }
     if(problem){setIssues([problem]);setMessage(problem);return;}

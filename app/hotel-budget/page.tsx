@@ -350,7 +350,7 @@ export default function HotelBudgetPage() {
       setForm(prev=>{
         const monthly=prev.forecast.monthly.map((row,i)=>({...row,label:monthNames[i]+" "+start}));
         const annual=prev.forecast.annual.map((row,i)=>({...row,label:String(start+i),days:String((start+i)%4===0&&((start+i)%100!==0||(start+i)%400===0)?366:365)}));
-        return {...prev,forecast:{monthly:monthlyWithDetails,annual}};
+        return {...prev,forecast:{monthly,annual}};
       });
     }
   },[form.yearStart]);

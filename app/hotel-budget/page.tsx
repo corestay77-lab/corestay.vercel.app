@@ -73,15 +73,18 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const occupied=months.map((m,i)=>available[i]===null||optional(form.forecast.monthly[i].occupancy)===null?null:available[i]!*optional(form.forecast.monthly[i].occupancy)!/100);
   const roomAvailableTotal=sumPresent(available), occupiedTotal=sumPresent(occupied), roomRevenueTotal=sumPresent(roomRevenue);
   const monthlyCost=(row:ForecastMonth)=>{
-    const cos=sumComplete([val(row,"fbCostOfSales"),val(row,"phoneCostOfSales"),val(row,"modCostOfSales")]);
-    const payroll=sumComplete([val(row,"roomPayroll"),val(row,"fbPayroll"),val(row,"phonePayroll"),val(row,"modPayroll")]);
-    const deptOther=sumComplete([val(row,"roomOtherExpenses"),val(row,"fbOtherExpenses"),val(row,"phoneOtherExpenses"),val(row,"modOtherExpenses")]);
-    const overheadPayroll=sumComplete([val(row,"agPayroll"),val(row,"smPayroll"),val(row,"hrdPayroll"),val(row,"pomecPayroll")]);
-    const overheadOther=sumComplete([val(row,"agOtherExpenses"),val(row,"smOtherExpenses"),val(row,"hrdOtherExpenses"),val(row,"pomecOtherExpenses"),val(row,"energyCost")]);
+    // Sum entered cost buckets so source-budget totals appear even when the report
+    // has not yet been split into every department line.
+    const sumEntered=(keys:(keyof ForecastMonth)[])=>{const values=keys.map(val);return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;};
+    const cos=sumEntered(["fbCostOfSales","phoneCostOfSales","modCostOfSales"]);
+    const payroll=sumEntered(["roomPayroll","fbPayroll","phonePayroll","modPayroll"]);
+    const deptOther=sumEntered(["roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses"]);
+    const overheadPayroll=sumEntered(["agPayroll","smPayroll","hrdPayroll","pomecPayroll"]);
+    const overheadOther=sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"]);
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
     const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
     const hasDetail=detailKeys.some(k=>val(row,k)!==null);
-    const detailTotal=hasDetail?sumComplete(detailed):null;
+    const detailTotal=detailed.every(v=>v!==null)?sumPresent(detailed):null;
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
   const costParts=form.forecast.monthly.map(monthlyCost);
@@ -226,6 +229,9 @@ export default function HotelBudgetPage() {
     const other=years.map(y=>optional(y.row.otherRevenue));
     const revenue=years.map(y=>y.calc.revenue);
     const costs=years.map(y=>y.calc.costs);
+    const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",Array.isArray(source.accountLines)?source.accountLines:ACCOUNT_LINES);
+    const annualCost=(group:AccountGroup)=>years.map((y,i)=>{const base=baseCost(group);return base===null?null:base*Math.pow(1.02,i);});
+    const costOfSales=annualCost("costOfSales"), payroll=annualCost("payroll"), deptExpenses=annualCost("operatingExpenses"), overhead=annualCost("overhead");
     const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
     const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
     const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
@@ -253,21 +259,13 @@ export default function HotelBudgetPage() {
       make("TOTAL REVENUES (EXCL. TAX)",revenue,"money",revenue,undefined,totalRevenue),
       make("TOTAL REVENUES (INCL. 21% — reference formula)",revenue.map(v=>v===null?null:v*1.21),"money",undefined,undefined,totalRevenue===null?null:totalRevenue*1.21),
       section("COST OF SALES"),
-      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",revenue),
-      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
-      make("TOTAL COST OF SALES — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL COST OF SALES",costOfSales,"money",revenue),
       section("PAYROLL & RELATED EXPENSES"),
-      make("ROOM — detail not entered",years.map(()=>null),"money",revenue),
-      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",revenue),
-      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
-      make("TOTAL PAYROLL & RELATED EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
+      make("TOTAL PAYROLL & RELATED EXPENSES",payroll,"money",revenue),
       section("OTHER DEPARTMENT EXPENSES"),
-      make("ROOM — detail not entered",years.map(()=>null),"money",revenue),
-      make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",revenue),
-      make("MINOR OPERATING DEPARTMENT — detail not entered",years.map(()=>null),"money",revenue),
-      make("TOTAL OTHER DEPARTMENT EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
-      make("DEPARTMENT OPERATING COST & EXPENSES — detail not entered",years.map(()=>null),"money",revenue),
-      make("TOTAL OPERATING COSTS (COMBINED INPUT)",costs,"money",revenue,"operatingCosts"),
+      make("TOTAL OTHER DEPARTMENT EXPENSES",deptExpenses,"money",revenue),
+      make("TOTAL OVERHEAD / UNDISTRIBUTED EXPENSES",overhead,"money",revenue),
+      make("TOTAL OPERATING COSTS",costs,"money",revenue,"operatingCosts"),
       section("DEPARTMENT INCOME"),
       make("ROOM — detail not entered",years.map(()=>null),"money",roomRevenue),
       make("FOOD & BEVERAGE — detail not entered",years.map(()=>null),"money",fb),
@@ -373,6 +371,10 @@ export default function HotelBudgetPage() {
       adr:adr!==null&&Number.isFinite(adr)?adr:null,
       fb:total(["fbRevenue"]),
       other:total(["otherRevenue"]),
+      costOfSales:total(["costOfSales"]),
+      payroll:total(["payroll"]),
+      operatingExpenses:total(["operatingExpenses"]),
+      overhead:total(["overhead"]),
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
     };
   },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.averageSellingRate,form.statistics.rooms,form.yearStart]);
@@ -396,6 +398,10 @@ export default function HotelBudgetPage() {
         adr:baseAdr===null?"":String(Math.round(baseAdr*100)/100),
         fbRevenue:baseFb===null?"":String(Math.round(baseFb*share)),
         otherRevenue:baseOther===null?"":String(Math.round(baseOther*share)),
+        fbCostOfSales:forecastSource.costOfSales===null?"":String(Math.round(forecastSource.costOfSales*share)),
+        roomPayroll:forecastSource.payroll===null?"":String(Math.round(forecastSource.payroll*share)),
+        roomOtherExpenses:forecastSource.operatingExpenses===null?"":String(Math.round(forecastSource.operatingExpenses*share)),
+        agOtherExpenses:forecastSource.overhead===null?"":String(Math.round(forecastSource.overhead*share)),
         operatingCosts:baseCosts===null?"":String(Math.round(baseCosts*share))
       };
     });

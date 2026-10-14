@@ -102,7 +102,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&costParts[i].overheadPayroll!==null&&costParts[i].overheadOther!==null?v-costParts[i].overheadPayroll-costParts[i].overheadOther:null);
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
   const nonOp= form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
-  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:null);
+  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
   const otherExpense= form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
   const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
   const operatorShare=osp.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"operatorSharePercent")!==null?v*val(form.forecast.monthly[i],"operatorSharePercent")!/100:null);
@@ -123,7 +123,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("AVERAGE ROOM RATE / ADR (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)),"money","adr",occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:null);
   add("REVPAR (RP)",months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),"money",undefined,roomAvailableTotal!==null&&roomAvailableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/roomAvailableTotal:null);
   add("EXCHANGE RATE US $ TO RP",form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),"money",undefined,optional(form.statistics.exchangeRate));
-  add("AVERAGE SELLING RATE (RP)",form.forecast.monthly.map(()=>optional(form.statistics.averageSellingRate)),"money",undefined,optional(form.statistics.averageSellingRate));
+  add("AVERAGE SELLING RATE (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.statistics.averageSellingRate)),"money",undefined,occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:optional(form.statistics.averageSellingRate));
   section("REVENUES");
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
   add("FOOD & BEVERAGE",fb,"money","fbRevenue",sumPresent(fb),revenue);
@@ -325,7 +325,7 @@ export default function HotelBudgetPage() {
     if(Number.isInteger(start)&&start>=1900&&start<=2200){
       setForm(prev=>{
         const monthly=prev.forecast.monthly.map((row,i)=>({...row,label:monthNames[i]+" "+start}));
-        const annual=prev.forecast.annual.map((row,i)=>({...row,label:String(start+i),days:row.days||String((start+i)%4===0?366:365)}));
+        const annual=prev.forecast.annual.map((row,i)=>({...row,label:String(start+i),days:String((start+i)%4===0&&((start+i)%100!==0||(start+i)%400===0)?366:365)}));
         return {...prev,forecast:{monthly,annual}};
       });
     }
@@ -403,7 +403,7 @@ export default function HotelBudgetPage() {
       const year=startYear+index;
       const factor=Math.pow(1.02,index);
       const grow=(value:number|null)=>value===null?"":String(Math.round(value*factor));
-      const occ=baseOccupancy===null?null:Math.min(100,baseOccupancy*factor);
+      const occ=baseOccupancy===null?null:baseOccupancy*factor;
       return {
         label:String(year),
         days:String(year%4===0&&(year%100!==0||year%400===0)?366:365),

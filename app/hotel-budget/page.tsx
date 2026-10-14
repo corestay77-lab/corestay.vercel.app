@@ -218,12 +218,29 @@ export default function HotelBudgetPage() {
     const val=(code:string,key:keyof AccountValue)=>optional(form.accounts[code]?.[key]||"");
     let weights=sectionLines.map(line=>val(line.code,budgetKey)??val(line.code,lastYearKey)??val(line.code,actualKey)??0);
     if(section==="Cost of Sales"){
-      const fnb=sumGroup(form.accounts,"fbRevenue",budgetKey,allAccountLines)??sumGroup(form.accounts,"fbRevenue",actualKey,allAccountLines)??sumGroup(form.accounts,"fbRevenue",lastYearKey,allAccountLines)??0;
-      const other=sumGroup(form.accounts,"otherRevenue",budgetKey,allAccountLines)??sumGroup(form.accounts,"otherRevenue",actualKey,allAccountLines)??sumGroup(form.accounts,"otherRevenue",lastYearKey,allAccountLines)??0;
-      weights=sectionLines.map(line=>line.code==="51101"?Math.max(0,fnb):line.code==="51201"?Math.max(0,other):0);
+      // Cost of Sales children must follow their matching revenue departments first,
+      // not the existing cost amounts (which may be stale or incorrectly allocated).
+      const positiveGroupValue=(group:AccountGroup)=>{
+        const candidates=[
+          sumGroup(form.accounts,group,budgetKey,allAccountLines),
+          sumGroup(form.accounts,group,actualKey,allAccountLines),
+          sumGroup(form.accounts,group,lastYearKey,allAccountLines),
+        ];
+        return candidates.find(value=>value!==null&&value>0)??0;
+      };
+      const fnb=positiveGroupValue("fbRevenue");
+      const other=positiveGroupValue("otherRevenue");
+      const revenueDriverTotal=fnb+other;
+      if(revenueDriverTotal>0){
+        weights=sectionLines.map(line=>line.code==="51101"?fnb:line.code==="51201"?other:0);
+      } else {
+        // Only use the existing child composition as fallback if no corresponding
+        // revenue figures are available at all.
+        weights=sectionLines.map(line=>Math.max(0,val(line.code,budgetKey)??val(line.code,lastYearKey)??val(line.code,actualKey)??0));
+      }
     }
     const totalWeight=weights.reduce((sum,weight)=>sum+Math.max(0,weight),0);
-    if(totalWeight<=0){setMessage(section==="Cost of Sales"?"Isi Budget F&B Revenue dan Other Operating Revenue (atau data Actual/Last Year) agar Cost of Sales dialokasikan menurut driver pendapatan. Tidak ada pembagian rata otomatis; nominal akun bisa diisi manual.":"Belum ada bobot dari Budget, Last Year, atau Actual untuk "+section+". Isi nominal setiap akun secara manual terlebih dahulu.");return;}
+    if(totalWeight<=0){setMessage(section==="Cost of Sales"?"Isi Budget Revenue dan data F&B Revenue serta Other Operating Revenue terlebih dahulu agar Cost of Sales dialokasikan ke sub-induk yang tepat.":"Belum ada bobot dari Budget, Last Year, atau Actual untuk "+section+". Isi nominal setiap akun anak secara manual terlebih dahulu.");return;}
     let allocated=0;
     const amounts=sectionLines.map((line,index)=>{const amount=index===sectionLines.length-1?parentAmount-allocated:Math.round(parentAmount*Math.max(0,weights[index])/totalWeight);allocated+=amount;return [line.code,amount] as const;});
     setForm(prev=>({...prev,accounts:{...prev.accounts,...Object.fromEntries(amounts.map(([code,amount])=>[code,{...(prev.accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""}),[budgetKey]:String(amount)}]))}}));

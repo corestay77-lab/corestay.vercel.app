@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
 
 type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; exchangeRate: string; averageSellingRate: string };
-type ForecastMonth = { label: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
+type ForecastMonth = { label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string };
 type ForecastYear = { label: string; days: string; rooms: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
 type BudgetForm = {
   hotelName: string; period: string; yearStart: string; statistics: Statistics;
@@ -20,7 +20,7 @@ type BudgetForm = {
 type SavedReport = { id: string; hotel_name: string; period_label: string; created_at: string; form_data: BudgetForm; calculated_data: any; validation_data: any };
 const LOCAL_REPORTS_KEY = "corestay-hotel-budget-local-reports-v1";
 const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
-const makeMonthly = (year: number): ForecastMonth[] => monthNames.map((label,i)=>({label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""}));
+const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>({label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",phoneRevenue:"",otherRevenue:"",fbCostOfSales:"",phoneCostOfSales:"",modCostOfSales:"",roomPayroll:"",fbPayroll:"",phonePayroll:"",modPayroll:"",roomOtherExpenses:"",fbOtherExpenses:"",phoneOtherExpenses:"",modOtherExpenses:"",agPayroll:"",smPayroll:"",hrdPayroll:"",pomecPayroll:"",agOtherExpenses:"",smOtherExpenses:"",hrdOtherExpenses:"",pomecOtherExpenses:"",energyCost:"",operatingCosts:"",basicManagementFee:"",otherManagementFee:"",insuranceGeneral:"",landLease:"",ownerInsurance:"",maintenanceFee:"",operatorSharePercent:"30",ownerOtherExpenses:""}));
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>({label:String(year+i),days:String((year+i)%4===0?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""}));
 const makeBlank = (): BudgetForm => ({
   hotelName:"",period:"",yearStart:"2027",
@@ -39,12 +39,16 @@ const totalColumn = (groups: readonly (typeof GROUP_ORDER[number])[], accounts: 
   const values=groups.map(g=>sumGroup(accounts,g,column,customLines));
   return values.some(v=>v!==null) ? values.reduce<number>((s,v)=>s+(v??0),0) : null;
 };
-const calcMonthly = (row: ForecastMonth, year: number, index: number, rooms: string) => {
-  const days=new Date(year,index+1,0).getDate(), roomCount=optional(rooms), occ=optional(row.occupancy), adr=optional(row.adr);
-  const roomRevenue=roomCount!==null&&occ!==null&&adr!==null ? days*roomCount*occ/100*adr : null;
-  const fb=optional(row.fbRevenue), other=optional(row.otherRevenue), costs=optional(row.operatingCosts);
-  const rev=roomRevenue!==null||fb!==null||other!==null ? (roomRevenue??0)+(fb??0)+(other??0) : null;
-  return {days,roomRevenue,revenue:rev,costs,gop:rev!==null&&costs!==null?rev-costs:null};
+const calcMonthly = (row:ForecastMonth,year:number,index:number,rooms:string) => {
+  const days=new Date(year,index+1,0).getDate(),roomCount=optional(rooms),occ=optional(row.occupancy),adr=optional(row.adr);
+  const roomRevenue=roomCount!==null&&occ!==null&&adr!==null?days*roomCount*occ/100*adr:null;
+  const fb=optional(row.fbRevenue),phone=optional(row.phoneRevenue),other=optional(row.otherRevenue);
+  const revenueParts=[roomRevenue,fb,phone,other].filter((v):v is number=>v!==null);
+  const revenue=revenueParts.length?revenueParts.reduce((a,b)=>a+b,0):null;
+  const detailCostKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost","basicManagementFee","otherManagementFee","insuranceGeneral","landLease","ownerInsurance","maintenanceFee","ownerOtherExpenses"];
+  const detailCosts=detailCostKeys.map(k=>optional(String(row[k]??""))).filter((v):v is number=>v!==null);
+  const costs=detailCosts.length?detailCosts.reduce((a,b)=>a+b,0):optional(row.operatingCosts);
+  return {days,roomRevenue,revenue,costs,gop:revenue!==null&&costs!==null?revenue-costs:null};
 };
 const calcAnnual = (row: ForecastYear) => {
   const days=optional(row.days), rooms=optional(row.rooms), occ=optional(row.occupancy), adr=optional(row.adr);

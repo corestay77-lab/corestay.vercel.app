@@ -133,6 +133,34 @@ export default function HotelBudgetPage() {
   },[form.accountLines,form.customAccounts]);
   const allAccountSections=useMemo(()=>[...new Set(allAccountLines.map(line=>line.section))],[allAccountLines]);
   const values=useMemo(()=>calculateBudget({...form, accountLines: form.accountLines}),[form]);
+  const forecastSource=useMemo(()=>{
+    const total=(groups:AccountGroup[])=>{
+      const nums=groups.map(g=>sumGroup(form.accounts,g,"budget",allAccountLines)).filter((v):v is number=>v!==null);
+      return nums.length?nums.reduce((a,b)=>a+b,0):null;
+    };
+    return {occupancy:values.occupancy,adr:values.adr,fb:total(["fbRevenue"]),other:total(["otherRevenue"]),costs:total(["costOfSales","payroll","operatingExpenses","overhead"])};
+  },[form.accounts,allAccountLines,values.occupancy,values.adr]);
+  useEffect(()=>{
+    setForm(prev=>{
+      const monthly=prev.forecast.monthly.map((r,i)=>({
+        ...r,
+        occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
+        adr:r.adr.trim()||forecastSource.adr===null?r.adr:String(Math.round(forecastSource.adr*100)/100),
+        fbRevenue:i===0&&!r.fbRevenue.trim()&&forecastSource.fb!==null?String(forecastSource.fb):r.fbRevenue,
+        otherRevenue:i===0&&!r.otherRevenue.trim()&&forecastSource.other!==null?String(forecastSource.other):r.otherRevenue,
+        operatingCosts:i===0&&!r.operatingCosts.trim()&&forecastSource.costs!==null?String(forecastSource.costs):r.operatingCosts
+      }));
+      const annual=prev.forecast.annual.map((r,i)=>i!==0?r:{
+        ...r,
+        occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
+        adr:r.adr.trim()||forecastSource.adr===null?r.adr:String(Math.round(forecastSource.adr*100)/100),
+        fbRevenue:!r.fbRevenue.trim()&&forecastSource.fb!==null?String(forecastSource.fb):r.fbRevenue,
+        otherRevenue:!r.otherRevenue.trim()&&forecastSource.other!==null?String(forecastSource.other):r.otherRevenue,
+        operatingCosts:!r.operatingCosts.trim()&&forecastSource.costs!==null?String(forecastSource.costs):r.operatingCosts
+      });
+      return {...prev,forecast:{monthly,annual}};
+    });
+  },[forecastSource]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",form.accountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",form.accountLines);

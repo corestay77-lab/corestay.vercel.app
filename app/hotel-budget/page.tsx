@@ -101,8 +101,25 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
       mod:mo!==null&&mc!==null&&mp!==null&&mx!==null?mo-mc-mp-mx:null
     };
   });
-  const deptIncomeTotal=deptIncome.map(d=>sumComplete([d.room,d.fb,d.phone,d.mod]));
-  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&costParts[i].overheadPayroll!==null&&costParts[i].overheadOther!==null?v-costParts[i].overheadPayroll-costParts[i].overheadOther:null);
+  // Department income can be derived from total revenue less the three
+  // departmental cost buckets even when the costs have not been allocated
+  // to every individual department line.
+  const departmentalOperatingCost=costParts.map(c=>sumComplete([c.cos,c.payroll,c.deptOther]));
+  const deptIncomeTotal=deptIncome.map((d,i)=>{
+    const detail=sumComplete([d.room,d.fb,d.phone,d.mod]);
+    if(detail!==null)return detail;
+    return revenue[i]!==null&&departmentalOperatingCost[i]!==null?revenue[i]!-departmentalOperatingCost[i]!:null;
+  });
+  // When the combined operating-cost input is available, overhead total is
+  // the residual after departmental costs; this avoids a blank subtotal when
+  // overhead payroll has not been split out but total costs are known.
+  const overheadTotal=costParts.map((c,i)=>{
+    const detail=sumComplete([c.overheadPayroll,c.overheadOther]);
+    if(detail!==null)return detail;
+    return totalOperatingCosts[i]!==null&&departmentalOperatingCost[i]!==null
+      ?totalOperatingCosts[i]!-departmentalOperatingCost[i]!:null;
+  });
+  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&overheadTotal[i]!==null?v-overheadTotal[i]!:null);
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
   const nonOp= form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
   const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
@@ -151,7 +168,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TELEPHONE & FACSIMILE",monthly("phoneOtherExpenses"),"money","phoneOtherExpenses");
   add("MINOR OPERATING DEPARTMENT",monthly("modOtherExpenses"),"money","modOtherExpenses");
   add("TOTAL OTHER DEPARTMENT EXPENSES",costParts.map(c=>c.deptOther),"sum",undefined,sumPresent(costParts.map(c=>c.deptOther)),revenue);
-  add("DEPARTMENT OPERATING COST & EXPENSES",form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].cos,costParts[i].payroll,costParts[i].deptOther])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].cos,costParts[i].payroll,costParts[i].deptOther]))),revenue);
+  add("DEPARTMENT OPERATING COST & EXPENSES",departmentalOperatingCost,"sum",undefined,sumPresent(departmentalOperatingCost),revenue);
   add("TOTAL OPERATING COSTS (DETAILED WHEN COMPLETE; OTHERWISE COMBINED INPUT)",totalOperatingCosts,"sum","operatingCosts",sumPresent(totalOperatingCosts),revenue,costParts.map(c=>c.detailTotal===null));
   section("DEPARTMENT INCOME");
   add("ROOM",deptIncome.map(d=>d.room),"money",undefined,sumPresent(deptIncome.map(d=>d.room)),roomRevenue);
@@ -172,7 +189,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("POMEC / ENGINEERING",monthly("pomecOtherExpenses"),"money","pomecOtherExpenses");
   add("ENERGY COST",monthly("energyCost"),"money","energyCost");
   add("TOTAL OVERHEAD OTHER EXPENSES",costParts.map(c=>c.overheadOther),"sum",undefined,sumPresent(costParts.map(c=>c.overheadOther)),revenue);
-  add("TOTAL OVERHEAD DEPARTMENT",form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].overheadPayroll,costParts[i].overheadOther])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([costParts[i].overheadPayroll,costParts[i].overheadOther]))),revenue);
+  add("TOTAL OVERHEAD DEPARTMENT",overheadTotal,"sum",undefined,sumPresent(overheadTotal),revenue);
   add("HOUSE PROFIT",houseProfit,"sum",undefined,sumPresent(houseProfit),revenue);
   add("BASIC MANAGEMENT FEE",monthly("basicManagementFee"),"money","basicManagementFee",sumPresent(monthly("basicManagementFee")),revenue);
   add("GROSS OPERATING INCOME",goi,"sum",undefined,sumPresent(goi),revenue);

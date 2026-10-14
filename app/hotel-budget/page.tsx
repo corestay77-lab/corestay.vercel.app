@@ -347,42 +347,67 @@ export default function HotelBudgetPage() {
   const allAccountSections=useMemo(()=>[...new Set(allAccountLines.map(line=>line.section))],[allAccountLines]);
   const values=useMemo(()=>calculateBudget({...form, accountLines: allAccountLines}),[form,allAccountLines]);
   const forecastSource=useMemo(()=>{
-    const total=(groups:AccountGroup[])=>{
-      const nums=groups.map(g=>sumGroup(form.accounts,g,"budget",allAccountLines)).filter((v):v is number=>v!==null);
+    const total=(groups:AccountGroup[],column:keyof AccountValue="budget")=>{
+      const nums=groups.map(g=>sumGroup(form.accounts,g,column,allAccountLines)).filter((v):v is number=>v!==null);
       return nums.length?nums.reduce((a,b)=>a+b,0):null;
     };
-    return {occupancy:values.occupancy,adr:values.adr,fb:total(["fbRevenue"]),other:total(["otherRevenue"]),costs:total(["costOfSales","payroll","operatingExpenses","overhead"])};
-  },[form.accounts,allAccountLines,values.occupancy,values.adr]);
+    const roomBudget=total(["roomRevenue"]);
+    const occupancy=values.occupancy;
+    const days=optional(form.statistics.days);
+    const rooms=optional(form.statistics.rooms);
+    const roomNights=days!==null&&rooms!==null&&occupancy!==null?days*rooms*occupancy/100:null;
+    const adr=roomBudget!==null&&roomNights!==null&&roomNights>0?roomBudget/roomNights:values.adr;
+    return {
+      occupancy,
+      adr,
+      fb:total(["fbRevenue"]),
+      other:total(["otherRevenue"]),
+      costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
+    };
+  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.days,form.statistics.rooms]);
   useEffect(()=>{
+    const startYear=Number(form.yearStart);
+    if(!Number.isInteger(startYear)||startYear<1900||startYear>2200)return;
+    const baseOccupancy=forecastSource.occupancy;
+    const baseAdr=forecastSource.adr;
+    const baseFb=forecastSource.fb;
+    const baseOther=forecastSource.other;
+    const baseCosts=forecastSource.costs;
+    const rooms=optional(form.statistics.rooms);
+    const monthly=monthNames.map((label,index)=>{
+      const yearDays=new Date(startYear,0,1).getFullYear()===startYear?(startYear%4===0&&(startYear%100!==0||startYear%400===0)?366:365):365;
+      const days=new Date(startYear,index+1,0).getDate();
+      const share=days/yearDays;
+      return {
+        ...makeMonthly(startYear)[index],
+        label:label+" "+startYear,
+        occupancy:baseOccupancy===null?"":String(Math.round(baseOccupancy*100)/100),
+        adr:baseAdr===null?"":String(Math.round(baseAdr*100)/100),
+        fbRevenue:baseFb===null?"":String(Math.round(baseFb*share)),
+        otherRevenue:baseOther===null?"":String(Math.round(baseOther*share)),
+        operatingCosts:baseCosts===null?"":String(Math.round(baseCosts*share))
+      };
+    });
+    const annual=Array.from({length:10},(_,index)=>{
+      const year=startYear+index;
+      const factor=Math.pow(1.02,index);
+      const grow=(value:number|null)=>value===null?"":String(Math.round(value*factor));
+      const occ=baseOccupancy===null?null:Math.min(100,baseOccupancy*factor);
+      return {
+        label:String(year),
+        days:String(year%4===0&&(year%100!==0||year%400===0)?366:365),
+        rooms:rooms===null?"":String(rooms),
+        occupancy:occ===null?"":String(Math.round(occ*100)/100),
+        adr:grow(baseAdr),
+        fbRevenue:grow(baseFb),
+        otherRevenue:grow(baseOther),
+        operatingCosts:grow(baseCosts)
+      };
+    });
     setForm(prev=>{
-      const startYear=Number(prev.yearStart);
-      // Do not fabricate monthly values by dividing annual P&L totals by 12.
-      // Monthly forecast cells are editable source inputs; missing months remain blank.
-      const monthly=prev.forecast.monthly.map((r,i)=>({...r,label:monthNames[i]+" "+startYear}));
-      const annual=prev.forecast.annual.map((r,i)=>{
-        const year=startYear+i;
-        const factor=Math.pow(1.02,i);
-        const grow=(current:string,source:number|null)=>{
-          if(source===null)return current;
-          const parsed=optional(current);
-          // Keep existing manual entries; fill missing values from the base budget and apply 2% annual growth.
-          if(!current.trim() && i===0)return String(Math.round(source));
-          if(!current.trim())return String(Math.round(source*factor));
-          if(i===0 && parsed!==null && Math.abs(parsed-source)<0.000001)return current;
-          return current;
-        };
-        return {
-          ...r,
-          label:String(year),
-          days:String(new Date(year,1,29).getMonth()===1?366:365),
-          rooms:r.rooms.trim()||prev.statistics.rooms,
-          occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
-          adr:grow(r.adr,forecastSource.adr),
-          fbRevenue:grow(r.fbRevenue,forecastSource.fb),
-          otherRevenue:grow(r.otherRevenue,forecastSource.other),
-          operatingCosts:grow(r.operatingCosts,forecastSource.costs)
-        };
-      });
+      const sameMonthly=prev.forecast.monthly.length===monthly.length&&prev.forecast.monthly.every((r,i)=>r.label===monthly[i].label&&r.occupancy===monthly[i].occupancy&&r.adr===monthly[i].adr&&r.fbRevenue===monthly[i].fbRevenue&&r.otherRevenue===monthly[i].otherRevenue&&r.operatingCosts===monthly[i].operatingCosts);
+      const sameAnnual=prev.forecast.annual.length===annual.length&&prev.forecast.annual.every((r,i)=>r.label===annual[i].label&&r.days===annual[i].days&&r.rooms===annual[i].rooms&&r.occupancy===annual[i].occupancy&&r.adr===annual[i].adr&&r.fbRevenue===annual[i].fbRevenue&&r.otherRevenue===annual[i].otherRevenue&&r.operatingCosts===annual[i].operatingCosts);
+      if(sameMonthly&&sameAnnual)return prev;
       return {...prev,forecast:{monthly,annual}};
     });
   },[forecastSource,form.yearStart,form.statistics.rooms]);
@@ -630,8 +655,7 @@ export default function HotelBudgetPage() {
       const hasPnl=Object.values(form.accounts).some(row=>Object.values(row||{}).some(value=>String(value??"").trim()!==""));
       if(!hasPnl) problem="Isi minimal nilai P&L dari laporan sumber (Actual, Budget, Last Year, atau YTD) sebelum melanjutkan.";
     } else if(activeTab==="forecast"){
-      const hasForecast=[...form.forecast.monthly,...form.forecast.annual].some(row=>Object.entries(row).some(([key,value])=>key!=="label"&&key!=="operatorSharePercent"&&key!=="days"&&String(value??"").trim()!==""));
-      if(!hasForecast) problem="Isi minimal satu nilai pada Monthly atau Annual Forecast sebelum melanjutkan.";
+      // Forecast is generated from Budget P&L and hotel statistics; no manual forecast input is required.
     }
     if(problem){setIssues([problem]);setMessage(problem);return;}
     setIssues([]);setMessage("");
@@ -732,7 +756,7 @@ export default function HotelBudgetPage() {
           </div>}
 
           {activeTab==="forecast"&&<div className="space-y-7">
-            <div className="rounded-2xl bg-teal-50 p-4 text-sm leading-6 text-teal-950">Isi langsung sel bulanan pada baris Occupancy, ADR, Food &amp; Beverage, Other Revenue, dan Total Operating Costs. Room Revenue, total revenue, RevPAR, dan total tahunan dihitung otomatis. Baris departemen yang belum memiliki input terpisah tetap —; angka tahunan dari P&amp;L tidak dibagi rata ke bulan.</div>
+            <div className="rounded-2xl bg-teal-50 p-4 text-sm leading-6 text-teal-950">Forecast terisi otomatis dari input Budget P&amp;L dan statistik hotel. Room Revenue dihitung dari jumlah hari × kamar × okupansi × ADR. Pendapatan lain dan biaya mengikuti proporsi jumlah hari; proyeksi 10 tahun bertambah 2% per tahun. Tidak perlu menginput ulang angka pada laporan konsolidasi.</div>
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
               <div className="mb-3"><h3 className="text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Laporan tahunan Januari–Desember dengan kolom TOTAL / RATA-RATA. Nilai dihitung dari data yang tersedia; data yang belum ada tetap ditampilkan sebagai —.</p></div>
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
@@ -755,7 +779,7 @@ export default function HotelBudgetPage() {
                     return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
                       <th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left">{line.label}</th>
                       {values.map((v,i)=><Fragment key={i}>
-                        <td className="border-t border-slate-200 px-1 py-2 text-right tabular-nums">{line.inputKey&&(line.editable?.[i]??true)?numberInput(form.forecast.monthly[i][line.inputKey],value=>updateMonth(i,line.inputKey!,value)):display(v)}</td>
+                        <td className="border-t border-slate-200 px-1 py-2 text-right tabular-nums">{display(v)}</td>
                         <td className="border-t border-slate-200 px-1 py-2 text-right tabular-nums">{line.base?percentOf(v,line.base[i]??null):"—"}</td>
                       </Fragment>)}
                       <td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums">{display(line.total)}</td>
@@ -765,7 +789,7 @@ export default function HotelBudgetPage() {
                 </table>
               </div>
             </div>
-                        <div className="rounded-2xl border border-indigo-100 bg-white p-4"><div className="mb-3"><h3 className="text-lg font-extrabold">10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Format 10 tahun mengikuti 1 YEAR CONSOLIDATED: setiap tahun memiliki Value dan %, disertai Total. Isian sumber tetap dapat diedit; detail departemen yang belum tersedia ditampilkan sebagai —.</p></div><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[1900px] border-collapse text-[10px]"><thead><tr className="bg-indigo-900 text-white"><th rowSpan={2} className="sticky left-0 z-10 min-w-[260px] bg-indigo-900 px-2 py-2 text-left">10 YEARS CONSOLIDATED</th>{form.forecast.annual.map(row=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">YEAR {Number(row.label)-Number(form.yearStart)+1}</th>)}<th colSpan={2} className="bg-teal-700 px-2 py-2 text-center">TOTAL / RATA-RATA</th></tr><tr className="bg-slate-100 text-slate-600">{form.forecast.annual.map(row=><Fragment key={row.label}><th className="px-1 py-1 text-right">Value</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="bg-teal-50 px-2 py-1 text-right">Value</th><th className="bg-teal-50 px-2 py-1 text-right">%</th></tr></thead><tbody>{buildTenYearRows(form).map((line,ri)=>{if(line.section)return <tr key={line.label}><th colSpan={23} className="border-t border-slate-300 bg-slate-200 px-2 py-2 text-left font-black">{line.label}</th></tr>;const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,2)+"%":line.kind==="count"?fmt(v,0):money(v);return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>{line.values.map((v,i)=><Fragment key={i}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.inputKey?numberInput(form.forecast.annual[i][line.inputKey],value=>updateYear(i,line.inputKey!,value)):display(v)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[i]??null):"—"}</td></Fragment>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null?"—":fmt(line.totalPct,2)+"%"}</td></tr>;})}</tbody></table></div></div>
+                        <div className="rounded-2xl border border-indigo-100 bg-white p-4"><div className="mb-3"><h3 className="text-lg font-extrabold">10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Proyeksi otomatis dari Budget P&amp;L dan statistik hotel, dengan kenaikan 2% per tahun. Setiap tahun memiliki Value dan %, disertai Total / Rata-rata; detail departemen yang tidak tersedia tetap ditampilkan sebagai —.</p></div><div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-full min-w-[1900px] border-collapse text-[10px]"><thead><tr className="bg-indigo-900 text-white"><th rowSpan={2} className="sticky left-0 z-10 min-w-[260px] bg-indigo-900 px-2 py-2 text-left">10 YEARS CONSOLIDATED</th>{form.forecast.annual.map(row=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">YEAR {Number(row.label)-Number(form.yearStart)+1}</th>)}<th colSpan={2} className="bg-teal-700 px-2 py-2 text-center">TOTAL / RATA-RATA</th></tr><tr className="bg-slate-100 text-slate-600">{form.forecast.annual.map(row=><Fragment key={row.label}><th className="px-1 py-1 text-right">Value</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="bg-teal-50 px-2 py-1 text-right">Value</th><th className="bg-teal-50 px-2 py-1 text-right">%</th></tr></thead><tbody>{buildTenYearRows(form).map((line,ri)=>{if(line.section)return <tr key={line.label}><th colSpan={23} className="border-t border-slate-300 bg-slate-200 px-2 py-2 text-left font-black">{line.label}</th></tr>;const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,2)+"%":line.kind==="count"?fmt(v,0):money(v);return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left">{line.label}</th>{line.values.map((v,i)=><Fragment key={i}><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{display(v)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right tabular-nums">{line.base?percentOf(v,line.base[i]??null):"—"}</td></Fragment>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{display(line.total)}</td><td className="border-t border-slate-200 bg-teal-50 px-2 py-1.5 text-right font-bold tabular-nums">{line.totalPct===null?"—":fmt(line.totalPct,2)+"%"}</td></tr>;})}</tbody></table></div></div>
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">

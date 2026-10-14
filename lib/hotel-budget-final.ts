@@ -96,7 +96,8 @@ export const calculateBudget = (form: any) => {
   const ytdRevenue=ytdRevenueValues.some(v=>v!==null)?ytdRevenueValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const ytdCostValues=costGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual",customLines));
   const ytdCosts=ytdCostValues.some(v=>v!==null)?ytdCostValues.reduce<number>((s,v)=>s+(v??0),0):null;
-  const otherIncome=sumGroup(form?.accounts||{},"otherIncome","actual",customLines)??0;
+  const otherIncomeValue=sumGroup(form?.accounts||{},"otherIncome","actual",customLines);
+  const otherIncome=otherIncomeValue??0;
   const belowGopGroups=["otherExpenses","operatorFees","provisions","depreciation","amortization","interest"] as const;
   const belowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const belowGopExpenses=belowGopValues.some(v=>v!==null)?belowGopValues.reduce<number>((s,v)=>s+(v??0),0):null;
@@ -106,19 +107,20 @@ export const calculateBudget = (form: any) => {
   const otherExpenseValues=otherExpenseGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const otherExpenses=otherExpenseValues.some(v=>v!==null)?otherExpenseValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const gop=revenue!==null?revenue-(costs??0):null;
-  const ownerShareProfitBeforeTax=gop!==null?gop+otherIncome-(belowGopExpenses??0):null;
-  const netProfit=ownerShareProfitBeforeTax!==null?ownerShareProfitBeforeTax-(tax??0):null;
-  const ownerCashAfterCapex=netProfit!==null?netProfit-(ownerCashItems??0):null;
-  const ytdOtherIncome=sumGroup(form?.accounts||{},"otherIncome","ytdActual",customLines)??0;
+  const ownerShareProfitBeforeTax=gop!==null&&otherIncomeValue!==null&&belowGopExpenses!==null?gop+otherIncome-belowGopExpenses:null;
+  const netProfit=ownerShareProfitBeforeTax!==null&&tax!==null?ownerShareProfitBeforeTax-tax:null;
+  const ownerCashAfterCapex=netProfit!==null&&ownerCashItems!==null?netProfit-ownerCashItems:null;
+  const ytdOtherIncomeValue=sumGroup(form?.accounts||{},"otherIncome","ytdActual",customLines);
+  const ytdOtherIncome=ytdOtherIncomeValue??0;
   const ytdBelowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"ytdActual",customLines));
   const ytdBelowGopExpenses=ytdBelowGopValues.some(v=>v!==null)?ytdBelowGopValues.reduce<number>((s,v)=>s+(v??0),0):null;
   const ytdTax=sumGroup(form?.accounts||{},"tax","ytdActual",customLines);
   const ytdOwnerCashItems=sumGroup(form?.accounts||{},"ownerCashItems","ytdActual",customLines);
   const ytdGop=ytdRevenue!==null?ytdRevenue-(ytdCosts??0):null;
   const ytdGopMargin=ytdRevenue!==null&&ytdRevenue>0&&ytdGop!==null?ytdGop/ytdRevenue*100:null;
-  const ytdOwnerShareProfitBeforeTax=ytdGop!==null?ytdGop+ytdOtherIncome-(ytdBelowGopExpenses??0):null;
-  const ytdNetProfit=ytdOwnerShareProfitBeforeTax!==null?ytdOwnerShareProfitBeforeTax-(ytdTax??0):null;
-  const ytdOwnerCashAfterCapex=ytdNetProfit!==null?ytdNetProfit-(ytdOwnerCashItems??0):null;
+  const ytdOwnerShareProfitBeforeTax=ytdGop!==null&&ytdOtherIncomeValue!==null&&ytdBelowGopExpenses!==null?ytdGop+ytdOtherIncome-ytdBelowGopExpenses:null;
+  const ytdNetProfit=ytdOwnerShareProfitBeforeTax!==null&&ytdTax!==null?ytdOwnerShareProfitBeforeTax-ytdTax:null;
+  const ytdOwnerCashAfterCapex=ytdNetProfit!==null&&ytdOwnerCashItems!==null?ytdNetProfit-ytdOwnerCashItems:null;
   return {
     totalRoomBuild,roomAvailable,occupied,occupancy:roomAvailable!==null&&roomAvailable>0&&occupied!==null?occupied/roomAvailable*100:null,
     adr:paid!==null&&paid>0&&roomRevenue!==null?roomRevenue/paid:null,

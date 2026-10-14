@@ -215,24 +215,9 @@ export default function HotelBudgetPage() {
   useEffect(()=>{
     setForm(prev=>{
       const startYear=Number(prev.yearStart);
-      const monthly=prev.forecast.monthly.map((r,i)=>{
-        const distribute=(current:string,source:number|null)=>{
-          if(source===null)return current;
-          const parsed=optional(current);
-          // Re-scale prior auto-filled full-budget values; otherwise preserve user-entered values.
-          if(!current.trim() || (parsed!==null && Math.abs(parsed-source)<0.000001)) return String(Math.round(source/12));
-          return current;
-        };
-        return {
-          ...r,
-          label:monthNames[i]+" "+startYear,
-          occupancy:r.occupancy.trim()||forecastSource.occupancy===null?r.occupancy:String(Math.round(forecastSource.occupancy*100)/100),
-          adr:r.adr.trim()||forecastSource.adr===null?r.adr:String(Math.round(forecastSource.adr*100)/100),
-          fbRevenue:distribute(r.fbRevenue,forecastSource.fb),
-          otherRevenue:distribute(r.otherRevenue,forecastSource.other),
-          operatingCosts:distribute(r.operatingCosts,forecastSource.costs)
-        };
-      });
+      // Do not fabricate monthly values by dividing annual P&L totals by 12.
+      // Monthly forecast cells are editable source inputs; missing months remain blank.
+      const monthly=prev.forecast.monthly.map((r,i)=>({...r,label:monthNames[i]+" "+startYear}));
       const annual=prev.forecast.annual.map((r,i)=>{
         const year=startYear+i;
         const factor=Math.pow(1.02,i);

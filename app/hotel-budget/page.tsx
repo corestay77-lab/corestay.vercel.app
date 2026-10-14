@@ -129,8 +129,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("FOOD & BEVERAGE",fb,"money","fbRevenue",sumPresent(fb),revenue);
   add("TELEPHONE & FACSIMILE",phone,"money","phoneRevenue",sumPresent(phone),revenue);
   add("MINOR OPERATING DEPARTMENT",other,"money","otherRevenue",sumPresent(other),revenue);
-  add("TOTAL REVENUES (EXCL. TAX)",revenue,"sum",undefined,revenueTotal);
-  add("TOTAL REVENUES (INCL. 21% — reference workbook formula)",revenue.map(v=>v===null?null:v*1.21),"sum",undefined,revenueTotal===null?null:revenueTotal*1.21);
+  add("TOTAL REVENUES (EXCL. TAX)",revenue,"sum",undefined,revenueTotal,revenue);
+  add("TOTAL REVENUES (INCL. 21% — reference workbook formula)",revenue.map(v=>v===null?null:v*1.21),"sum",undefined,revenueTotal===null?null:revenueTotal*1.21,revenue);
   section("COST OF SALES");
   add("Food & Beverage",monthly("fbCostOfSales"),"money","fbCostOfSales");
   add("Telephone & Facsimile",monthly("phoneCostOfSales"),"money","phoneCostOfSales");
@@ -665,19 +665,32 @@ export default function HotelBudgetPage() {
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
               <div className="mb-3"><h3 className="text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Laporan tahunan Januari–Desember dengan kolom TOTAL / RATA-RATA. Nilai dihitung dari data yang tersedia; data yang belum ada tetap ditampilkan sebagai —.</p></div>
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-                <table className="w-full min-w-[1200px] border-collapse text-xs">
-                  <thead className="bg-slate-800 text-white"><tr><th className="sticky left-0 z-10 bg-slate-800 px-3 py-2 text-left">STATISTICS / FORECAST</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-2 py-2 text-right">{monthNames[i]}</th>)}<th className="bg-teal-700 px-3 py-2 text-right">TOTAL / RATA-RATA</th></tr></thead>
+                <table className="w-full min-w-[1800px] border-collapse text-[10px]">
+                  <thead>
+                    <tr className="bg-slate-800 text-white">
+                      <th rowSpan={2} className="sticky left-0 z-10 min-w-[210px] bg-slate-800 px-3 py-2 text-left">1 YEAR CONSOLIDATED — {form.yearStart}</th>
+                      {form.forecast.monthly.map((row,i)=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">{monthNames[i].toUpperCase()}</th>)}
+                      <th colSpan={2} className="bg-teal-700 px-2 py-2 text-center">TOTAL / RATA-RATA</th>
+                    </tr>
+                    <tr className="bg-slate-100 text-slate-600">
+                      {form.forecast.monthly.map(row=><Fragment key={row.label}><th className="px-1 py-1 text-right">Value</th><th className="px-1 py-1 text-right">%</th></Fragment>)}
+                      <th className="bg-teal-50 px-2 py-1 text-right">Value</th><th className="bg-teal-50 px-2 py-1 text-right">%</th>
+                    </tr>
+                  </thead>
                   <tbody>{buildConsolidatedRows(form).map((line,ri)=>{
-                      if(line.kind==="section") return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={14} className="border-t border-slate-300 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
-                      const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="Days"||line.label==="# OF ROOMS"||line.label==="ROOM AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);
-                      const values=line.values;
-                      const total=line.total??null;
-                      return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
-                        <th className="sticky left-0 z-10 border-t border-slate-200 bg-inherit px-3 py-2 text-left">{line.label}</th>
-                        {values.map((v,i)=><td key={i} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{line.inputKey&&(line.editable?.[i]??true)?numberInput(form.forecast.monthly[i][line.inputKey],value=>updateMonth(i,line.inputKey!,value)):display(v)}</td>)}
-                        <td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-bold tabular-nums">{display(total)}</td>
-                      </tr>;
-                    })}</tbody>
+                    if(line.kind==="section") return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={27} className="border-t border-slate-300 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
+                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="Days"||line.label==="# OF ROOMS"||line.label==="ROOM AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);
+                    const values=line.values;
+                    return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
+                      <th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left">{line.label}</th>
+                      {values.map((v,i)=><Fragment key={i}>
+                        <td className="border-t border-slate-200 px-1 py-2 text-right tabular-nums">{line.inputKey&&(line.editable?.[i]??true)?numberInput(form.forecast.monthly[i][line.inputKey],value=>updateMonth(i,line.inputKey!,value)):display(v)}</td>
+                        <td className="border-t border-slate-200 px-1 py-2 text-right tabular-nums">{line.base?percentOf(v,line.base[i]??null):"—"}</td>
+                      </Fragment>)}
+                      <td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums">{display(line.total)}</td>
+                      <td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</td>
+                    </tr>;
+                  })}</tbody>
                 </table>
               </div>
             </div>

@@ -216,35 +216,40 @@ export default function HotelBudgetPage() {
     const actualKey:keyof AccountValue=pnlView==="month"?"actual":"ytdActual";
     const lastYearKey:keyof AccountValue=pnlView==="month"?"lastYear":"lastYearYtd";
     const val=(code:string,key:keyof AccountValue)=>optional(form.accounts[code]?.[key]||"");
-    let weights=sectionLines.map(line=>val(line.code,budgetKey)??val(line.code,lastYearKey)??val(line.code,actualKey)??0);
+    // Use positive existing values as the preferred distribution weights. Empty/zero
+    // Budget cells must not block fallback to Last Year or Actual.
+    const positiveValue=(...values:(number|null)[])=>values.find(value=>value!==null&&value>0)??0;
+    let weights=sectionLines.map(line=>positiveValue(val(line.code,budgetKey),val(line.code,lastYearKey),val(line.code,actualKey)));
+    let allocationMethod="proporsi Budget, Last Year, atau Actual";
     if(section==="Cost of Sales"){
-      // Cost of Sales children must follow their matching revenue departments first,
-      // not the existing cost amounts (which may be stale or incorrectly allocated).
+      // Cost of Sales children follow their matching revenue departments first.
       const positiveGroupValue=(group:AccountGroup)=>{
         const candidates=[
           sumGroup(form.accounts,group,budgetKey,allAccountLines),
-          sumGroup(form.accounts,group,actualKey,allAccountLines),
           sumGroup(form.accounts,group,lastYearKey,allAccountLines),
+          sumGroup(form.accounts,group,actualKey,allAccountLines),
         ];
         return candidates.find(value=>value!==null&&value>0)??0;
       };
       const fnb=positiveGroupValue("fbRevenue");
       const other=positiveGroupValue("otherRevenue");
-      const revenueDriverTotal=fnb+other;
-      if(revenueDriverTotal>0){
+      if(fnb+other>0){
         weights=sectionLines.map(line=>line.code==="51101"?fnb:line.code==="51201"?other:0);
-      } else {
-        // Only use the existing child composition as fallback if no corresponding
-        // revenue figures are available at all.
-        weights=sectionLines.map(line=>Math.max(0,val(line.code,budgetKey)??val(line.code,lastYearKey)??val(line.code,actualKey)??0));
+        allocationMethod="proporsi F&B Revenue dan Other Operating Revenue";
       }
     }
-    const totalWeight=weights.reduce((sum,weight)=>sum+Math.max(0,weight),0);
-    if(totalWeight<=0){setMessage(section==="Cost of Sales"?"Isi Budget Revenue dan data F&B Revenue serta Other Operating Revenue terlebih dahulu agar Cost of Sales dialokasikan ke sub-induk yang tepat.":"Belum ada bobot dari Budget, Last Year, atau Actual untuk "+section+". Isi nominal setiap akun anak secara manual terlebih dahulu.");return;}
+    let totalWeight=weights.reduce((sum,weight)=>sum+Math.max(0,weight),0);
+    // Make parent percentage work even for a brand-new budget with no historical
+    // child values. Equal split is only an initialization; users can edit each child.
+    if(totalWeight<=0){
+      weights=sectionLines.map(()=>1);
+      totalWeight=weights.length;
+      allocationMethod="pembagian awal merata karena belum ada data pembobot";
+    }
     let allocated=0;
-    const amounts=sectionLines.map((line,index)=>{const amount=index===sectionLines.length-1?parentAmount-allocated:Math.round(parentAmount*Math.max(0,weights[index])/totalWeight);allocated+=amount;return [line.code,amount] as const;});
+    const amounts=sectionLines.map((line,index)=>{const amount=index===sectionLines.length-1?Math.round(parentAmount)-allocated:Math.round(parentAmount*Math.max(0,weights[index])/totalWeight);allocated+=amount;return [line.code,amount] as const;});
     setForm(prev=>({...prev,accounts:{...prev.accounts,...Object.fromEntries(amounts.map(([code,amount])=>[code,{...(prev.accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""}),[budgetKey]:String(amount)}]))}}));
-    setMessage("Budget induk "+parentPct+"% ("+idr(parentAmount)+") dialokasikan berdasarkan driver pendapatan untuk Cost of Sales atau komposisi biaya yang tersedia. Nominal setiap akun anak tetap bisa diedit manual; Actual dan Last Year tidak berubah.");
+    setMessage("Budget induk "+parentPct+"% ("+idr(Math.round(parentAmount))+") berhasil dialokasikan ke "+sectionLines.length+" akun pada "+section+" menggunakan "+allocationMethod+". Angka akhir disesuaikan agar total tepat; nominal tiap akun anak tetap bisa diedit manual. Actual dan Last Year tidak berubah.");
   };
   const updateMonth=(index:number,key:keyof Omit<ForecastMonth,"label">,value:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,monthly:prev.forecast.monthly.map((r,i)=>i===index?{...r,[key]:value}:r)}}));
   const updateYear=(index:number,key:keyof Omit<ForecastYear,"label">,value:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,annual:prev.forecast.annual.map((r,i)=>i===index?{...r,[key]:value}:r)}}));

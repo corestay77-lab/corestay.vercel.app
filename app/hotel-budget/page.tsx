@@ -75,7 +75,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const monthlyCost=(row:ForecastMonth)=>{
     // Sum entered cost buckets so source-budget totals appear even when the report
     // has not yet been split into every department line.
-    const sumEntered=(keys:(keyof ForecastMonth)[])=>{const values=keys.map(val);return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;};
+    const sumEntered=(keys:(keyof ForecastMonth)[])=>{const values=keys.map(key=>val(row,key));return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;};
     const cos=sumEntered(["fbCostOfSales","phoneCostOfSales","modCostOfSales"]);
     const payroll=sumEntered(["roomPayroll","fbPayroll","phonePayroll","modPayroll"]);
     const deptOther=sumEntered(["roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses"]);

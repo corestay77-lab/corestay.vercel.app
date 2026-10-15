@@ -259,21 +259,24 @@ export default function HotelBudgetPage() {
     const payrollBase=masterPayrollMonthly!==null?masterPayrollMonthly*12:baseCost("payroll");
     const payroll=years.map((_,i)=>payrollBase===null?null:payrollBase*growth(i));
     const detailRevenueKeys=new Set(["roomRevenue","foodRevenue","beverageRevenue","businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts","foodCost","beverageCost","laundryCost"]);
-    const detailCostBase=monthlyBase(row=>{
-      const details=[row.roomDivisionDetails,row.fbDetails,row.modDetails];
-      const vals=details.flatMap(detail=>Object.entries(detail||{}).filter(([key,value])=>!detailRevenueKeys.has(key)&&!payrollInputKey(key)&&String(value??"").trim()!=="").map(([,value])=>optional(String(value))));
-      return sumPresent(vals);
-    });
+    // Match the 1-year report's departmental-expense buckets exactly.
+    const detailCostBase=monthlyBase(row=>sumPresent([
+      optional(row.roomOtherExpenses),optional(row.fbOtherExpenses),
+      optional(row.phoneOtherExpenses),optional(row.modOtherExpenses)
+    ]));
     const costOfSalesBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||""),optional(row.phoneCostOfSales||""),optional(row.modDetails?.laundryCost||"")]));
     const detailOverheadBase=monthlyBase(row=>{
-      const details=[row.agDetails,row.smDetails,row.hrdDetails,row.pomecDetails];
-      const vals=details.flatMap(detail=>Object.entries(detail||{}).filter(([key,value])=>!detailRevenueKeys.has(key)&&!payrollInputKey(key)&&String(value??"").trim()!=="").map(([,value])=>optional(String(value))));
-      return sumPresent(vals);
+      const explicit=sumPresent([optional(row.agOtherExpenses),optional(row.smOtherExpenses),optional(row.hrdOtherExpenses)]);
+      const pomecOther=pomecTotal(row,"other")??optional(row.pomecOtherExpenses);
+      const energy=pomecTotal(row,"energy")??optional(row.energyCost);
+      return sumPresent([explicit,pomecOther,energy]);
     });
     const pomecNonPayrollBase=source.forecast.monthly.some(row=>POMEC_LINES.some(line=>line.group!=="payroll"&&pomecValue(row,line.key)!==null))?source.forecast.monthly.reduce((sum,row)=>sum+POMEC_LINES.filter(line=>line.group!=="payroll").reduce((n,line)=>n+(pomecValue(row,line.key)??0),0),0):null;
     const costOfSales=years.map((_,i)=>costOfSalesBase===null?annualCost("costOfSales")[i]:costOfSalesBase*growth(i));
     const deptExpenses=years.map((_,i)=>detailCostBase===null?annualCost("operatingExpenses")[i]:detailCostBase*growth(i));
-    const overheadBase=baseCost("overhead")??detailOverheadBase??pomecNonPayrollBase;
+    // Prefer the same forecast overhead detail used by the 1-year consolidated
+    // report; the account-level budget is only a fallback to prevent double counting.
+    const overheadBase=detailOverheadBase??pomecNonPayrollBase??baseCost("overhead");
     const overhead=years.map((_,i)=>overheadBase===null?null:overheadBase*growth(i));
     const sumKnown=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((n,v)=>n+(v??0),0):null;
     const monthlyOperatingCostBase=monthlyBase(row=>optional(row.operatingCosts));

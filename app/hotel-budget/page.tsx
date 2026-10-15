@@ -178,7 +178,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("MINOR OPERATING DEPARTMENT",monthly("modOtherExpenses"),"money","modOtherExpenses");
   add("TOTAL OTHER DEPARTMENT EXPENSES",costParts.map(c=>c.deptOther),"sum",undefined,sumPresent(costParts.map(c=>c.deptOther)),revenue);
   add("DEPARTMENT OPERATING COST & EXPENSES",departmentalOperatingCost,"sum",undefined,sumPresent(departmentalOperatingCost),revenue);
-  add("TOTAL OPERATING COSTS (DETAILED WHEN COMPLETE; OTHERWISE COMBINED INPUT)",totalOperatingCosts,"sum","operatingCosts",sumPresent(totalOperatingCosts),revenue,costParts.map(c=>c.detailTotal===null));
+  add("TOTAL OPERATING COSTS",totalOperatingCosts,"sum","operatingCosts",sumPresent(totalOperatingCosts),revenue,costParts.map(c=>c.detailTotal===null));
   section("DEPARTMENT INCOME");
   add("ROOM",deptIncome.map(d=>d.room),"money",undefined,sumPresent(deptIncome.map(d=>d.room)),roomRevenue);
   add("FOOD & BEVERAGE",deptIncome.map(d=>d.fb),"money",undefined,sumPresent(deptIncome.map(d=>d.fb)),fb);

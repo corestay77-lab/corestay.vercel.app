@@ -260,7 +260,9 @@ export default function HotelBudgetPage() {
     const costs=years.map(y=>y.calc.costs);
     const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",Array.isArray(source.accountLines)?source.accountLines:ACCOUNT_LINES);
     const annualCost=(group:AccountGroup)=>years.map((y,i)=>{const base=baseCost(group);return base===null?null:base*Math.pow(1.02,i);});
-    const costOfSales=annualCost("costOfSales"), payroll=annualCost("payroll"), deptExpenses=annualCost("operatingExpenses"), overhead=annualCost("overhead");
+    const costOfSales=annualCost("costOfSales"), deptExpenses=annualCost("operatingExpenses"), overhead=annualCost("overhead");
+    const masterPayrollMonthly=(source.payrollEmployees||[]).length?(source.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
+    const payroll=years.map((_,i)=>masterPayrollMonthly!==null?masterPayrollMonthly*12*Math.pow(1.02,i):baseCost("payroll")===null?null:baseCost("payroll")!*Math.pow(1.02,i));
     const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
     const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
     const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
@@ -472,7 +474,9 @@ export default function HotelBudgetPage() {
         const prior=prev.forecast.monthly[i]||makeMonthly(startYear)[i];
         const agDetails=prior.agDetails||{},modDetails=prior.modDetails||{},fbDetails=prior.fbDetails||{},roomDivisionDetails=prior.roomDivisionDetails||{},pomecDetails=prior.pomecDetails||{},hrdDetails=prior.hrdDetails||{},smDetails=prior.smDetails||{};
         const has=(details:Record<string,string>)=>Object.values(details).some(v=>String(v??"").trim()!=="");
-        const payrollTotal=(dept:string)=>{const employees=prev.payrollEmployees||[];const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR"],AG:["AG","FN"],POMEC:["POMEC","SEC"]};const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());if(!employees.some(e=>wanted.includes(e.department.toLowerCase())))return "";return String(payrollDepartmentMonthly(dept).total);};
+        const payrollEmployees=prev.payrollEmployees||[];const masterPayrollExists=payrollEmployees.length>0;const payrollTotal=(dept:string)=>{const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR"],AG:["AG","FN"],POMEC:["POMEC","SEC"]};const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());if(!masterPayrollExists)return "";if(!payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase())))return "0";return String(payrollDepartmentMonthly(dept).total);};
+         const foPayroll=payrollTotal("FO"),hkPayroll=payrollTotal("HK");
+         const roomPayroll=masterPayrollExists?String(Number(foPayroll||0)+Number(hkPayroll||0)):(roomDetail?(prior.roomPayroll||row.roomPayroll):row.roomPayroll);
         const fbDetail=has(fbDetails),modDetail=has(modDetails),roomDetail=has(roomDivisionDetails),agDetail=has(agDetails),smDetail=has(smDetails),hrdDetail=has(hrdDetails),pomecDetail=has(pomecDetails);
         return {...row,
           fbRevenue:row.fbRevenue,
@@ -487,13 +491,13 @@ export default function HotelBudgetPage() {
           hrdOtherExpenses:hrdDetail?(prior.hrdOtherExpenses||row.hrdOtherExpenses):row.hrdOtherExpenses,
           pomecOtherExpenses:pomecDetail?(prior.pomecOtherExpenses||row.pomecOtherExpenses):row.pomecOtherExpenses,
           energyCost:pomecDetail?(prior.energyCost||row.energyCost):row.energyCost,
-          roomPayroll:roomDetail?(prior.roomPayroll||row.roomPayroll):row.roomPayroll,
-          fbPayroll:payrollTotal("FB")|| (fbDetail?(prior.fbPayroll||row.fbPayroll):row.fbPayroll),
-          modPayroll:payrollTotal("MOD")|| (modDetail?(prior.modPayroll||row.modPayroll):row.modPayroll),
-          agPayroll:payrollTotal("AG")|| (agDetail?(prior.agPayroll||row.agPayroll):row.agPayroll),
-          smPayroll:payrollTotal("SM")|| (smDetail?(prior.smPayroll||row.smPayroll):row.smPayroll),
-          hrdPayroll:payrollTotal("HRD")|| (hrdDetail?(prior.hrdPayroll||row.hrdPayroll):row.hrdPayroll),
-          pomecPayroll:payrollTotal("POMEC")|| (pomecDetail?(prior.pomecPayroll||row.pomecPayroll):row.pomecPayroll),
+          roomPayroll,
+          fbPayroll:masterPayrollExists?payrollTotal("FB"):(fbDetail?(prior.fbPayroll||row.fbPayroll):row.fbPayroll),
+          modPayroll:masterPayrollExists?payrollTotal("MOD"):(modDetail?(prior.modPayroll||row.modPayroll):row.modPayroll),
+          agPayroll:masterPayrollExists?payrollTotal("AG"):(agDetail?(prior.agPayroll||row.agPayroll):row.agPayroll),
+          smPayroll:masterPayrollExists?payrollTotal("SM"):(smDetail?(prior.smPayroll||row.smPayroll):row.smPayroll),
+          hrdPayroll:masterPayrollExists?payrollTotal("HRD"):(hrdDetail?(prior.hrdPayroll||row.hrdPayroll):row.hrdPayroll),
+          pomecPayroll:masterPayrollExists?payrollTotal("POMEC"):(pomecDetail?(prior.pomecPayroll||row.pomecPayroll):row.pomecPayroll),
           agDetails,modDetails:{...modDetails,...row.modDetails},fbDetails:{...fbDetails,...row.fbDetails},roomDivisionDetails:{...roomDivisionDetails,...row.roomDivisionDetails},pomecDetails,hrdDetails,smDetails
         };
       });

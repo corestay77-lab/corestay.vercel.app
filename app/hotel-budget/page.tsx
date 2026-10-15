@@ -501,7 +501,7 @@ export default function HotelBudgetPage() {
       if(sameMonthly&&sameAnnual)return prev;
       return {...prev,forecast:{monthly,annual}};
     });
-  },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees]);
+  },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees,form.budgetAllocations]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",allAccountLines);

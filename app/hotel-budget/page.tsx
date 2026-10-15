@@ -950,7 +950,7 @@ export default function HotelBudgetPage() {
           </div>}
           {activeTab==="statistics"&&<div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {field("Nama hotel",form.hotelName,v=>updateMeta("hotelName",v),{placeholder:"Contoh: Hotel Marza 88"})}
+              {field("Nama hotel",form.hotelName,v=>updateMeta("hotelName",v),{placeholder:"Hotel Corestay"})}
               {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari 2027 / FY 2027"})}
               {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
               {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}

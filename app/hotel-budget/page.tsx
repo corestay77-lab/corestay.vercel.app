@@ -872,7 +872,7 @@ export default function HotelBudgetPage() {
               </div>
               <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
 <div className="space-y-4">
-<div><h3 className="font-extrabold text-slate-800">DEPARTMENT EXPENSES</h3><p className="mt-1 text-sm text-slate-500">Pilih departemen untuk menampilkan rincian biaya di bawahnya agar layar tetap ringkas.</p></div>
+<div><h3 className="font-extrabold text-slate-800">DEPARTMENT EXPENSES</h3><p className="mt-1 text-sm text-slate-500">Pilih departemen untuk menampilkan rincian biaya. Di setiap departemen, bagian PAYROLL &amp; RELATED otomatis mengambil data dari Master Payroll dan seluruh nilainya terkunci—perubahan hanya dapat dilakukan di Master Payroll.</p></div>
 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
 {[{id:"room",label:"Room Division",sub:"Room Dept · Front Office · House Keeping",color:"border-sky-200 bg-sky-50 text-sky-900"},{id:"fb",label:"Food & Beverage",sub:"Revenue · Cost of Sales · Payroll · Expenses",color:"border-amber-200 bg-amber-50 text-amber-900"},{id:"mod",label:"Minor Operating Dept.",sub:"Pendapatan dan biaya departemen",color:"border-violet-200 bg-violet-50 text-violet-900"},{id:"ag",label:"Administration & General",sub:"Payroll dan biaya umum",color:"border-indigo-200 bg-indigo-50 text-indigo-900"},{id:"sm",label:"Sales & Marketing",sub:"Payroll dan biaya pemasaran",color:"border-pink-200 bg-pink-50 text-pink-900"},{id:"hrd",label:"Human Resources",sub:"Payroll dan biaya SDM",color:"border-emerald-200 bg-emerald-50 text-emerald-900"},{id:"pomec",label:"POMEC & Utilities",sub:"Maintenance dan energi",color:"border-orange-200 bg-orange-50 text-orange-900"}].map(item=><button key={item.id} type="button" onClick={()=>setSelectedDepartment(item.id)} aria-pressed={selectedDepartment===item.id} className={"rounded-xl border p-3 text-left transition hover:shadow-sm "+item.color+(selectedDepartment===item.id?" ring-2 ring-slate-400 ring-offset-1 shadow-sm":" opacity-80")}><span className="block text-sm font-extrabold">{item.label}</span><span className="mt-1 block text-[11px] leading-4 opacity-80">{item.sub}</span></button>)}
 </div>
@@ -952,7 +952,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   })()}
                 </div>}
                 {selectedDepartment==="ag"&&<div className="space-y-3">
-                  <div><h4 className="font-extrabold text-slate-800">ADMINISTRATION &amp; GENERAL</h4><p className="mt-1 text-xs text-slate-500">Rincian A&amp;G mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. Nilai dan subtotal dihitung otomatis.</p></div>
+                  <div><h4 className="font-extrabold text-slate-800">ADMINISTRATION &amp; GENERAL</h4><p className="mt-1 text-xs text-slate-500">Rincian A&amp;G mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. PAYROLL &amp; RELATED otomatis dari Master Payroll dan tidak dapat diedit di sini; biaya operasional lainnya dapat diisi manual. Nilai dan subtotal dihitung otomatis.</p></div>
                   {(() => {
                     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
                     const operatingDays=[0,0,0,7,30,31,30,31,31,30,31,30];
@@ -983,7 +983,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   })()}
                 </div>}
                 {selectedDepartment==="sm"&&<div className="space-y-3">
-                  <div><h4 className="font-extrabold text-slate-800">SALES &amp; MARKETING DEPARTMENT</h4><p className="mt-1 text-xs text-slate-500">Rincian S&amp;M mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. Biaya payroll ditarik otomatis dari Master Payroll; biaya pemasaran lainnya dapat diisi dan subtotal dihitung otomatis.</p></div>
+                  <div><h4 className="font-extrabold text-slate-800">SALES &amp; MARKETING DEPARTMENT</h4><p className="mt-1 text-xs text-slate-500">Rincian S&amp;M mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. Semua baris PAYROLL &amp; RELATED otomatis dari Master Payroll dan terkunci; biaya pemasaran lainnya dapat diisi manual. Subtotal dihitung otomatis.</p></div>
                   {(() => {
                     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
                     const operatingDays=[0,0,0,7,30,31,30,31,31,30,31,30];
@@ -1021,7 +1021,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   })()}
                 </div>}
                 {selectedDepartment==="pomec"&&<div className="space-y-3">
-                  <div><h4 className="font-extrabold text-slate-800">ENGINEERING DEPARTMENT — POMEC</h4><p className="mt-1 text-xs text-slate-500">Urutan bulan Dec–Nov, TOTAL dan persentase terhadap total revenue hotel. Payroll mengikuti Master Payroll; biaya perawatan dan energi dapat diisi per bulan. Subtotal dan total dihitung otomatis.</p></div>
+                  <div><h4 className="font-extrabold text-slate-800">ENGINEERING DEPARTMENT — POMEC</h4><p className="mt-1 text-xs text-slate-500">Urutan bulan Dec–Nov, TOTAL dan persentase terhadap total revenue hotel. Semua baris PAYROLL &amp; RELATED otomatis dari Master Payroll dan terkunci; hanya biaya perawatan dan energi yang dapat diisi per bulan. Subtotal dan total dihitung otomatis.</p></div>
                   {(() => {
                     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
                     const operatingDays=[0,0,0,7,30,31,30,31,31,30,31,30];
@@ -1054,7 +1054,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   })()}
                 </div>}
                 {selectedDepartment==="hrd"&&<div className="space-y-3">
-                  <div><h4 className="font-extrabold text-slate-800">HUMAN RESOURCE</h4><p className="mt-1 text-xs text-slate-500">HRD mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. Angka contoh sumber tidak diisi otomatis.</p></div>
+                  <div><h4 className="font-extrabold text-slate-800">HUMAN RESOURCE</h4><p className="mt-1 text-xs text-slate-500">HRD mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. PAYROLL &amp; RELATED otomatis dari Master Payroll dan terkunci; hanya biaya non-payroll yang diisi manual. Angka contoh sumber tidak diisi otomatis.</p></div>
                   {(() => {
                     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
                     const operatingDays=[31,0,0,7,30,31,30,31,31,30,31,30];

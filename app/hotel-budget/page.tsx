@@ -964,17 +964,7 @@ export default function HotelBudgetPage() {
 
           {activeTab==="pnl"&&<div className="space-y-5">
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
-              <div className="mb-5 border-b border-slate-100 pb-4">
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-sky-700">STEP 2 / 6 · CORESTAY WORKFLOW</p>
-                <h2 className="mt-2 text-2xl font-black text-slate-900">Budget P&amp;L</h2>
-                <p className="mt-1 text-sm font-medium text-slate-600">Revenue dan biaya department</p>
-              </div>
               <div className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
-                <div className="bg-gradient-to-r from-sky-800 via-blue-700 to-indigo-700 px-5 py-5 text-white sm:px-6">
-                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-100">Budget P&amp;L · Revenue Setup</p>
-                  <h3 className="mt-1 text-xl font-black sm:text-2xl">REVENUES</h3>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-sky-50">Tentukan total pendapatan budget, lalu atur persentase kontribusi setiap sumber revenue. Nilai alokasi dihitung otomatis dan dapat diterapkan ke akun terkait.</p>
-                </div>
                 <div className="space-y-5 p-4 sm:p-6">
                   <div className="grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:p-5">
                     <label className="block min-w-0">

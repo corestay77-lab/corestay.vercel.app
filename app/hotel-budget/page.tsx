@@ -226,6 +226,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
   const [activeTab,setActiveTab]=useState("statistics");
+  const [selectedDepartment,setSelectedDepartment]=useState("room");
   const [authStatus,setAuthStatus]=useState<"checking"|"authenticated"|"unauthenticated">("checking");
   const [accessToken,setAccessToken]=useState("");
   const [reports,setReports]=useState<SavedReport[]>([]);
@@ -845,7 +846,13 @@ export default function HotelBudgetPage() {
                 </div>
               </div>
               <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
-<div><h3 className="font-extrabold text-slate-800">DEPARTMENT EXPENSES — ROOM DIVISION</h3><p className="mt-1 text-sm text-slate-500">Input budget per bulan sesuai format sumber. Urutan: Dec, Jan–Nov, TOTAL, %.</p></div>
+<div className="space-y-4">
+<div><h3 className="font-extrabold text-slate-800">DEPARTMENT EXPENSES</h3><p className="mt-1 text-sm text-slate-500">Pilih departemen untuk menampilkan rincian biaya di bawahnya agar layar tetap ringkas.</p></div>
+<div className="grid grid-cols-2 gap-2 sm:grid-cols-3 xl:grid-cols-4">
+{[{id:"room",label:"Room Division",sub:"Room Dept · Front Office · House Keeping",color:"border-sky-200 bg-sky-50 text-sky-900"},{id:"fb",label:"Food & Beverage",sub:"Revenue · Cost of Sales · Payroll · Expenses",color:"border-amber-200 bg-amber-50 text-amber-900"},{id:"mod",label:"Minor Operating Dept.",sub:"Pendapatan dan biaya departemen",color:"border-violet-200 bg-violet-50 text-violet-900"},{id:"ag",label:"Administration & General",sub:"Payroll dan biaya umum",color:"border-indigo-200 bg-indigo-50 text-indigo-900"},{id:"sm",label:"Sales & Marketing",sub:"Payroll dan biaya pemasaran",color:"border-pink-200 bg-pink-50 text-pink-900"},{id:"hrd",label:"Human Resources",sub:"Payroll dan biaya SDM",color:"border-emerald-200 bg-emerald-50 text-emerald-900"},{id:"pomec",label:"POMEC & Utilities",sub:"Maintenance dan energi",color:"border-orange-200 bg-orange-50 text-orange-900"}].map(item=><button key={item.id} type="button" onClick={()=>setSelectedDepartment(item.id)} aria-pressed={selectedDepartment===item.id} className={"rounded-xl border p-3 text-left transition hover:shadow-sm "+item.color+(selectedDepartment===item.id?" ring-2 ring-slate-400 ring-offset-1 shadow-sm":" opacity-80")}><span className="block text-sm font-extrabold">{item.label}</span><span className="mt-1 block text-[11px] leading-4 opacity-80">{item.sub}</span></button>)}
+</div>
+</div>
+{selectedDepartment==="room"&&<div className="space-y-3"><div><h4 className="font-extrabold text-slate-800">ROOM DIVISION</h4><p className="mt-1 text-xs text-slate-500">Urutan: Dec, Jan–Nov, TOTAL, %.</p></div>
 {(() => {
 const order=[11,0,1,2,3,4,5,6,7,8,9,10];
 const groups=[
@@ -867,7 +874,30 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 <tr className="bg-emerald-50 font-black"><td className="sticky left-0 z-10 bg-emerald-50 px-3 py-3 text-xs">DEPARTMENTAL PROFIT</td>{order.map(i=>{const r=value(i,"roomRevenue"),co=total(i,costKeys);return <td key={i} className="px-2 py-3 text-right text-xs tabular-nums">{fmtMoney(r!==null&&co!==null?r-co:null)}</td>})}<td className="px-2 py-3 text-right text-xs tabular-nums">{fmtMoney(rev!==null&&costTotal!==null?rev-costTotal:null)}</td><td className="px-2 py-3 text-right text-xs">{pct(rev!==null&&costTotal!==null?rev-costTotal:null)}</td></tr>
 </tbody></table></div>;
 })()}
-<p className="text-xs leading-5 text-slate-500">Subtotal, total biaya, departmental profit, dan persentase dihitung otomatis. Nilai yang belum diisi tetap ditampilkan sebagai —. Angka contoh dari sumber tidak dimasukkan otomatis.</p>
+</div>}
+                {selectedDepartment==="fb"&&<div className="space-y-3">
+                  <div><h4 className="font-extrabold text-slate-800">F &amp; B DEPARTMENT</h4><p className="mt-1 text-xs text-slate-500">Budget bulanan dengan total otomatis. Persentase Cost of Sales FOOD dihitung terhadap FOOD revenue; BEVERAGE terhadap BEVERAGE revenue; biaya lain terhadap total F&amp;B revenue.</p></div>
+                  {(() => {
+                    const order=[11,0,1,2,3,4,5,6,7,8,9,10];
+                    const value=(i:number,key:string)=>optional(form.forecast.monthly[i]?.fbDetails?.[key]||"");
+                    const total=(i:number,keys:readonly string[])=>{const vals=keys.map(key=>value(i,key));return vals.some(v=>v!==null)?vals.reduce<number>((sum,v)=>sum+(v??0),0):null;};
+                    const annual=(keys:readonly string[])=>order.some(i=>total(i,keys)!==null)?order.reduce<number>((sum,i)=>sum+(total(i,keys)??0),0):null;
+                    const revenueKeys=["foodRevenue","beverageRevenue"] as const;
+                    const revenueByMonth=(i:number)=>total(i,revenueKeys);
+                    const revenueTotal=annual(revenueKeys);
+                    const fmtMoney=(amount:number|null)=>amount===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(amount);
+                    const pct=(amount:number|null,base:number|null)=>amount===null||base===null||base===0?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(amount/base*100)+"%";
+                    const costKeys=["foodCost","beverageCost","salaryWages","incomeTax","jamsostek","insurance","thr","mealAllowances","glassware","chinaware","silverware","linen","decoration","duesSubscription","extermDisinfectant","kitchenFuel","laundry","miscellaneous","spoilage","cleaningSupplies","guestSupplies","printingStationery","telephone","uniform","utensil","contractCleaning"] as const;
+                    const totalRow=(label:string,keys:readonly string[],baseKeys:readonly string[]=revenueKeys)=><tr className="bg-slate-100 font-bold"><td className="sticky left-0 z-10 min-w-52 bg-slate-100 px-3 py-2 text-xs">{label}</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(total(i,keys))}</td>)}<td className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(annual(keys))}</td><td className="px-2 py-2 text-right text-xs">{pct(annual(keys),annual(baseKeys))}</td></tr>;
+                    return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white"><table className="min-w-max border-collapse"><thead><tr className="bg-amber-800 text-white"><th className="sticky left-0 z-20 min-w-52 px-3 py-3 text-left text-xs">F &amp; B DEPARTMENT</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-2 py-3 text-right text-xs">TOTAL</th><th className="min-w-20 px-2 py-3 text-right text-xs">%</th></tr></thead><tbody>
+                      {FB_BUDGET_GROUPS.map(group=><Fragment key={group.title}><tr className="bg-amber-50"><td colSpan={15} className="px-3 py-2 text-xs font-black text-amber-950">{group.title}</td></tr>{group.rows.map(([key,label])=><tr key={key} className="border-t border-slate-100"><td className="sticky left-0 z-10 min-w-52 bg-white px-3 py-2 text-xs">{label}</td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={label+" "+form.forecast.monthly[i].label} inputMode="numeric" className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-xs tabular-nums focus:border-amber-400 focus:outline-none" placeholder="—" value={formatWholeRupiah(form.forecast.monthly[i]?.fbDetails?.[key]||"")} onChange={e=>updateFbDetail(i,key,e.target.value.replace(/[^0-9]/g,""))}/></td>)}<td className="px-2 py-2 text-right text-xs font-bold tabular-nums">{fmtMoney(annual([key]))}</td><td className="px-2 py-2 text-right text-xs">{key==="foodCost"?pct(annual([key]),annual(["foodRevenue"])):key==="beverageCost"?pct(annual([key]),annual(["beverageRevenue"])):pct(annual([key]),revenueTotal)}</td></tr>)}{group.title==="REVENUES"&&<tr className="bg-amber-100 font-black"><td className="sticky left-0 z-10 bg-amber-100 px-3 py-2 text-xs">TOTAL F &amp; B REVENUE</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(revenueByMonth(i))}</td>)}<td className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(revenueTotal)}</td><td className="px-2 py-2 text-right text-xs">100,00%</td></tr>}{group.title!=="REVENUES"&&totalRow(group.total,group.rows.map(r=>r[0]))}</Fragment>)}
+                      <tr className="bg-indigo-50 font-black"><td className="sticky left-0 z-10 bg-indigo-50 px-3 py-3 text-xs">TOTAL COST &amp; EXPENSES</td>{order.map(i=>{const n=total(i,costKeys);return <td key={i} className="px-2 py-3 text-right text-xs tabular-nums">{fmtMoney(n)}</td>})}<td className="px-2 py-3 text-right text-xs tabular-nums">{fmtMoney(annual(costKeys))}</td><td className="px-2 py-3 text-right text-xs">{pct(annual(costKeys),revenueTotal)}</td></tr>
+                      <tr className="bg-emerald-50 font-black"><td className="sticky left-0 z-10 bg-emerald-50 px-3 py-3 text-xs">DEPT. PROFIT/LOSS</td>{order.map(i=>{const rev=revenueByMonth(i),cost=total(i,costKeys);return <td key={i} className="px-2 py-3 text-right text-xs tabular-nums">{fmtMoney(rev!==null&&cost!==null?rev-cost:null)}</td>})}<td className="px-2 py-3 text-right text-xs tabular-nums">{fmtMoney(revenueTotal!==null&&annual(costKeys)!==null?revenueTotal-annual(costKeys)!:null)}</td><td className="px-2 py-3 text-right text-xs">{pct(revenueTotal!==null&&annual(costKeys)!==null?revenueTotal-annual(costKeys)!:null,revenueTotal)}</td></tr>
+                    </tbody></table></div>;
+                  })()}
+                </div>}
+                {!["room","fb"].includes(selectedDepartment)&&<div className="rounded-xl border border-dashed border-slate-300 bg-white p-5"><h4 className="font-extrabold text-slate-800">{({mod:"MINOR OPERATING DEPARTMENT",ag:"ADMINISTRATION & GENERAL",sm:"SALES & MARKETING",hrd:"HUMAN RESOURCES",pomec:"POMEC & UTILITIES"} as Record<string,string>)[selectedDepartment]}</h4><p className="mt-2 text-sm leading-6 text-slate-600">Menu departemen sudah disiapkan. Rincian akun bagian ini akan disusun setelah format F&amp;B selesai, agar subtotal dan rumus konsisten.</p></div>}
+                <p className="text-xs leading-5 text-slate-500">Subtotal, total biaya, departmental profit, dan persentase dihitung otomatis. Nilai yang belum diisi tetap ditampilkan sebagai —. Angka contoh dari sumber tidak dimasukkan otomatis.</p>
 </div>
             </section>
           </div>}

@@ -97,7 +97,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
   const costParts=form.forecast.monthly.map(monthlyCost);
-  const totalOperatingCosts=costParts.map(c=>c.detailTotal??c.fallback);
+  const totalOperatingCosts=costParts.map(c=>c.detailTotal??c.fallback??sumPresent([c.cos,c.payroll,c.deptOther,c.overheadPayroll,c.overheadOther]));
   const deptIncome=form.forecast.monthly.map((r,i)=>{
     const room=roomRevenue[i], rp=val(r,"roomPayroll"), ro=val(r,"roomOtherExpenses");
     const f=fb[i], fc=val(r,"fbCostOfSales"), fp=val(r,"fbPayroll"), fo=val(r,"fbOtherExpenses");

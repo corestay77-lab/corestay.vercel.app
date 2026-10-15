@@ -216,9 +216,6 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("MAINTENANCE FEE (SERVICE CHARGE)",monthly("maintenanceFee"),"money","maintenanceFee");
   add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
-  add("OPERATOR SHARE RATE (%)",monthly("operatorSharePercent"),"percent","operatorSharePercent",avgPresent(monthly("operatorSharePercent")));
-  add("PT / OPERATOR SHARE (RP)",operatorShare,"sum",undefined,sumPresent(operatorShare),osp);
-  add("HOTEL / OWNER SHARE (RP)",ownerShare,"sum",undefined,sumPresent(ownerShare),osp);
   add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
   add("TOTAL OWNER EXPENSES",form.forecast.monthly.map((r,i)=>sumComplete([operatorShare[i],ownerShare[i],val(r,"ownerOtherExpenses")])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([operatorShare[i],ownerShare[i],val(r,"ownerOtherExpenses")]))),osp);
   add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumPresent(nosp),revenue);

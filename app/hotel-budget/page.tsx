@@ -47,7 +47,8 @@ const totalColumn = (groups: readonly (typeof GROUP_ORDER[number])[], accounts: 
 };
 const calcMonthly = (row:ForecastMonth,year:number,index:number,rooms:string) => {
   const days=new Date(year,index+1,0).getDate(),roomCount=optional(rooms),occ=optional(row.occupancy),adr=optional(row.adr);
-  const roomRevenue=roomCount!==null&&occ!==null&&adr!==null?days*roomCount*occ/100*adr:null;
+  const calculatedRoomRevenue=roomCount!==null&&occ!==null&&adr!==null?days*roomCount*occ/100*adr:null;
+  const roomRevenue=optional(row.roomDivisionDetails?.roomRevenue)??calculatedRoomRevenue;
   const fb=optional(row.fbRevenue),phone=optional(row.phoneRevenue),other=optional(row.otherRevenue);
   const revenueParts=[roomRevenue,fb,phone,other].filter((v):v is number=>v!==null);
   const revenue=revenueParts.length?revenueParts.reduce((a,b)=>a+b,0):null;

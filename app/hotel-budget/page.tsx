@@ -951,7 +951,7 @@ export default function HotelBudgetPage() {
           {activeTab==="statistics"&&<div className="space-y-6">
             <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {field("Nama hotel",form.hotelName,v=>updateMeta("hotelName",v),{placeholder:"Hotel Corestay"})}
-              {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari 2027 / FY 2027"})}
+              {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari - Desember"})}
               {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
               {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
               {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",step:"0.1",hint:"Masukkan persentase okupansi acuan 0–100%. Digunakan untuk forecast jika okupansi tidak dapat dihitung dari room nights."})}

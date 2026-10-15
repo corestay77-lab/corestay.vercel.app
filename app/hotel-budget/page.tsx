@@ -259,8 +259,9 @@ export default function HotelBudgetPage() {
     const monthlyBase=(get:(row:ForecastMonth,index:number)=>number|null)=>sumPresent(source.forecast.monthly.map(get));
     // STEP 2 departmental monthly entries are the source of truth for the 10-year projection.
     const roomBase=monthlyBase((row,i)=>calcMonthly(row,Number(source.yearStart),i,source.statistics.rooms).roomRevenue);
-    const fbBase=monthlyBase(row=>optional(row.fbRevenue));
-    const otherBase=monthlyBase(row=>optional(row.otherRevenue));
+    const fbBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodRevenue||""),optional(row.fbDetails?.beverageRevenue||"")])??optional(row.fbRevenue));
+    const otherRevenueKeys=["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"];
+    const otherBase=monthlyBase(row=>sumPresent(otherRevenueKeys.map(key=>optional(row.modDetails?.[key]||"")))??optional(row.otherRevenue));
     const roomRevenue=years.map((_,i)=>roomBase===null?null:roomBase*growth(i));
     const fb=years.map((_,i)=>fbBase===null?null:fbBase*growth(i));
     const other=years.map((_,i)=>otherBase===null?null:otherBase*growth(i));
@@ -270,9 +271,9 @@ export default function HotelBudgetPage() {
     const masterPayrollMonthly=(source.payrollEmployees||[]).length?(source.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
     const payrollBase=masterPayrollMonthly!==null?masterPayrollMonthly*12:baseCost("payroll");
     const payroll=years.map((_,i)=>payrollBase===null?null:payrollBase*growth(i));
-    const detailRevenueKeys=new Set(["roomRevenue","foodRevenue","beverageRevenue","businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"]);
+    const detailRevenueKeys=new Set(["roomRevenue","foodRevenue","beverageRevenue","businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts","foodCost","beverageCost","laundryCost"]);
     const detailCostBase=monthlyBase(row=>{
-      const details=[row.roomDivisionDetails,row.fbDetails,row.modDetails,row.agDetails,row.smDetails,row.hrdDetails,row.pomecDetails];
+      const details=[row.roomDivisionDetails,row.fbDetails,row.modDetails,row.agDetails,row.smDetails];
       const vals=details.flatMap(detail=>Object.entries(detail||{}).filter(([key,value])=>!detailRevenueKeys.has(key)&&!payrollInputKey(key)&&String(value??"").trim()!=="").map(([,value])=>optional(String(value))));
       return sumPresent(vals);
     });

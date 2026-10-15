@@ -476,7 +476,7 @@ export default function HotelBudgetPage() {
         const has=(details:Record<string,string>)=>Object.values(details).some(v=>String(v??"").trim()!=="");
         const payrollEmployees=prev.payrollEmployees||[];const masterPayrollExists=payrollEmployees.length>0;const payrollTotal=(dept:string)=>{const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR"],AG:["AG","FN"],POMEC:["POMEC","SEC"]};const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());if(!masterPayrollExists)return "";if(!payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase())))return "0";return String(payrollDepartmentMonthly(dept).total);};
          const foPayroll=payrollTotal("FO"),hkPayroll=payrollTotal("HK");
-         const roomPayroll=masterPayrollExists?String(Number(foPayroll||0)+Number(hkPayroll||0)):(roomDetail?(prior.roomPayroll||row.roomPayroll):row.roomPayroll);
+         const roomPayroll=masterPayrollExists?String(Number(foPayroll||0)+Number(hkPayroll||0)):(prior.roomPayroll||row.roomPayroll);
         const fbDetail=has(fbDetails),modDetail=has(modDetails),roomDetail=has(roomDivisionDetails),agDetail=has(agDetails),smDetail=has(smDetails),hrdDetail=has(hrdDetails),pomecDetail=has(pomecDetails);
         return {...row,
           fbRevenue:row.fbRevenue,

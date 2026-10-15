@@ -456,7 +456,7 @@ export default function HotelBudgetPage() {
         const prior=prev.forecast.monthly[i]||makeMonthly(startYear)[i];
         const agDetails=prior.agDetails||{},modDetails=prior.modDetails||{},fbDetails=prior.fbDetails||{},roomDivisionDetails=prior.roomDivisionDetails||{},pomecDetails=prior.pomecDetails||{},hrdDetails=prior.hrdDetails||{},smDetails=prior.smDetails||{};
         const has=(details:Record<string,string>)=>Object.values(details).some(v=>String(v??"").trim()!=="");
-        const payrollTotal=(dept:string)=>{const employees=prev.payrollEmployees||[];const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR"],AG:["AG","FN"],POMEC:["POMEC","SEC"]};const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());if(!employees.some(e=>wanted.includes(e.department.toLowerCase())))return "";return String(payrollDepartmentMonthlyForForm(prev,dept));};
+        const payrollTotal=(dept:string)=>{const employees=prev.payrollEmployees||[];const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR"],AG:["AG","FN"],POMEC:["POMEC","SEC"]};const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());if(!employees.some(e=>wanted.includes(e.department.toLowerCase())))return "";return String(payrollDepartmentMonthly(dept).total);};
         const fbDetail=has(fbDetails),modDetail=has(modDetails),roomDetail=has(roomDivisionDetails),agDetail=has(agDetails),smDetail=has(smDetails),hrdDetail=has(hrdDetails),pomecDetail=has(pomecDetails);
         return {...row,
           fbRevenue:fbDetail?(prior.fbRevenue||row.fbRevenue):row.fbRevenue,
@@ -486,7 +486,7 @@ export default function HotelBudgetPage() {
       if(sameMonthly&&sameAnnual)return prev;
       return {...prev,forecast:{monthly,annual}};
     });
-  },[forecastSource,form.yearStart,form.statistics.rooms]);
+  },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",allAccountLines);

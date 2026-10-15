@@ -776,19 +776,52 @@ export default function HotelBudgetPage() {
                 <h2 className="mt-2 text-2xl font-black text-slate-900">Budget P&amp;L</h2>
                 <p className="mt-1 text-sm font-medium text-slate-600">Revenue dan biaya department</p>
               </div>
-              <div className="rounded-xl border border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center">
-                <p className="text-base font-bold text-slate-800">Format Budget P&amp;L dikosongkan untuk setup ulang</p>
-                <p className="mx-auto mt-2 max-w-2xl text-sm leading-6 text-slate-600">Semua format departemen dan daftar akun lama disembunyikan dari tampilan tahap ini. Kita akan menyusun kembali format Revenue dan biaya setiap department secara bertahap. Belum ada baris akun atau angka yang ditampilkan sebagai format awal.</p>
+              <div className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
+                <div className="bg-gradient-to-r from-sky-800 via-blue-700 to-indigo-700 px-5 py-5 text-white sm:px-6">
+                  <p className="text-xs font-bold uppercase tracking-[0.2em] text-sky-100">Budget P&amp;L · Revenue Setup</p>
+                  <h3 className="mt-1 text-xl font-black sm:text-2xl">REVENUES</h3>
+                  <p className="mt-1 max-w-2xl text-sm leading-6 text-sky-50">Tentukan total pendapatan budget, lalu atur persentase kontribusi setiap sumber revenue. Nilai alokasi dihitung otomatis dan dapat diterapkan ke akun terkait.</p>
+                </div>
+                <div className="space-y-5 p-4 sm:p-6">
+                  <div className="grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:p-5">
+                    <label className="block min-w-0">
+                      <span className="mb-2 block text-sm font-bold text-slate-700">TOTAL REVENUE BUDGET — ALL OUTLET (Rp)</span>
+                      <input className={inputClass+" text-lg font-extrabold tabular-nums"} inputMode="numeric" type="number" min="0" step="1000" placeholder="Masukkan total revenue budget" value={form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||""} onChange={e=>updateAllocation(revenueTotalKey,e.target.value)} />
+                      <span className="mt-1.5 block text-xs text-slate-500">Masukkan total pendapatan yang direncanakan untuk periode budget terpilih.</span>
+                    </label>
+                    <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-sky-100 sm:min-w-[190px]">
+                      <p className="text-xs font-semibold text-slate-500">TOTAL ALOKASI</p>
+                      <p className="mt-1 text-xl font-black tabular-nums text-sky-800">{fmt((optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("roomRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("fbRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("otherRevenue")]||"")??0),2)}%</p>
+                      <p className={"mt-1 text-xs font-semibold "+(Math.abs((optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("roomRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("fbRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("otherRevenue")]||"")??0)-100)<0.01?"text-emerald-700":"text-amber-700"}>{Math.abs((optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("roomRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("fbRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("otherRevenue")]||"")??0)-100)<0.01?"Pembagian sudah 100%":"Sesuaikan hingga 100%"}</p>
+                    </div>
+                  </div>
+                  <div className="overflow-hidden rounded-xl border border-slate-200">
+                    <div className="grid grid-cols-[minmax(0,1fr)_105px] gap-3 bg-slate-100 px-4 py-3 text-xs font-extrabold uppercase tracking-wide text-slate-600 sm:grid-cols-[minmax(0,1fr)_140px_180px]">
+                      <span>Kelompok Revenue</span><span className="text-right">Persentase</span><span className="hidden text-right sm:block">Nilai Budget</span>
+                    </div>
+                    {([{group:"roomRevenue" as AccountGroup,label:"ROOMS",subtitle:"Pendapatan kamar",accent:"border-l-sky-500",percentBg:"bg-sky-50",icon:"▦"},{group:"fbRevenue" as AccountGroup,label:"FOOD & BEVERAGE REVENUE",subtitle:"Restoran, bar, banquet, dan F&B lainnya",accent:"border-l-amber-500",percentBg:"bg-amber-50",icon:"◈"},{group:"otherRevenue" as AccountGroup,label:"MINOR OPERATING DEPT.",subtitle:"Laundry, transportasi, spa, sewa, dan pendapatan operasional lainnya",accent:"border-l-violet-500",percentBg:"bg-violet-50",icon:"◇"}]).map(item=>{
+                      const total=optional(form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||"");
+                      const pct=optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey(item.group)]||"");
+                      const allocated=total!==null&&pct!==null?Math.round(total*pct/100):null;
+                      return <div key={item.group} className={"grid grid-cols-[minmax(0,1fr)_105px] items-center gap-3 border-t border-l-4 border-slate-100 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_140px_180px] "+item.accent}>
+                        <div className="min-w-0"><div className="flex items-center gap-2"><span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-black text-slate-700 "+item.percentBg}>{item.icon}</span><div className="min-w-0"><p className="text-sm font-extrabold text-slate-800">{item.label}</p><p className="mt-0.5 text-xs leading-5 text-slate-500">{item.subtitle}</p></div></div><p className="mt-2 text-sm font-bold tabular-nums text-slate-700 sm:hidden">{allocated===null?"Isi total dan %":money(allocated)}</p></div>
+                        <label className="block"><span className="sr-only">Persentase {item.label}</span><div className="relative"><input className={inputClass+" pr-7 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" placeholder="0" value={form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey(item.group)]||""} onChange={e=>updateAllocation(revenueGroupPercentKey(item.group),e.target.value)} /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span></div></label>
+                        <div className="hidden text-right sm:block"><p className="font-extrabold tabular-nums text-slate-800">{allocated===null?"—":money(allocated)}</p><p className="mt-1 text-xs text-slate-400">{pct===null?"Persentase belum diisi":fmt(pct,2)+"% dari total"}</p></div>
+                      </div>;
+                    })}
+                  </div>
+                  <div className="flex flex-col gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm leading-6 text-indigo-950 sm:flex-row sm:items-center sm:justify-between">
+                    <p className="max-w-2xl">Setelah persentase ketiga kelompok berjumlah 100%, tekan tombol alokasi pada setiap kelompok untuk membagikan nilai budget ke akun revenue terkait. Actual dan Last Year tidak diubah.</p>
+                    <button type="button" onClick={()=>{const totalPct=(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("roomRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("fbRevenue")]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("otherRevenue")]||"")??0);if(Math.abs(totalPct-100)>0.01){setMessage("Total persentase ROOMS, FOOD & BEVERAGE REVENUE, dan MINOR OPERATING DEPT. harus tepat 100%. Saat ini "+fmt(totalPct)+"%.");return;}setMessage("Persentase Revenue sudah tepat 100%. Silakan terapkan alokasi pada masing-masing kelompok.");}} className="shrink-0 rounded-xl bg-indigo-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-indigo-800">Validasi 100%</button>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-3">
+                    {[{group:"roomRevenue" as AccountGroup,label:"ROOMS",color:"bg-sky-700"},{group:"fbRevenue" as AccountGroup,label:"FOOD & BEVERAGE",color:"bg-amber-600"},{group:"otherRevenue" as AccountGroup,label:"MINOR OPERATING DEPT.",color:"bg-violet-700"}].map(item=><button key={item.group} type="button" onClick={()=>applyRevenueGroup(item.group)} className={"flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 "+item.color}><span>↗</span> Terapkan {item.label}</button>)}
+                  </div>
+                  {message&&<p role="status" className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900">{message}</p>}
+                </div>
               </div>
-              <div className="mt-5 grid gap-3 md:grid-cols-2">
-                <div className="rounded-xl border border-slate-200 p-4">
-                  <h3 className="font-extrabold text-slate-800">REVENUE</h3>
-                  <p className="mt-1 text-sm text-slate-500">Format pendapatan akan disusun ulang.</p>
-                </div>
-                <div className="rounded-xl border border-slate-200 p-4">
-                  <h3 className="font-extrabold text-slate-800">DEPARTMENT EXPENSES</h3>
-                  <p className="mt-1 text-sm text-slate-500">Format biaya masing-masing department akan disusun ulang.</p>
-                </div>
+              <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
+                <div className="flex items-center gap-2"><span className="flex h-9 w-9 items-center justify-center rounded-xl bg-slate-200 text-lg">✦</span><div><h3 className="font-extrabold text-slate-800">DEPARTMENT EXPENSES</h3><p className="text-sm text-slate-500">Bagian biaya departemen akan disusun pada tahap berikutnya.</p></div></div>
               </div>
             </section>
           </div>}

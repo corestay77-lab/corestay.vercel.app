@@ -357,7 +357,7 @@ export default function HotelBudgetPage() {
       setForm(prev=>{
         const monthly=prev.forecast.monthly.map((row,i)=>({...row,label:monthNames[i]+" "+start,modDetails:{...(row.modDetails||{}),operatingDays:String(new Date(start,i+1,0).getDate())}}));
         const annual=prev.forecast.annual.map((row,i)=>({...row,label:String(start+i),days:String((start+i)%4===0&&((start+i)%100!==0||(start+i)%400===0)?366:365)}));
-        return {...prev,forecast:{monthly:monthlyWithDetails,annual}};
+        return {...prev,forecast:{monthly,annual}};
       });
     }
   },[form.yearStart]);
@@ -543,7 +543,7 @@ export default function HotelBudgetPage() {
       const sameMonthly=JSON.stringify(prev.forecast.monthly)===JSON.stringify(monthlyWithDetails);
       const sameAnnual=prev.forecast.annual.length===annual.length&&prev.forecast.annual.every((r,i)=>r.label===annual[i].label&&r.days===annual[i].days&&r.rooms===annual[i].rooms&&r.occupancy===annual[i].occupancy&&r.adr===annual[i].adr&&r.fbRevenue===annual[i].fbRevenue&&r.otherRevenue===annual[i].otherRevenue&&r.operatingCosts===annual[i].operatingCosts);
       if(sameMonthly&&sameAnnual)return prev;
-      return {...prev,forecast:{monthly,annual}};
+      return {...prev,forecast:{monthly:monthlyWithDetails,annual}};
     });
   },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees,form.budgetAllocations]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);

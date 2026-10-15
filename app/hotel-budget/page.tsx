@@ -815,7 +815,7 @@ export default function HotelBudgetPage() {
                         const beverageAmount=fbTotal!==null?Math.round(fbTotal*beveragePct/100):null;
                         const splitTotal=foodPct+beveragePct;
                         const splitValid=Math.abs(splitTotal-100)<0.01;
-                        return <div className="border-t border-amber-100 bg-amber-50/50 px-3 py-3 sm:px-4">
+                        return <div className="border-t border-amber-100 bg-amber-50/50 py-3 pl-[60px] pr-3 sm:pl-[60px] sm:pr-4">
                           <div className="mb-2"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800">F&amp;B DEPARTMENT — REVENUES</p><p className="mt-0.5 text-[11px] text-slate-500">Pembagian dari {fbTotal===null?"alokasi FOOD & BEVERAGE REVENUE":money(fbTotal)}</p></div>
                           <div className="grid gap-2 sm:grid-cols-2">
                             <div className="rounded-lg border border-slate-200 bg-white p-2.5">

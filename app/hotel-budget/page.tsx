@@ -277,9 +277,14 @@ export default function HotelBudgetPage() {
     const overhead=years.map((_,i)=>overheadBase===null?null:overheadBase*growth(i));
     const sumKnown=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((n,v)=>n+(v??0),0):null;
     const monthlyOperatingCostBase=monthlyBase(row=>optional(row.operatingCosts));
-    const costs=years.map((y,i)=>detailCostBase!==null||costOfSalesBase!==null
-      ? sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]])
-      : monthlyOperatingCostBase!==null?monthlyOperatingCostBase*growth(i):y.calc.costs??sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]]));
+    // Keep the 10-year Year 1 cost basis identical to the 1-year consolidated report.
+    // Monthly operatingCosts is the canonical total when entered; detailed account
+    // buckets are fallback inputs only and must not be added on top of that total.
+    const costs=years.map((y,i)=>monthlyOperatingCostBase!==null
+      ? monthlyOperatingCostBase*growth(i)
+      : detailCostBase!==null||costOfSalesBase!==null
+        ? sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]])
+        : y.calc.costs??sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]]));
     const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
     const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
     const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;

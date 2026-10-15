@@ -254,18 +254,18 @@ export default function HotelBudgetPage() {
     const fb=years.map((_,i)=>fbBase===null?null:fbBase*growth(i));
     const other=years.map((_,i)=>otherBase===null?null:otherBase*growth(i));
     const revenue=years.map((_,i)=>sumPresent([roomRevenue[i],fb[i],other[i]]));
-    const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",Array.isArray(source.accountLines)?source.accountLines:ACCOUNT_LINES);
+    const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",allAccountLines);
     const annualCost=(group:AccountGroup)=>years.map((_,i)=>{const base=baseCost(group);return base===null?null:base*growth(i);});
     const masterPayrollMonthly=(source.payrollEmployees||[]).length?(source.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
     const payrollBase=masterPayrollMonthly!==null?masterPayrollMonthly*12:baseCost("payroll");
     const payroll=years.map((_,i)=>payrollBase===null?null:payrollBase*growth(i));
     const detailRevenueKeys=new Set(["roomRevenue","foodRevenue","beverageRevenue","businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts","foodCost","beverageCost","laundryCost"]);
     const detailCostBase=monthlyBase(row=>{
-      const details=[row.roomDivisionDetails,row.fbDetails,row.modDetails,row.agDetails,row.smDetails];
+      const details=[row.roomDivisionDetails,row.fbDetails,row.modDetails,row.agDetails,row.smDetails,row.hrdDetails,row.pomecDetails];
       const vals=details.flatMap(detail=>Object.entries(detail||{}).filter(([key,value])=>!detailRevenueKeys.has(key)&&!payrollInputKey(key)&&String(value??"").trim()!=="").map(([,value])=>optional(String(value))));
       return sumPresent(vals);
     });
-    const costOfSalesBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||""),optional(row.modDetails?.laundryCost||"")]));
+    const costOfSalesBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||""),optional(row.phoneCostOfSales||""),optional(row.modDetails?.laundryCost||"")]));
     const pomecNonPayrollBase=source.forecast.monthly.some(row=>POMEC_LINES.some(line=>line.group!=="payroll"&&pomecValue(row,line.key)!==null))?source.forecast.monthly.reduce((sum,row)=>sum+POMEC_LINES.filter(line=>line.group!=="payroll").reduce((n,line)=>n+(pomecValue(row,line.key)??0),0),0):null;
     const costOfSales=years.map((_,i)=>costOfSalesBase===null?annualCost("costOfSales")[i]:costOfSalesBase*growth(i));
     const deptExpenses=years.map((_,i)=>detailCostBase===null?annualCost("operatingExpenses")[i]:detailCostBase*growth(i));

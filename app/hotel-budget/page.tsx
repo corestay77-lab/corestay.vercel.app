@@ -960,7 +960,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     </tbody></table></div>;
                   })()}
                 </div>}
-                {{selectedDepartment==="hrd"&&<div className="space-y-3">
+                {selectedDepartment==="hrd"&&<div className="space-y-3">
                   <div><h4 className="font-extrabold text-slate-800">HUMAN RESOURCE</h4><p className="mt-1 text-xs text-slate-500">HRD mengikuti urutan Dec, Jan–Nov, TOTAL, dan persentase terhadap total revenue hotel. Angka contoh sumber tidak diisi otomatis.</p></div>
                   {(() => {
                     const order=[11,0,1,2,3,4,5,6,7,8,9,10];

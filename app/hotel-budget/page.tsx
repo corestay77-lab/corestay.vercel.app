@@ -1,6 +1,6 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
@@ -27,7 +27,7 @@ const POMEC_LINES = [{key:"salaryWages",label:"SALARY & WAGES",group:"payroll"},
 const pomecValue=(row:ForecastMonth,key:string)=>optional(row.pomecDetails?.[key]||"");
 const pomecTotal=(row:ForecastMonth,group:"payroll"|"other"|"energy")=>{const vals=POMEC_LINES.filter(x=>x.group===group).map(x=>pomecValue(row,x.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
 const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>({agDetails:{},hrdDetails:{},modDetails:{},fbDetails:{},roomDivisionDetails:{},pomecDetails:{},label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",phoneRevenue:"",otherRevenue:"",fbCostOfSales:"",phoneCostOfSales:"",modCostOfSales:"",roomPayroll:"",fbPayroll:"",phonePayroll:"",modPayroll:"",roomOtherExpenses:"",fbOtherExpenses:"",phoneOtherExpenses:"",modOtherExpenses:"",agPayroll:"",smPayroll:"",hrdPayroll:"",pomecPayroll:"",agOtherExpenses:"",smOtherExpenses:"",hrdOtherExpenses:"",pomecOtherExpenses:"",energyCost:"",operatingCosts:"",basicManagementFee:"",otherManagementFee:"",insuranceGeneral:"",landLease:"",ownerInsurance:"",maintenanceFee:"",operatorSharePercent:"30",ownerOtherExpenses:""}));
-const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>({label:String(year+i),days:String((year+i)%4===0?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""}));
+const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>{const y=year+i;return {label:String(y),days:String(y%4===0&&(y%100!==0||y%400===0)?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""};});
 const makeBlank = (): BudgetForm => ({
   hotelName:"",period:"",yearStart:"2027",payrollEmployees:[],
   statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:""},
@@ -244,6 +244,7 @@ export default function HotelBudgetPage() {
   const [summary,setSummary]=useState("");
   const [currency,setCurrency]=useState<"IDR"|"USD">("IDR");
   const [annualGrowthPct,setAnnualGrowthPct]=useState(2);
+  const lastAutoForecastRef=useRef<{monthly:ForecastMonth[];annual:ForecastYear[]}|null>(null);
   const money=(value:number|null|undefined)=>value===null||value===undefined||!Number.isFinite(value)?"—":new Intl.NumberFormat(currency==="IDR"?"id-ID":"en-US",{style:"currency",currency,maximumFractionDigits:currency==="IDR"?0:2}).format(value);
 
   const buildTenYearRows=(source:BudgetForm)=>{
@@ -523,6 +524,22 @@ export default function HotelBudgetPage() {
         operatingCosts:grow(baseCosts)
       };
     });
+    const previousAuto=lastAutoForecastRef.current;
+    lastAutoForecastRef.current={monthly,annual};
+    const preserveManual=(current:string|undefined,previousGenerated:string|undefined,nextGenerated:string|undefined)=>previousGenerated!==undefined&&current!==previousGenerated?(current??""):(nextGenerated??"");
+    const annualWithManualOverrides=annual.map((row,i)=>{
+      const prior=form.forecast.annual[i]||makeAnnual(startYear)[i];
+      const old=previousAuto?.annual[i];
+      return {...row,
+        days:preserveManual(prior.days,old?.days,row.days),
+        rooms:preserveManual(prior.rooms,old?.rooms,row.rooms),
+        occupancy:preserveManual(prior.occupancy,old?.occupancy,row.occupancy),
+        adr:preserveManual(prior.adr,old?.adr,row.adr),
+        fbRevenue:preserveManual(prior.fbRevenue,old?.fbRevenue,row.fbRevenue),
+        otherRevenue:preserveManual(prior.otherRevenue,old?.otherRevenue,row.otherRevenue),
+        operatingCosts:preserveManual(prior.operatingCosts,old?.operatingCosts,row.operatingCosts)
+      };
+    });
     setForm(prev=>{
       const monthlyWithDetails=monthly.map((row,i)=>{
         const monthShare=new Date(startYear,i+1,0).getDate()/daysInYear;
@@ -542,10 +559,13 @@ export default function HotelBudgetPage() {
         const roomPayroll=masterPayrollExists?String(Number(foPayroll||0)+Number(hkPayroll||0)):((foPayroll||hkPayroll)?String(Number(foPayroll||0)+Number(hkPayroll||0)):"");
         const fbDetail=has(fbDetails),modDetail=has(modDetails),roomDetail=has(roomDivisionDetails),agDetail=has(agDetails),smDetail=has(smDetails),hrdDetail=has(hrdDetails),pomecDetail=has(pomecDetails);
         return {...row,
-          fbRevenue:row.fbRevenue,
+          occupancy:preserveManual(prior.occupancy,previousAuto?.monthly[i]?.occupancy,row.occupancy),
+          adr:preserveManual(prior.adr,previousAuto?.monthly[i]?.adr,row.adr),
+          fbRevenue:preserveManual(prior.fbRevenue,previousAuto?.monthly[i]?.fbRevenue,row.fbRevenue),
           fbCostOfSales:fbDetail?(prior.fbCostOfSales||row.fbCostOfSales):row.fbCostOfSales,
           fbOtherExpenses:fbDetail?(prior.fbOtherExpenses||row.fbOtherExpenses):row.fbOtherExpenses,
-          otherRevenue:row.otherRevenue,
+          otherRevenue:preserveManual(prior.otherRevenue,previousAuto?.monthly[i]?.otherRevenue,row.otherRevenue),
+          operatingCosts:preserveManual(prior.operatingCosts,previousAuto?.monthly[i]?.operatingCosts,row.operatingCosts),
           modCostOfSales:modDetail?(prior.modCostOfSales||row.modCostOfSales):row.modCostOfSales,
           modOtherExpenses:modDetail?(prior.modOtherExpenses||row.modOtherExpenses):row.modOtherExpenses,
           roomOtherExpenses:roomDetail?(prior.roomOtherExpenses||row.roomOtherExpenses):row.roomOtherExpenses,
@@ -561,13 +581,13 @@ export default function HotelBudgetPage() {
           smPayroll:payrollTotal("SM"),
           hrdPayroll:payrollTotal("HRD"),
           pomecPayroll:payrollTotal("POMEC"),
-          agDetails,modDetails:{...modDetails,...row.modDetails},fbDetails:{...fbDetails,...row.fbDetails},roomDivisionDetails:{...roomDivisionDetails,...row.roomDivisionDetails},pomecDetails,hrdDetails,smDetails
+          agDetails,modDetails:{...modDetails,...row.modDetails},fbDetails:{...fbDetails,...row.fbDetails},roomDivisionDetails:{...roomDivisionDetails,...row.roomDivisionDetails,roomRevenue:preserveManual(prior.roomDivisionDetails?.roomRevenue,previousAuto?.monthly[i]?.roomDivisionDetails?.roomRevenue,row.roomDivisionDetails?.roomRevenue)},pomecDetails,hrdDetails,smDetails
         };
       });
       const sameMonthly=JSON.stringify(prev.forecast.monthly)===JSON.stringify(monthlyWithDetails);
-      const sameAnnual=prev.forecast.annual.length===annual.length&&prev.forecast.annual.every((r,i)=>r.label===annual[i].label&&r.days===annual[i].days&&r.rooms===annual[i].rooms&&r.occupancy===annual[i].occupancy&&r.adr===annual[i].adr&&r.fbRevenue===annual[i].fbRevenue&&r.otherRevenue===annual[i].otherRevenue&&r.operatingCosts===annual[i].operatingCosts);
+      const sameAnnual=prev.forecast.annual.length===annualWithManualOverrides.length&&prev.forecast.annual.every((r,i)=>r.label===annualWithManualOverrides[i].label&&r.days===annualWithManualOverrides[i].days&&r.rooms===annualWithManualOverrides[i].rooms&&r.occupancy===annualWithManualOverrides[i].occupancy&&r.adr===annualWithManualOverrides[i].adr&&r.fbRevenue===annualWithManualOverrides[i].fbRevenue&&r.otherRevenue===annualWithManualOverrides[i].otherRevenue&&r.operatingCosts===annualWithManualOverrides[i].operatingCosts);
       if(sameMonthly&&sameAnnual)return prev;
-      return {...prev,forecast:{monthly:monthlyWithDetails,annual}};
+      return {...prev,forecast:{monthly:monthlyWithDetails,annual:annualWithManualOverrides}};
     });
   },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees,form.budgetAllocations,annualGrowthPct]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);

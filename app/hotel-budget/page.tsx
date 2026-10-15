@@ -1194,7 +1194,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <table className="w-full min-w-[1450px] border-collapse text-[10px]">
                   <thead>
                     <tr className="bg-slate-800 text-white">
-                      <th rowSpan={2} className="sticky left-0 z-10 min-w-[150px] bg-slate-800 px-1 py-2 text-left">1 YEAR CONSOLIDATED — {form.yearStart}</th>
+                      <th rowSpan={2} className="sticky left-0 z-10 w-[130px] min-w-[130px] max-w-[130px] bg-slate-800 px-1 py-2 text-left"><span className="block max-w-[122px] whitespace-normal">1 YEAR CONSOLIDATED — {form.yearStart}</span></th>
                       {form.forecast.monthly.map((row,i)=><th key={row.label} colSpan={2} className="px-1 py-2 text-center">{monthNames[i].toUpperCase()}</th>)}
                       <th colSpan={2} className="bg-teal-700 px-1 py-2 text-center">TOTAL / RATA-RATA</th>
                     </tr>

@@ -446,7 +446,7 @@ export default function HotelBudgetPage() {
     const baseFb=forecastSource.fb;
     const baseOther=forecastSource.other;
     const masterPayrollMonthly=(form.payrollEmployees||[]).length?(form.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
-    const baseCosts=forecastSource.costs!==null&&masterPayrollMonthly!==null&&forecastSource.payroll!==null?forecastSource.costs-forecastSource.payroll+masterPayrollMonthly:forecastSource.costs;
+    const baseCosts=forecastSource.costs!==null&&masterPayrollMonthly!==null?forecastSource.costs-(forecastSource.payroll??0)+masterPayrollMonthly*12:forecastSource.costs;
     const daysInYear=Number.isInteger(startYear)&&startYear>=1900&&startYear<=2200?(startYear%4===0&&(startYear%100!==0||startYear%400===0)?366:365):365;
     const budgetForCode=(code:string)=>optional(form.accounts[code]?.budget||"");
     const monthlyShare=(value:number|null,share:number)=>value===null?"":String(Math.round(value*share));

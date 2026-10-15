@@ -145,6 +145,41 @@ export async function POST(request: NextRequest) {
         }
       }
     }
+    // Validate forecast inputs used by P&L formulas, not only headline fields.
+    const extraMonthlyKeys = [
+      "fbCostOfSales","phoneCostOfSales","modCostOfSales",
+      "roomPayroll","fbPayroll","phonePayroll","modPayroll",
+      "roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses",
+      "agPayroll","smPayroll","hrdPayroll","pomecPayroll",
+      "agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost",
+      "basicManagementFee","otherManagementFee","insuranceGeneral","landLease",
+      "ownerInsurance","maintenanceFee","operatorSharePercent","ownerOtherExpenses"
+    ];
+    for (const row of form.forecast?.monthly || []) {
+      for (const key of extraMonthlyKeys) {
+        const raw = row?.[key];
+        if (raw === "" || raw === null || raw === undefined) continue;
+        const value = numeric(raw);
+        if (value === null) issues.push("Forecast bulanan "+row.label+" — "+key+" harus berupa angka valid.");
+        else if (key === "operatorSharePercent" ? (value < 0 || value > 100) : value < 0) {
+          issues.push(key === "operatorSharePercent"
+            ? "Forecast bulanan "+row.label+" — operator share harus 0–100%."
+            : "Forecast bulanan "+row.label+" — "+key+" tidak boleh negatif.");
+        }
+      }
+      for (const detailKey of ["roomDivisionDetails","fbDetails","modDetails","agDetails","smDetails","hrdDetails","pomecDetails"]) {
+        const details = row?.[detailKey];
+        if (!details || typeof details !== "object" || Array.isArray(details)) continue;
+        for (const [key, raw] of Object.entries(details as Record<string, unknown>)) {
+          if (raw === "" || raw === null || raw === undefined) continue;
+          const value = numeric(raw);
+          if (value === null) issues.push("Forecast bulanan "+row.label+" — detail "+key+" harus berupa angka valid.");
+          else if (value < 0 && !/discount|allowance/i.test(key)) {
+            issues.push("Forecast bulanan "+row.label+" — detail "+key+" tidak boleh negatif.");
+          }
+        }
+      }
+    }
     const actionStatus = String(form.actionStatus || "Belum dimulai");
     const actionProgress = numeric(form.actionProgress);
     const validActionStatuses = ["Belum dimulai","Sedang berjalan","Selesai","Terhambat"];

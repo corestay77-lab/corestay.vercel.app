@@ -815,21 +815,21 @@ export default function HotelBudgetPage() {
                         const beverageAmount=fbTotal!==null?Math.round(fbTotal*beveragePct/100):null;
                         const splitTotal=foodPct+beveragePct;
                         const splitValid=Math.abs(splitTotal-100)<0.01;
-                        return <div className="border-t border-amber-100 bg-amber-50/50 px-4 py-4 sm:px-5">
-                          <div className="mb-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">F&amp;B DEPARTMENT — REVENUES</p><p className="mt-1 text-xs text-slate-500">Pembagian dari {fbTotal===null?"alokasi FOOD & BEVERAGE REVENUE":money(fbTotal)}</p></div>
-                          <div className="grid gap-3 sm:grid-cols-2">
-                            <div className="rounded-lg border border-slate-200 bg-white p-3">
-                              <p className="text-sm font-extrabold text-slate-800">FOOD</p>
-                              <p className="mt-1 text-lg font-black tabular-nums text-slate-900">{foodAmount===null?"—":money(foodAmount)}</p>
-                              <label className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-slate-600"><span>Persentase dari total F&amp;B (%)</span><span className="flex items-center gap-1"><input className={inputClass+" w-20 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" value={form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]??"70"} onChange={e=>updateAllocation("__fbFoodPercent",e.target.value)}/><span>%</span></span></label>
+                        return <div className="border-t border-amber-100 bg-amber-50/50 px-3 py-3 sm:px-4">
+                          <div className="mb-2"><p className="text-[10px] font-bold uppercase tracking-[0.14em] text-amber-800">F&amp;B DEPARTMENT — REVENUES</p><p className="mt-0.5 text-[11px] text-slate-500">Pembagian dari {fbTotal===null?"alokasi FOOD & BEVERAGE REVENUE":money(fbTotal)}</p></div>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+                              <p className="text-xs font-extrabold text-slate-800">FOOD</p>
+                              <p className="mt-0.5 text-base font-black tabular-nums text-slate-900">{foodAmount===null?"—":money(foodAmount)}</p>
+                              <label className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-600"><span>Persentase dari total F&amp;B</span><span className="flex items-center gap-1"><input aria-label="Persentase FOOD dari total F&B" className={inputClass+" w-16 py-1 text-right text-xs font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" value={form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]??"70"} onChange={e=>updateAllocation("__fbFoodPercent",e.target.value)}/><span>%</span></span></label>
                             </div>
-                            <div className="rounded-lg border border-slate-200 bg-white p-3">
-                              <p className="text-sm font-extrabold text-slate-800">BEVERAGE</p>
-                              <p className="mt-1 text-lg font-black tabular-nums text-slate-900">{beverageAmount===null?"—":money(beverageAmount)}</p>
-                              <label className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-slate-600"><span>Persentase dari total F&amp;B (%)</span><span className="flex items-center gap-1"><input className={inputClass+" w-20 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" value={form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]??"30"} onChange={e=>updateAllocation("__fbBeveragePercent",e.target.value)}/><span>%</span></span></label>
+                            <div className="rounded-lg border border-slate-200 bg-white p-2.5">
+                              <p className="text-xs font-extrabold text-slate-800">BEVERAGE</p>
+                              <p className="mt-0.5 text-base font-black tabular-nums text-slate-900">{beverageAmount===null?"—":money(beverageAmount)}</p>
+                              <label className="mt-2 flex flex-wrap items-center justify-between gap-2 text-[11px] font-semibold text-slate-600"><span>Persentase dari total F&amp;B</span><span className="flex items-center gap-1"><input aria-label="Persentase BEVERAGE dari total F&B" className={inputClass+" w-16 py-1 text-right text-xs font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" value={form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]??"30"} onChange={e=>updateAllocation("__fbBeveragePercent",e.target.value)}/><span>%</span></span></label>
                             </div>
                           </div>
-                          <div className={"mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-semibold "+(splitValid?"bg-emerald-50 text-emerald-800":"bg-amber-100 text-amber-900")}><span>Total pembagian</span><span className="font-extrabold tabular-nums">{fmt(splitTotal,2)}% · {splitValid?"Pembagian sudah 100%":"Sesuaikan hingga 100%"}</span></div>
+                          <div className={"mt-2 flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-xs font-semibold "+(splitValid?"bg-emerald-50 text-emerald-800":"bg-amber-100 text-amber-900")}><span>Total pembagian</span><span className="font-extrabold tabular-nums">{fmt(splitTotal,2)}% · {splitValid?"Pembagian sudah 100%":"Sesuaikan hingga 100%"}</span></div>
                         </div>;
                       })()}</Fragment>;
                     })}

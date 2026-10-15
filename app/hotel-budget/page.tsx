@@ -793,7 +793,7 @@ export default function HotelBudgetPage() {
             </section>
           </div>}
 
-          activeTab==="forecast"&&<div className="space-y-7">
+          {activeTab==="forecast"&&<div className="space-y-7">
             
             <div className="rounded-2xl bg-teal-50 p-4 text-sm leading-6 text-teal-950">Forecast terisi otomatis dari input Budget P&amp;L dan statistik hotel. Room Revenue dihitung dari jumlah hari × kamar × okupansi × ADR. Pendapatan lain dan biaya mengikuti proporsi jumlah hari; proyeksi 10 tahun bertambah 2% per tahun. Tidak perlu menginput ulang angka pada laporan konsolidasi.</div>
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">

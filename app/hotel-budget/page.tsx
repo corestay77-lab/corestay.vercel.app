@@ -114,20 +114,10 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // departmental cost buckets even when the costs have not been allocated
   // to every individual department line.
   const departmentalOperatingCost=costParts.map(c=>sumComplete([c.cos,c.payroll,c.deptOther]));
-  const deptIncomeTotal=deptIncome.map((d,i)=>{
-    const detail=sumComplete([d.room,d.fb,d.phone,d.mod]);
-    if(detail!==null)return detail;
-    return revenue[i]!==null&&departmentalOperatingCost[i]!==null?revenue[i]!-departmentalOperatingCost[i]!:null;
-  });
-  // When the combined operating-cost input is available, overhead total is
-  // the residual after departmental costs; this avoids a blank subtotal when
-  // overhead payroll has not been split out but total costs are known.
-  const overheadTotal=costParts.map((c,i)=>{
-    const detail=sumComplete([c.overheadPayroll,c.overheadOther]);
-    if(detail!==null)return detail;
-    return totalOperatingCosts[i]!==null&&departmentalOperatingCost[i]!==null
-      ?totalOperatingCosts[i]!-departmentalOperatingCost[i]!:null;
-  });
+  const deptIncomeTotal=deptIncome.map(d=>sumComplete([d.room,d.fb,d.phone,d.mod]));
+  // Do not classify an unexplained cost residual as overhead. Keep this
+  // subtotal blank unless both overhead buckets have entered detail.
+  const overheadTotal=costParts.map(c=>sumComplete([c.overheadPayroll,c.overheadOther]));
   const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&overheadTotal[i]!==null?v-overheadTotal[i]!:null);
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
   const nonOp= form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));

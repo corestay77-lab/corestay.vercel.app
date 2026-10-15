@@ -786,7 +786,7 @@ export default function HotelBudgetPage() {
                   <div className="grid gap-4 rounded-2xl border border-sky-100 bg-sky-50/70 p-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end sm:p-5">
                     <label className="block min-w-0">
                       <span className="mb-2 block text-sm font-bold text-slate-700">TOTAL REVENUE BUDGET — ALL OUTLET (Rp)</span>
-                      <input className={inputClass+" text-lg font-extrabold tabular-nums"} inputMode="numeric" type="number" min="0" step="1000" placeholder="Masukkan total revenue budget" value={form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||""} onChange={e=>updateAllocation(revenueTotalKey,e.target.value)} />
+                      <input className={inputClass+" text-lg font-extrabold tabular-nums"} inputMode="numeric" type="text" placeholder="Contoh: 1.500.000.000" value={formatWholeRupiah(form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||"")} onChange={e=>updateAllocation(revenueTotalKey,e.target.value.replace(/[^0-9]/g,""))} />
                       <span className="mt-1.5 block text-xs text-slate-500">Masukkan total pendapatan yang direncanakan untuk periode budget terpilih.</span>
                     </label>
                     <div className="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-sky-100 sm:min-w-[190px]">
@@ -818,6 +818,33 @@ export default function HotelBudgetPage() {
                     {[{group:"roomRevenue" as AccountGroup,label:"ROOMS",color:"bg-sky-700"},{group:"fbRevenue" as AccountGroup,label:"FOOD & BEVERAGE",color:"bg-amber-600"},{group:"otherRevenue" as AccountGroup,label:"MINOR OPERATING DEPT.",color:"bg-violet-700"}].map(item=><button key={item.group} type="button" onClick={()=>applyRevenueGroup(item.group)} className={"flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 "+item.color}><span>↗</span> Terapkan {item.label}</button>)}
                   </div>
                   {message&&<p role="status" className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900">{message}</p>}
+                </div>
+              </div>
+              <div className="mt-5 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
+                <div className="bg-gradient-to-r from-amber-600 to-orange-500 px-5 py-4 text-white sm:px-6">
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-50">F&amp;B DEPARTMENT</p>
+                  <h3 className="mt-1 text-xl font-black">REVENUES</h3>
+                  <p className="mt-1 text-sm leading-5 text-amber-50">Pisahkan pendapatan Food dan Beverage dari total alokasi FOOD &amp; BEVERAGE REVENUE.</p>
+                </div>
+                <div className="space-y-4 p-4 sm:p-5">
+                  <div className="grid gap-3 sm:grid-cols-2">
+                    {([{key:"__fbFoodPercent",label:"FOOD",color:"border-l-orange-500",tone:"bg-orange-50"},{key:"__fbBeveragePercent",label:"BEVERAGE",color:"border-l-sky-500",tone:"bg-sky-50"}]).map(item=>{
+                      const totalRevenue=optional(form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||"");
+                      const fbPct=optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("fbRevenue")]||"");
+                      const fbTotal=totalRevenue!==null&&fbPct!==null?Math.round(totalRevenue*fbPct/100):null;
+                      const splitPct=optional(form.budgetAllocations?.parentPercentBySection?.[item.key]||"");
+                      const amount=fbTotal!==null&&splitPct!==null?Math.round(fbTotal*splitPct/100):null;
+                      return <div key={item.key} className={"rounded-xl border border-slate-200 border-l-4 p-4 "+item.color}>
+                        <div className="flex items-center justify-between gap-3"><p className="font-extrabold text-slate-800">{item.label}</p><span className={"rounded-lg px-2 py-1 text-xs font-bold text-slate-600 "+item.tone}>F&amp;B Revenue</span></div>
+                        <label className="mt-3 block"><span className="mb-1.5 block text-xs font-semibold text-slate-600">Persentase dari total F&amp;B (%)</span><div className="relative"><input className={inputClass+" pr-7 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" placeholder="0" value={form.budgetAllocations?.parentPercentBySection?.[item.key]||""} onChange={e=>updateAllocation(item.key,e.target.value)} /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span></div></label>
+                        <p className="mt-3 text-xs font-semibold text-slate-500">Nilai budget</p><p className="mt-1 text-lg font-black tabular-nums text-slate-900">{amount===null?"—":money(amount)}</p>
+                      </div>;
+                    })}
+                  </div>
+                  <div className={"rounded-xl px-4 py-3 text-sm font-semibold "+(Math.abs((optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"")??0)-100)<0.01?"bg-emerald-50 text-emerald-800":"bg-amber-50 text-amber-900")}>
+                    Total FOOD + BEVERAGE: {fmt((optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"")??0),2)}% — {Math.abs((optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"")??0)-100)<0.01?"Pembagian sudah 100%":"Sesuaikan hingga 100%"}.
+                  </div>
+                  <p className="text-xs leading-5 text-slate-500">Angka Rupiah ditampilkan dengan pemisah ribuan Indonesia (contoh: 1.500.000.000). Pembagian FOOD dan BEVERAGE ini merupakan rincian dari alokasi F&amp;B.</p>
                 </div>
               </div>
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">

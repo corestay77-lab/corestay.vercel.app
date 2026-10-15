@@ -874,7 +874,6 @@ export default function HotelBudgetPage() {
     {id:"statistics",label:"Budget & Statistics",sub:"Identitas hotel dan kapasitas",color:"from-sky-500 to-blue-600",icon:"🏨",detail:"Mulai dari profil hotel, periode, kapasitas kamar, dan statistik operasional."},
     {id:"pnl",label:"Budget P&L",sub:"Revenue dan biaya dept",color:"from-violet-500 to-purple-600",icon:"📊",detail:"Isi akun Actual, Budget, Last Year, dan YTD. Ringkasan dihitung otomatis dari data yang terisi."},
     {id:"forecast",label:"Monthly & Annual Forecast",sub:"Proyeksi 12 bulan & 10 tahun",color:"from-teal-500 to-emerald-600",icon:"📈",detail:"Bangun proyeksi berdasarkan hari, kamar, okupansi, ADR, pendapatan lain, dan biaya."},
-    {id:"variance",label:"Variance & Exception Report",sub:"Analisis selisih",color:"from-amber-500 to-orange-600",icon:"🔎",detail:"Temukan selisih Actual vs Budget dan Last Year, termasuk perbandingan YTD."},
     {id:"action-plan",label:"Management Action Plan",sub:"PIC, target, tenggat",color:"from-pink-500 to-rose-600",icon:"🎯",detail:"Ubah temuan menjadi tindakan terukur dengan penanggung jawab dan deadline."},
     {id:"export",label:"Export PDF & Excel",sub:"Validasi dan laporan akhir",color:"from-indigo-500 to-blue-700",icon:"📄",detail:"Tinjau ringkasan, jalankan validasi final, lalu cetak PDF atau unduh Excel."}
   ];

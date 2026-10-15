@@ -481,7 +481,7 @@ export default function HotelBudgetPage() {
           agDetails,modDetails,fbDetails,roomDivisionDetails,pomecDetails,hrdDetails,smDetails
         };
       });
-      const sameMonthly=prev.forecast.monthly.length===monthlyWithDetails.length&&prev.forecast.monthly.every((r,i)=>r.label===monthlyWithDetails[i].label&&r.occupancy===monthlyWithDetails[i].occupancy&&r.adr===monthlyWithDetails[i].adr&&r.fbRevenue===monthlyWithDetails[i].fbRevenue&&r.otherRevenue===monthlyWithDetails[i].otherRevenue&&r.operatingCosts===monthlyWithDetails[i].operatingCosts);
+      const sameMonthly=JSON.stringify(prev.forecast.monthly)===JSON.stringify(monthlyWithDetails);
       const sameAnnual=prev.forecast.annual.length===annual.length&&prev.forecast.annual.every((r,i)=>r.label===annual[i].label&&r.days===annual[i].days&&r.rooms===annual[i].rooms&&r.occupancy===annual[i].occupancy&&r.adr===annual[i].adr&&r.fbRevenue===annual[i].fbRevenue&&r.otherRevenue===annual[i].otherRevenue&&r.operatingCosts===annual[i].operatingCosts);
       if(sameMonthly&&sameAnnual)return prev;
       return {...prev,forecast:{monthly,annual}};

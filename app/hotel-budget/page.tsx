@@ -254,20 +254,39 @@ export default function HotelBudgetPage() {
     const years=source.forecast.annual.map(row=>({row,calc:calcAnnual(row),days:optional(row.days),rooms:optional(row.rooms),occ:optional(row.occupancy)}));
     const roomAvail=years.map(y=>y.days!==null&&y.rooms!==null?y.days*y.rooms:null);
     const occupied=years.map((y,i)=>roomAvail[i]!==null&&y.occ!==null?roomAvail[i]!*y.occ/100:null);
-    const roomRevenue=years.map(y=>y.calc.roomRevenue);
-    const fb=years.map(y=>optional(y.row.fbRevenue));
-    const other=years.map(y=>optional(y.row.otherRevenue));
-    const revenue=years.map(y=>y.calc.revenue);
+    const growth=(i:number)=>Math.pow(1+annualGrowthPct/100,i);
+    const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((n,v)=>n+(v??0),0):null;
+    const monthlyBase=(get:(row:ForecastMonth,index:number)=>number|null)=>sumPresent(source.forecast.monthly.map(get));
+    // STEP 2 departmental monthly entries are the source of truth for the 10-year projection.
+    const roomBase=monthlyBase((row,i)=>calcMonthly(row,Number(source.yearStart),i,source.statistics.rooms).roomRevenue);
+    const fbBase=monthlyBase(row=>optional(row.fbRevenue));
+    const otherBase=monthlyBase(row=>optional(row.otherRevenue));
+    const roomRevenue=years.map((_,i)=>roomBase===null?null:roomBase*growth(i));
+    const fb=years.map((_,i)=>fbBase===null?null:fbBase*growth(i));
+    const other=years.map((_,i)=>otherBase===null?null:otherBase*growth(i));
+    const revenue=years.map((_,i)=>sumPresent([roomRevenue[i],fb[i],other[i]]));
     const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",Array.isArray(source.accountLines)?source.accountLines:ACCOUNT_LINES);
-    const annualCost=(group:AccountGroup)=>years.map((_,i)=>{const base=baseCost(group);return base===null?null:base*Math.pow(1+annualGrowthPct/100,i);});
-    const costOfSales=annualCost("costOfSales"), deptExpenses=annualCost("operatingExpenses");
+    const annualCost=(group:AccountGroup)=>years.map((_,i)=>{const base=baseCost(group);return base===null?null:base*growth(i);});
     const masterPayrollMonthly=(source.payrollEmployees||[]).length?(source.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
-    const payroll=years.map((_,i)=>masterPayrollMonthly!==null?masterPayrollMonthly*12*Math.pow(1+annualGrowthPct/100,i):baseCost("payroll")===null?null:baseCost("payroll")!*Math.pow(1+annualGrowthPct/100,i));
+    const payrollBase=masterPayrollMonthly!==null?masterPayrollMonthly*12:baseCost("payroll");
+    const payroll=years.map((_,i)=>payrollBase===null?null:payrollBase*growth(i));
+    const detailRevenueKeys=new Set(["roomRevenue","foodRevenue","beverageRevenue","businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"]);
+    const detailCostBase=monthlyBase(row=>{
+      const details=[row.roomDivisionDetails,row.fbDetails,row.modDetails,row.agDetails,row.smDetails,row.hrdDetails,row.pomecDetails];
+      const vals=details.flatMap(detail=>Object.entries(detail||{}).filter(([key,value])=>!detailRevenueKeys.has(key)&&!payrollInputKey(key)&&String(value??"").trim()!=="").map(([,value])=>optional(String(value))));
+      return sumPresent(vals);
+    });
+    const costOfSalesBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||""),optional(row.modDetails?.laundryCost||"")]));
     const pomecNonPayrollBase=source.forecast.monthly.some(row=>POMEC_LINES.some(line=>line.group!=="payroll"&&pomecValue(row,line.key)!==null))?source.forecast.monthly.reduce((sum,row)=>sum+POMEC_LINES.filter(line=>line.group!=="payroll").reduce((n,line)=>n+(pomecValue(row,line.key)??0),0),0):null;
+    const costOfSales=years.map((_,i)=>costOfSalesBase===null?annualCost("costOfSales")[i]:costOfSalesBase*growth(i));
+    const deptExpenses=years.map((_,i)=>detailCostBase===null?annualCost("operatingExpenses")[i]:detailCostBase*growth(i));
     const overheadBase=baseCost("overhead")??pomecNonPayrollBase;
-    const overhead=years.map((_,i)=>overheadBase===null?null:overheadBase*Math.pow(1+annualGrowthPct/100,i));
+    const overhead=years.map((_,i)=>overheadBase===null?null:overheadBase*growth(i));
     const sumKnown=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((n,v)=>n+(v??0),0):null;
-    const costs=years.map((y,i)=>y.calc.costs??sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]]));
+    const monthlyOperatingCostBase=monthlyBase(row=>optional(row.operatingCosts));
+    const costs=years.map((y,i)=>detailCostBase!==null||costOfSalesBase!==null
+      ? sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]])
+      : monthlyOperatingCostBase!==null?monthlyOperatingCostBase*growth(i):y.calc.costs??sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]]));
     const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
     const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
     const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;

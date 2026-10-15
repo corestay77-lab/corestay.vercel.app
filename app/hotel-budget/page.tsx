@@ -215,7 +215,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
 
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
-  const [activeTab,setActiveTab]=useState("statistics");
+  const [activeTab,setActiveTab]=useState("payroll");
   const [selectedDepartment,setSelectedDepartment]=useState("room");
   const [authStatus,setAuthStatus]=useState<"checking"|"authenticated"|"unauthenticated">("checking");
   const [accessToken,setAccessToken]=useState("");
@@ -870,8 +870,8 @@ export default function HotelBudgetPage() {
   }
 
   const tabItems=[
-    {id:"payroll",label:"Master Payroll",sub:"Data staf dan biaya karyawan",color:"from-emerald-500 to-teal-700",icon:"👥",detail:"Satu sumber data payroll untuk semua departemen; biaya dihitung otomatis."},
     {id:"statistics",label:"Budget & Statistics",sub:"Identitas hotel dan kapasitas",color:"from-sky-500 to-blue-600",icon:"🏨",detail:"Mulai dari profil hotel, periode, kapasitas kamar, dan statistik operasional."},
+    {id:"payroll",label:"Master Payroll",sub:"Data staf dan biaya karyawan",color:"from-emerald-500 to-teal-700",icon:"👥",detail:"Satu sumber data payroll untuk semua departemen; biaya dihitung otomatis."},
     {id:"pnl",label:"Budget P&L",sub:"Revenue dan biaya dept",color:"from-violet-500 to-purple-600",icon:"📊",detail:"Isi akun Actual, Budget, Last Year, dan YTD. Ringkasan dihitung otomatis dari data yang terisi."},
     {id:"forecast",label:"Monthly & Annual Forecast",sub:"Proyeksi 12 bulan & 10 tahun",color:"from-teal-500 to-emerald-600",icon:"📈",detail:"Bangun proyeksi berdasarkan hari, kamar, okupansi, ADR, pendapatan lain, dan biaya."},
     {id:"action-plan",label:"Management Action Plan",sub:"PIC, target, tenggat",color:"from-pink-500 to-rose-600",icon:"🎯",detail:"Ubah temuan menjadi tindakan terukur dengan penanggung jawab dan deadline."},

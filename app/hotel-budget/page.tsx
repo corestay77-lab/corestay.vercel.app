@@ -803,11 +803,35 @@ export default function HotelBudgetPage() {
                       const total=optional(form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||"");
                       const pct=optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey(item.group)]||"");
                       const allocated=total!==null&&pct!==null?Math.round(total*pct/100):null;
-                      return <div key={item.group} className={"grid grid-cols-[minmax(0,1fr)_105px] items-center gap-3 border-t border-l-4 border-slate-100 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_140px_180px] "+item.accent}>
+                      return <Fragment key={item.group}><div className={"grid grid-cols-[minmax(0,1fr)_105px] items-center gap-3 border-t border-l-4 border-slate-100 px-4 py-4 sm:grid-cols-[minmax(0,1fr)_140px_180px] "+item.accent}>
                         <div className="min-w-0"><div className="flex items-center gap-2"><span className={"flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-lg font-black text-slate-700 "+item.percentBg}>{item.icon}</span><div className="min-w-0"><p className="text-sm font-extrabold text-slate-800">{item.label}</p><p className="mt-0.5 text-xs leading-5 text-slate-500">{item.subtitle}</p></div></div><p className="mt-2 text-sm font-bold tabular-nums text-slate-700 sm:hidden">{allocated===null?"Isi total dan %":money(allocated)}</p></div>
                         <label className="block"><span className="sr-only">Persentase {item.label}</span><div className="relative"><input className={inputClass+" pr-7 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" placeholder="0" value={form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey(item.group)]||""} onChange={e=>updateAllocation(revenueGroupPercentKey(item.group),e.target.value)} /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span></div></label>
                         <div className="hidden text-right sm:block"><p className="font-extrabold tabular-nums text-slate-800">{allocated===null?"—":money(allocated)}</p><p className="mt-1 text-xs text-slate-400">{pct===null?"Persentase belum diisi":fmt(pct,2)+"% dari total"}</p></div>
-                      </div>;
+                      </div>{item.group==="fbRevenue"&&(()=>{
+                        const fbTotal=allocated;
+                        const foodPct=optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"70")??70;
+                        const beveragePct=optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"30")??30;
+                        const foodAmount=fbTotal!==null?Math.round(fbTotal*foodPct/100):null;
+                        const beverageAmount=fbTotal!==null?Math.round(fbTotal*beveragePct/100):null;
+                        const splitTotal=foodPct+beveragePct;
+                        const splitValid=Math.abs(splitTotal-100)<0.01;
+                        return <div className="border-t border-amber-100 bg-amber-50/50 px-4 py-4 sm:px-5">
+                          <div className="mb-3"><p className="text-xs font-bold uppercase tracking-[0.16em] text-amber-800">F&amp;B DEPARTMENT — REVENUES</p><p className="mt-1 text-xs text-slate-500">Pembagian dari {fbTotal===null?"alokasi FOOD & BEVERAGE REVENUE":money(fbTotal)}</p></div>
+                          <div className="grid gap-3 sm:grid-cols-2">
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="text-sm font-extrabold text-slate-800">FOOD</p>
+                              <p className="mt-1 text-lg font-black tabular-nums text-slate-900">{foodAmount===null?"—":money(foodAmount)}</p>
+                              <label className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-slate-600"><span>Persentase dari total F&amp;B (%)</span><span className="flex items-center gap-1"><input className={inputClass+" w-20 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" value={form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]??"70"} onChange={e=>updateAllocation("__fbFoodPercent",e.target.value)}/><span>%</span></span></label>
+                            </div>
+                            <div className="rounded-lg border border-slate-200 bg-white p-3">
+                              <p className="text-sm font-extrabold text-slate-800">BEVERAGE</p>
+                              <p className="mt-1 text-lg font-black tabular-nums text-slate-900">{beverageAmount===null?"—":money(beverageAmount)}</p>
+                              <label className="mt-2 flex items-center justify-between gap-3 text-xs font-semibold text-slate-600"><span>Persentase dari total F&amp;B (%)</span><span className="flex items-center gap-1"><input className={inputClass+" w-20 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" value={form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]??"30"} onChange={e=>updateAllocation("__fbBeveragePercent",e.target.value)}/><span>%</span></span></label>
+                            </div>
+                          </div>
+                          <div className={"mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg px-3 py-2 text-sm font-semibold "+(splitValid?"bg-emerald-50 text-emerald-800":"bg-amber-100 text-amber-900")}><span>Total pembagian</span><span className="font-extrabold tabular-nums">{fmt(splitTotal,2)}% · {splitValid?"Pembagian sudah 100%":"Sesuaikan hingga 100%"}</span></div>
+                        </div>;
+                      })()}</Fragment>;
                     })}
                   </div>
                   <div className="flex flex-col gap-2 rounded-xl border border-indigo-100 bg-indigo-50/70 p-4 text-sm leading-6 text-indigo-950 sm:flex-row sm:items-center sm:justify-between">
@@ -818,33 +842,6 @@ export default function HotelBudgetPage() {
                     {[{group:"roomRevenue" as AccountGroup,label:"ROOMS",color:"bg-sky-700"},{group:"fbRevenue" as AccountGroup,label:"FOOD & BEVERAGE",color:"bg-amber-600"},{group:"otherRevenue" as AccountGroup,label:"MINOR OPERATING DEPT.",color:"bg-violet-700"}].map(item=><button key={item.group} type="button" onClick={()=>applyRevenueGroup(item.group)} className={"flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-extrabold text-white shadow-sm transition hover:brightness-110 "+item.color}><span>↗</span> Terapkan {item.label}</button>)}
                   </div>
                   {message&&<p role="status" className="rounded-xl border border-sky-100 bg-sky-50 px-4 py-3 text-sm font-medium text-sky-900">{message}</p>}
-                </div>
-              </div>
-              <div className="mt-5 overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm">
-                <div className="bg-gradient-to-r from-amber-600 to-orange-500 px-5 py-4 text-white sm:px-6">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-amber-50">F&amp;B DEPARTMENT</p>
-                  <h3 className="mt-1 text-xl font-black">REVENUES</h3>
-                  <p className="mt-1 text-sm leading-5 text-amber-50">Pisahkan pendapatan Food dan Beverage dari total alokasi FOOD &amp; BEVERAGE REVENUE.</p>
-                </div>
-                <div className="space-y-4 p-4 sm:p-5">
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    {([{key:"__fbFoodPercent",label:"FOOD",color:"border-l-orange-500",tone:"bg-orange-50"},{key:"__fbBeveragePercent",label:"BEVERAGE",color:"border-l-sky-500",tone:"bg-sky-50"}]).map(item=>{
-                      const totalRevenue=optional(form.budgetAllocations?.parentPercentBySection?.[revenueTotalKey]||"");
-                      const fbPct=optional(form.budgetAllocations?.parentPercentBySection?.[revenueGroupPercentKey("fbRevenue")]||"");
-                      const fbTotal=totalRevenue!==null&&fbPct!==null?Math.round(totalRevenue*fbPct/100):null;
-                      const splitPct=optional(form.budgetAllocations?.parentPercentBySection?.[item.key]||"");
-                      const amount=fbTotal!==null&&splitPct!==null?Math.round(fbTotal*splitPct/100):null;
-                      return <div key={item.key} className={"rounded-xl border border-slate-200 border-l-4 p-4 "+item.color}>
-                        <div className="flex items-center justify-between gap-3"><p className="font-extrabold text-slate-800">{item.label}</p><span className={"rounded-lg px-2 py-1 text-xs font-bold text-slate-600 "+item.tone}>F&amp;B Revenue</span></div>
-                        <label className="mt-3 block"><span className="mb-1.5 block text-xs font-semibold text-slate-600">Persentase dari total F&amp;B (%)</span><div className="relative"><input className={inputClass+" pr-7 text-right font-bold tabular-nums"} type="number" min="0" max="100" step="0.1" placeholder="0" value={form.budgetAllocations?.parentPercentBySection?.[item.key]||""} onChange={e=>updateAllocation(item.key,e.target.value)} /><span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-slate-400">%</span></div></label>
-                        <p className="mt-3 text-xs font-semibold text-slate-500">Nilai budget</p><p className="mt-1 text-lg font-black tabular-nums text-slate-900">{amount===null?"—":money(amount)}</p>
-                      </div>;
-                    })}
-                  </div>
-                  <div className={"rounded-xl px-4 py-3 text-sm font-semibold "+(Math.abs((optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"")??0)-100)<0.01?"bg-emerald-50 text-emerald-800":"bg-amber-50 text-amber-900")}>
-                    Total FOOD + BEVERAGE: {fmt((optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"")??0),2)}% — {Math.abs((optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"")??0)+(optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"")??0)-100)<0.01?"Pembagian sudah 100%":"Sesuaikan hingga 100%"}.
-                  </div>
-                  <p className="text-xs leading-5 text-slate-500">Angka Rupiah ditampilkan dengan pemisah ribuan Indonesia (contoh: 1.500.000.000). Pembagian FOOD dan BEVERAGE ini merupakan rincian dari alokasi F&amp;B.</p>
                 </div>
               </div>
               <div className="mt-5 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">

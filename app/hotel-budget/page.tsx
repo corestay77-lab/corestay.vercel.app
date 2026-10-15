@@ -404,23 +404,24 @@ export default function HotelBudgetPage() {
       const nums=lines.map(line=>optional(form.accounts[line.code]?.budget||"")).filter((v):v is number=>v!==null);
       return nums.length?nums.reduce((a,b)=>a+b,0):null;
     };
+    const labelHas=(label:string,...terms:string[])=>{const normalized=label.toLowerCase();return terms.some(term=>normalized.includes(term.toLowerCase()));};
     const deptBudget={
-      roomOther:budgetByLabel("operatingExpenses",label=>label.startsWith("Room Department —")),
-      fbOther:budgetByLabel("operatingExpenses",label=>label.startsWith("F&B Department —")),
-      modOther:budgetByLabel("operatingExpenses",label=>label.startsWith("Other Departments —")),
-      pomecOther:budgetByLabel("overhead",label=>label.startsWith("Engineering —")),
-      energy:budgetByLabel("overhead",label=>label.startsWith("Energy Cost —")),
-      smOther:budgetByLabel("overhead",label=>label.startsWith("Sales & Marketing —")),
-      agOther:budgetByLabel("overhead",label=>label.startsWith("Administrative & General —"))
+      roomOther:budgetByLabel("operatingExpenses",label=>labelHas(label,"room department","front office","housekeeping")),
+      fbOther:budgetByLabel("operatingExpenses",label=>labelHas(label,"f&b department","food & beverage","food and beverage")),
+      modOther:budgetByLabel("operatingExpenses",label=>labelHas(label,"other departments","minor operating","mod department")),
+      pomecOther:budgetByLabel("overhead",label=>labelHas(label,"engineering","pomec","maintenance")),
+      energy:budgetByLabel("overhead",label=>labelHas(label,"energy cost","electricity","water consumed","fuel / diesel")),
+      smOther:budgetByLabel("overhead",label=>labelHas(label,"sales & marketing","sales and marketing")),
+      agOther:budgetByLabel("overhead",label=>labelHas(label,"administrative & general","administration & general","a&g"))
     };
     const payrollByLabel=(predicate:(label:string)=>boolean)=>budgetByLabel("payroll",predicate);
     const payrollBudget={
-      fo:payrollByLabel(label=>label.startsWith("Front Office —")),
-      hk:payrollByLabel(label=>label.startsWith("Housekeeping —")),
-      fb:payrollByLabel(label=>label.startsWith("Food & Beverage —")),
-      pomec:payrollByLabel(label=>label.startsWith("Engineering —")),
-      sm:payrollByLabel(label=>label.startsWith("Sales & Marketing —")),
-      ag:payrollByLabel(label=>label.startsWith("Administrative & General —"))
+      fo:payrollByLabel(label=>labelHas(label,"front office")),
+      hk:payrollByLabel(label=>labelHas(label,"housekeeping")),
+      fb:payrollByLabel(label=>labelHas(label,"food & beverage","food and beverage")),
+      pomec:payrollByLabel(label=>labelHas(label,"engineering","pomec","security")),
+      sm:payrollByLabel(label=>labelHas(label,"sales & marketing","sales and marketing")),
+      ag:payrollByLabel(label=>labelHas(label,"administrative & general","administration & general","finance / accounting","finance & accounting"))
     };
     return {
       roomBudget,
@@ -444,7 +445,8 @@ export default function HotelBudgetPage() {
     const baseAdr=forecastSource.adr;
     const baseFb=forecastSource.fb;
     const baseOther=forecastSource.other;
-    const baseCosts=forecastSource.costs;
+    const masterPayrollMonthly=(form.payrollEmployees||[]).length?(form.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
+    const baseCosts=forecastSource.costs!==null&&masterPayrollMonthly!==null&&forecastSource.payroll!==null?forecastSource.costs-forecastSource.payroll+masterPayrollMonthly:forecastSource.costs;
     const daysInYear=Number.isInteger(startYear)&&startYear>=1900&&startYear<=2200?(startYear%4===0&&(startYear%100!==0||startYear%400===0)?366:365):365;
     const budgetForCode=(code:string)=>optional(form.accounts[code]?.budget||"");
     const monthlyShare=(value:number|null,share:number)=>value===null?"":String(Math.round(value*share));

@@ -124,9 +124,10 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
   const otherExpense= form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
   const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
-  const operatorShare=osp.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"operatorSharePercent")!==null?v*val(form.forecast.monthly[i],"operatorSharePercent")!/100:null);
-  const ownerShare=osp.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"operatorSharePercent")!==null?v*(100-val(form.forecast.monthly[i],"operatorSharePercent")!)/100:null);
-  const nosp=ownerShare.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"ownerOtherExpenses")!==null?v-val(form.forecast.monthly[i],"ownerOtherExpenses")!:null);
+  // Owner/operator share is a profit allocation, not an operating expense.
+  // Deduct only separately entered other owner expenses from OSP to derive NOSP.
+  const totalOwnerExpenses=form.forecast.monthly.map(r=>val(r,"ownerOtherExpenses"));
+  const nosp=osp.map((v,i)=>v!==null&&totalOwnerExpenses[i]!==null?v-totalOwnerExpenses[i]!:null);
   const rows:ConsolidatedRow[]=[];
   const section=(label:string)=>rows.push({label,kind:"section",values:[]});
   const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[])=>{
@@ -206,7 +207,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
   add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
-  add("TOTAL OWNER EXPENSES",form.forecast.monthly.map((r,i)=>sumComplete([operatorShare[i],ownerShare[i],val(r,"ownerOtherExpenses")])),"sum",undefined,sumPresent(form.forecast.monthly.map((r,i)=>sumComplete([operatorShare[i],ownerShare[i],val(r,"ownerOtherExpenses")]))),osp);
+  add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),osp);
   add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumPresent(nosp),revenue);
   add("NET OWNER SHARE PROFIT / UNIT",nosp.map((v)=>v!==null&&roomCount!==null&&roomCount>0?v/roomCount:null),"money",undefined,roomCount!==null&&roomCount>0&&sumPresent(nosp)!==null?sumPresent(nosp)!/roomCount:null);
   return rows;

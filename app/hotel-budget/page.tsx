@@ -1366,6 +1366,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         .print-one-year, .print-ten-year { break-before: page !important; page-break-before: always !important; width: 100% !important; }
         .print-one-year table, .print-ten-year table { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; }
         .print-one-year th:first-child, .print-one-year td:first-child { width: 27mm !important; min-width: 27mm !important; max-width: 27mm !important; }
+        .print-ten-year th:first-child, .print-ten-year td:first-child { width: 34mm !important; min-width: 34mm !important; max-width: 34mm !important; }
         .print-one-year th, .print-one-year td { font-size: 5pt !important; padding: 1.2px !important; }
         .print-ten-year th, .print-ten-year td { font-size: 5.2pt !important; padding: 1.5px !important; }
         .print-one-year tr, .print-ten-year tr { break-inside: avoid !important; page-break-inside: avoid !important; }

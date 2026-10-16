@@ -495,7 +495,6 @@ export default function HotelBudgetPage() {
       make("FOOD & BEVERAGE",fb,"money",revenue,"fbRevenue"),
       make("MINOR OPERATING DEPARTMENT",other,"money",revenue,"otherRevenue"),
       make("TOTAL REVENUES (EXCL. TAX)",revenue,"money",revenue,undefined,totalRevenue),
-      make("TOTAL REVENUES (INCL. 21% — reference formula)",revenue.map(v=>v===null?null:v*1.21),"money",undefined,undefined,totalRevenue===null?null:totalRevenue*1.21),
       section("COST OF SALES"),
       make("TOTAL COST OF SALES",costOfSales,"money",revenue),
       section("PAYROLL & RELATED EXPENSES"),

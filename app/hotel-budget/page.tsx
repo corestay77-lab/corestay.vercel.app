@@ -281,7 +281,8 @@ export default function HotelBudgetPage() {
     const otherRevenueKeys=["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"];
     const otherBase=monthlyBase(row=>sumPresent(otherRevenueKeys.map(key=>optional(row.modDetails?.[key]||"")))??optional(row.otherRevenue));
     const roomRevenue=years.map((_,i)=>roomBase===null?null:roomBase*growth(i));
-    const fb=years.map((_,i)=>fbBase===null?null:fbBase*growth(i));
+    // Use the Annual Forecast F&B value so the 10-year report follows the same yearly figures.
+    const fb=years.map((y,i)=>optional(y.row.fbRevenue)??(fbBase===null?null:fbBase*growth(i)));
     const other=years.map((_,i)=>otherBase===null?null:otherBase*growth(i));
     const revenue=years.map((_,i)=>sumPresent([roomRevenue[i],fb[i],other[i]]));
     const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",allAccountLines);
@@ -510,13 +511,18 @@ export default function HotelBudgetPage() {
     const beveragePct=optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"30")??30;
     const modRevenueCodes=[["businessCenterRevenue","41301"],["rentCarRevenue","41302"],["laundryRevenue","41303"],["spaRevenue","41304"],["telephoneRevenue","41305"],["sportRecreationRevenue","41306"],["rentedSpaceRevenue","41307"],["miscellaneousRevenue","41308"],["otherRevenueDiscounts","41309"]] as const;
     const rooms=optional(form.statistics.rooms);
+    // Reconcile monthly F&B allocation to the same rounded annual base used by Annual Forecast.
+    // Keep Jan–Nov allocation unchanged; December absorbs only the rounding remainder.
+    const fbMonthlyValues:(number|null)[]=baseFb===null?monthNames.map(()=>null):monthNames.map((_,i)=>Math.round(baseFb*new Date(startYear,i+1,0).getDate()/daysInYear));
+    if(baseFb!==null)fbMonthlyValues[11]=Math.round(baseFb)-fbMonthlyValues.slice(0,11).reduce<number>((sum,value)=>sum+(value??0),0);
     const monthly=monthNames.map((label,index)=>{
       const days=new Date(startYear,index+1,0).getDate();
       const share=days/daysInYear;
       const roomBudget=forecastSource.roomBudget;
       const foodShare=foodPct+beveragePct>0?foodPct/(foodPct+beveragePct):0.7;
+      const fbMonth=fbMonthlyValues[index];
       const fbFood=baseFb===null?"":String(Math.round(baseFb*share*foodShare));
-      const fbBeverage=baseFb===null?"":String(Math.round(baseFb*share)-Number(fbFood||0));
+      const fbBeverage=baseFb===null?"":String((fbMonth??0)-Number(fbFood||0));
       const modDetails=Object.fromEntries(modRevenueCodes.map(([key,code])=>[key,monthlyShare(budgetForCode(code),share)]));
       const modTotal=Object.values(modDetails).some(v=>v!=="")?String(Object.values(modDetails).reduce((sum,v)=>sum+(v===""?0:Number(v)),0)):baseOther===null?"":String(Math.round(baseOther*share));
       return {
@@ -527,7 +533,7 @@ export default function HotelBudgetPage() {
         roomDivisionDetails:{roomRevenue:monthlyShare(roomBudget,share)},
         fbDetails:{foodRevenue:fbFood,beverageRevenue:fbBeverage},
         modDetails:{...modDetails},
-        fbRevenue:baseFb===null?"":String(Math.round(baseFb*share)),
+        fbRevenue:fbMonth===null?"":String(fbMonth),
         otherRevenue:modTotal,
         fbCostOfSales:forecastSource.costOfSales===null?"":String(Math.round(forecastSource.costOfSales*share)),
         roomPayroll:forecastSource.payroll===null?"":String(Math.round(forecastSource.payroll*share)),

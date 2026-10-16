@@ -640,6 +640,29 @@ export default function HotelBudgetPage() {
       return {...prev,forecast:{monthly:monthlyWithDetails,annual:annualWithManualOverrides}};
     });
   },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees,form.budgetAllocations,annualGrowthPct]);
+  // Step 1 MOD revenue is the source for matching Budget P&L accounts.
+  // Only the Budget column is derived; Actual, Last Year and YTD remain untouched.
+  useEffect(()=>{
+    const sources:[string,string][]=[
+      ["41301",form.statistics.modBusinessCenterRevenue],
+      ["41304",form.statistics.modMassageRevenue],
+      ["41303",form.statistics.modLaundryRevenue],
+      ["41308",form.statistics.modOtherIncomeRevenue]
+    ];
+    setForm(prev=>{
+      let changed=false;
+      const accounts={...prev.accounts};
+      for(const [code,raw] of sources){
+        if(!raw.trim())continue;
+        const current=accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
+        if(current.budget!==raw){
+          accounts[code]={...current,budget:raw};
+          changed=true;
+        }
+      }
+      return changed?{...prev,accounts}:prev;
+    });
+  },[form.statistics.modBusinessCenterRevenue,form.statistics.modMassageRevenue,form.statistics.modLaundryRevenue,form.statistics.modOtherIncomeRevenue]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",allAccountLines);

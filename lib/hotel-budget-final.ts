@@ -123,7 +123,7 @@ export const calculateBudget = (form: any) => {
   const ytdNetProfit=ytdOwnerShareProfitBeforeTax!==null&&ytdTax!==null?ytdOwnerShareProfitBeforeTax-ytdTax:null;
   const ytdOwnerCashAfterCapex:null=null;
   return {
-    totalRoomBuild,roomAvailable,occupied,occupancy:roomAvailable!==null&&roomAvailable>0&&occupied!==null?occupied/roomAvailable*100:null,
+    totalRoomBuild,roomAvailable,occupied,occupancy:roomAvailable!==null&&roomAvailable>0&&paid!==null?paid/roomAvailable*100:null,
     adr:paid!==null&&paid>0&&roomRevenue!==null?roomRevenue/paid:null,
     revpar:roomAvailable!==null&&roomAvailable>0&&roomRevenue!==null?roomRevenue/roomAvailable:null,
     roomRevenue,revenue,costs,gop,gopMargin:revenue!==null&&revenue>0&&gop!==null?gop/revenue*100:null,

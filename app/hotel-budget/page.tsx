@@ -123,8 +123,15 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const pomecMonthly=(group:"payroll"|"other"|"energy")=>form.forecast.monthly.map(r=>pomecTotal(r,group)??(group==="payroll"?val(r,"pomecPayroll"):group==="other"?val(r,"pomecOtherExpenses"):val(r,"energyCost")));
   const roomRevenue=months.map(m=>m.roomRevenue), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
   const revenue=months.map(m=>m.revenue), revenueTotal=sumPresent(revenue);
-  const available=months.map(m=>roomCount===null?null:m.days*roomCount);
-  const occupied=months.map((m,i)=>available[i]===null||optional(form.forecast.monthly[i].occupancy)===null?null:available[i]!*optional(form.forecast.monthly[i].occupancy)!/100);
+  const unavailableRooms=[form.statistics.outInventory,form.statistics.houseUse,form.statistics.outOfOrder].map(optional);
+  const unavailableTotal=unavailableRooms.some(v=>v!==null)?unavailableRooms.reduce<number>((sum,v)=>sum+(v??0),0):0;
+  const statisticsDays=optional(form.statistics.days);
+  const available=months.map(m=>roomCount===null?null:Math.max(0,roomCount*m.days-(unavailableTotal>0&&statisticsDays!==null&&statisticsDays>0?unavailableTotal*m.days/statisticsDays:unavailableTotal)));
+  const occupancyAssumption=form.forecast.monthly.map(row=>optional(row.occupancy)??optional(form.statistics.occupancy));
+  const occupied=months.map((m,i)=>available[i]===null||occupancyAssumption[i]===null?null:available[i]!*occupancyAssumption[i]!/100);
+  const complimentaryAnnual=optional(form.statistics.complimentary);
+  const complimentary=months.map(m=>complimentaryAnnual===null?null:complimentaryAnnual*m.days/months.reduce((sum,x)=>sum+x.days,0));
+  const totalOccupied=months.map((m,i)=>occupied[i]===null&&complimentary[i]===null?null:(occupied[i]??0)+(complimentary[i]??0));
   const roomAvailableTotal=sumPresent(available), occupiedTotal=sumPresent(occupied), roomRevenueTotal=sumPresent(roomRevenue);
   const monthlyCost=(row:ForecastMonth)=>{
     // Sum entered cost buckets so source-budget totals appear even when the report
@@ -184,12 +191,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("Days",months.map(m=>m.days),"sum",undefined,months.reduce((a,m)=>a+m.days,0));
   add("# OF ROOMS",months.map(()=>roomCount),"avg",undefined,roomCount);
   add("ROOM AVAILABLE",available,"sum",undefined,roomAvailableTotal);
-  add("OCCUPIED ROOMS",occupied,"sum",undefined,occupiedTotal);
-  // Hospitality KPI standard: occupancy is rooms sold / rooms available; keep annual occupancy weighted by room nights.
-  add("OCCUPANCY (%)",occupied.map((sold,i)=>pct(sold,available[i])),"percent", "occupancy",pct(occupiedTotal,roomAvailableTotal));
+  add("ROOM PAID",occupied,"sum",undefined,occupiedTotal);
+  add("OCCUPIED ROOMS (PAID + COMPLIMENTARY)",totalOccupied,"sum",undefined,sumPresent(totalOccupied));
+  // Occupancy uses paid room nights divided by sellable room nights, matching the Statistics sheet.
+  add("OCCUPANCY (%)",occupied.map((sold,i)=>pct(sold,available[i])),"percent","occupancy",pct(occupiedTotal,roomAvailableTotal));
+  add("AVERAGE ROOM RATE (ARR) (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)??optional(form.statistics.averageSellingRate)),"money",undefined,occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:optional(form.statistics.averageSellingRate));
   add("REVPAR (RP)",months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),"money",undefined,roomAvailableTotal!==null&&roomAvailableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/roomAvailableTotal:null);
-  add("EXCHANGE RATE US $ TO RP",form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),"money",undefined,optional(form.statistics.exchangeRate));
-  add("AVERAGE ROOM RATE (ARR) (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:null),"money",undefined,occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:null);
+  add("COMPLIMENTARY ROOM NIGHTS",complimentary,"sum",undefined,complimentaryAnnual);
+  add("EXCHANGE RATE US $ TO RP",form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),"avg",undefined,optional(form.statistics.exchangeRate));
   section("REVENUES");
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
   add("FOOD & BEVERAGE",fb,"money","fbRevenue",sumPresent(fb),revenue);
@@ -288,8 +297,15 @@ export default function HotelBudgetPage() {
   const buildTenYearRows=(source:BudgetForm)=>{
     type R={label:string;section?:boolean;values:(number|null)[];total:number|null;base?:(number|null)[];totalPct:number|null;kind?:"percent"|"count"|"money";inputKey?:keyof Omit<ForecastYear,"label">};
     const years=source.forecast.annual.map(row=>({row,calc:calcAnnual(row),days:optional(row.days),rooms:optional(row.rooms),occ:optional(row.occupancy)}));
-    const roomAvail=years.map(y=>y.days!==null&&y.rooms!==null?y.days*y.rooms:null);
-    const occupied=years.map((y,i)=>roomAvail[i]!==null&&y.occ!==null?roomAvail[i]!*y.occ/100:null);
+    const unavailableRooms=[source.statistics.outInventory,source.statistics.houseUse,source.statistics.outOfOrder].map(optional);
+    const unavailableTotal=unavailableRooms.some(v=>v!==null)?unavailableRooms.reduce<number>((sum,v)=>sum+(v??0),0):0;
+    const statisticsDays=optional(source.statistics.days);
+    const roomAvail=years.map(y=>y.days!==null&&y.rooms!==null?Math.max(0,y.rooms*y.days-(unavailableTotal>0&&statisticsDays!==null&&statisticsDays>0?unavailableTotal*y.days/statisticsDays:unavailableTotal)):null);
+    const monthlyStatRows=buildConsolidatedRows(source);
+    const firstYearPaid=monthlyStatRows.find(row=>row.label==="ROOM PAID")?.total??null;
+    const firstYearAvailable=monthlyStatRows.find(row=>row.label==="ROOM AVAILABLE")?.total??null;
+    const firstYearOccupancy=firstYearPaid!==null&&firstYearAvailable!==null&&firstYearAvailable>0?firstYearPaid/firstYearAvailable*100:null;
+    const occupied=years.map((y,i)=>i===0&&firstYearPaid!==null?firstYearPaid:roomAvail[i]!==null&&y.occ!==null?roomAvail[i]!*y.occ/100:null);
     const growth=(i:number)=>Math.pow(1+annualGrowthPct/100,i);
     const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((n,v)=>n+(v??0),0):null;
     const monthlyBase=(get:(row:ForecastMonth,index:number)=>number|null)=>sumPresent(source.forecast.monthly.map(get));
@@ -353,10 +369,12 @@ export default function HotelBudgetPage() {
       make("Days",years.map(y=>y.days),"count",undefined,"days",sum(years.map(y=>y.days))),
       make("# OF ROOMS",years.map(y=>y.rooms),"count",undefined,"rooms",avg(years.map(y=>y.rooms))),
       make("ROOM AVAILABLE",roomAvail,"count",undefined,undefined,totalAvailable),
-      make("OCCUPIED ROOMS",occupied,"count",undefined,undefined,totalOccupied),
-      make("OCCUPANCY (%)",years.map(y=>y.occ),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),
+      make("ROOM PAID",occupied,"count",undefined,undefined,totalOccupied),
+      make("OCCUPIED ROOMS (PAID + COMPLIMENTARY)",years.map((y,i)=>occupied[i]===null?null:occupied[i]!+(i===0?(optional(source.statistics.complimentary)??0):0)),"count",undefined,undefined,null),
+      make("OCCUPANCY (%)",years.map((y,i)=>i===0&&firstYearOccupancy!==null?firstYearOccupancy:pct(occupied[i],roomAvail[i])),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),
+      make("AVERAGE ROOM RATE (ARR) (RP)",years.map((y,i)=>i===0&&roomRevenue[i]!==null&&firstYearPaid!==null&&firstYearPaid>0?roomRevenue[i]!/firstYearPaid:roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(y.row.adr)??optional(source.statistics.averageSellingRate)),"money",undefined,undefined,totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
       make("REVPAR (RP)",years.map((y,i)=>roomRevenue[i]!==null&&roomAvail[i]!==null&&roomAvail[i]!>0?roomRevenue[i]!/roomAvail[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalAvailable!==null&&totalAvailable>0?totalRoomRev/totalAvailable:null),
-      make("AVERAGE ROOM RATE (ARR) (RP)",years.map((y,i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
+      make("COMPLIMENTARY ROOM NIGHTS",years.map((y,i)=>i===0?optional(source.statistics.complimentary):null),"count",undefined,undefined,optional(source.statistics.complimentary)),
       section("REVENUES"),
       make("ROOMS",roomRevenue,"money",revenue),
       make("FOOD & BEVERAGE",fb,"money",revenue,"fbRevenue"),

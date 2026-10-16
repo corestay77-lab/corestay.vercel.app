@@ -5,7 +5,7 @@ import * as XLSX from "xlsx";
 import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
 
-type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string };
+type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string; fbAverageGuestsPerRoom: string; fbLengthOfStay: string; fbRestaurantCoverPercent: string; fbAverageBreakfastCheck: string; fbMeetingRoomAUnits: string; fbMeetingRoomAPax: string; fbMeetingRoomACoverPercent: string; fbMeetingRoomBUnits: string; fbMeetingRoomBPax: string; fbMeetingRoomBCoverPercent: string; fbBallroomCapacity: string; fbBallroomCoverPercent: string; fbAverageMeetingCheck: string };
 type ForecastMonth = { smDetails?:Record<string,string>; agDetails?:Record<string,string>; hrdDetails?:Record<string,string>; modDetails?:Record<string,string>; fbDetails?:Record<string,string>; roomDivisionDetails?:Record<string,string>; pomecDetails?:Record<string,string>; label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string };
 type ForecastYear = { label: string; days: string; rooms: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
 type PayrollEmployee = { id:string; department:string; position:string; headcount:string; basicSalary:string; medical:string; meal:string; ptkpAnnual:string; insuranceMonthly:string; otherMonthly:string };
@@ -30,7 +30,7 @@ const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>(
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>{const y=year+i;return {label:String(y),days:String(y%4===0&&(y%100!==0||y%400===0)?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""};});
 const makeBlank = (): BudgetForm => ({
   hotelName:"",period:"",yearStart:"2027",payrollEmployees:[],
-  statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:""},
+  statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:"",fbAverageGuestsPerRoom:"2",fbLengthOfStay:"1",fbRestaurantCoverPercent:"35",fbAverageBreakfastCheck:"90000",fbMeetingRoomAUnits:"3",fbMeetingRoomAPax:"20",fbMeetingRoomACoverPercent:"35",fbMeetingRoomBUnits:"1",fbMeetingRoomBPax:"40",fbMeetingRoomBCoverPercent:"35",fbBallroomCapacity:"1000",fbBallroomCoverPercent:"30",fbAverageMeetingCheck:"85000"},
   accounts:emptyAccounts(),budgetAllocations:{parentPercentBySection:{},childPercentByCode:{}},accountLines:ACCOUNT_LINES,customAccounts:[],forecast:{monthly:makeMonthly(2027),annual:makeAnnual(2027)},
   confirmAccountReview:false,notes:"",actionRecommendation:"",actionOwner:"",actionDue:"",actionTarget:"",actionStatus:"Belum dimulai",actionProgress:"0"
 });
@@ -54,6 +54,32 @@ const calcMonthly = (row:ForecastMonth,year:number,index:number,rooms:string) =>
   const revenue=revenueParts.length?revenueParts.reduce((a,b)=>a+b,0):null;
   const costs=optional(row.operatingCosts);
   return {days,roomRevenue,revenue,costs,gop:revenue!==null&&costs!==null?revenue-costs:null};
+};
+const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthIndex:number) => {
+  const rooms=optional(statistics.rooms), occupancy=optional(statistics.occupancy);
+  // Do not create F&B revenue until the hotel room/occupancy assumptions are supplied.
+  if(rooms===null||occupancy===null||!Number.isFinite(year))return null;
+  const days=new Date(year,monthIndex+1,0).getDate();
+  const val=(key:keyof Statistics, fallback:number)=>optional(statistics[key] as string)??fallback;
+  const averageGuests=val("fbAverageGuestsPerRoom",2);
+  const lengthOfStay=Math.max(0.0001,val("fbLengthOfStay",1));
+  const restaurantCover=val("fbRestaurantCoverPercent",35)/100;
+  const breakfastCheck=val("fbAverageBreakfastCheck",90000);
+  const roomACovers=val("fbMeetingRoomAUnits",3)*val("fbMeetingRoomAPax",20)*days*val("fbMeetingRoomACoverPercent",35)/100;
+  const roomBCovers=val("fbMeetingRoomBUnits",1)*val("fbMeetingRoomBPax",40)*days*val("fbMeetingRoomBCoverPercent",35)/100;
+  const ballroomCovers=val("fbBallroomCapacity",1000)*days*val("fbBallroomCoverPercent",30)/100;
+  const arrivals=rooms*days*occupancy/100*averageGuests/lengthOfStay;
+  const restaurantCovers=arrivals*restaurantCover;
+  const restaurantRevenue=restaurantCovers*breakfastCheck;
+  const meetingCheck=val("fbAverageMeetingCheck",85000);
+  const meetingRoomARevenue=roomACovers*meetingCheck;
+  const meetingRoomBRevenue=roomBCovers*meetingCheck;
+  const ballroomRevenue=ballroomCovers*meetingCheck;
+  return {days,arrivals,restaurantCovers,restaurantRevenue,meetingRoomARevenue,meetingRoomBRevenue,ballroomRevenue,total:restaurantRevenue+meetingRoomARevenue+meetingRoomBRevenue+ballroomRevenue};
+};
+const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => {
+  const months=Array.from({length:12},(_,i)=>calculateFbStatisticsMonthly(statistics,year,i));
+  return months.some(m=>m!==null)?months.reduce<number>((sum,m)=>sum+(m?.total??0),0):null;
 };
 const calcAnnual = (row: ForecastYear) => {
   const days=optional(row.days), rooms=optional(row.rooms), occ=optional(row.occupancy), adr=optional(row.adr);
@@ -454,7 +480,7 @@ export default function HotelBudgetPage() {
       roomBudget,
       occupancy:occupancy!==null&&Number.isFinite(occupancy)?occupancy:null,
       adr:adr!==null&&Number.isFinite(adr)?adr:null,
-      fb:total(["fbRevenue"]),
+      fb:total(["fbRevenue"])??calculateFbStatisticsAnnual(form.statistics,year),
       other:total(["otherRevenue"]),
       costOfSales:total(["costOfSales"]),
       payroll:total(["payroll"]),
@@ -464,7 +490,7 @@ export default function HotelBudgetPage() {
       payrollBudget,
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
     };
-  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.occupancy,form.statistics.averageSellingRate,form.statistics.rooms,form.yearStart]);
+  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics,form.yearStart]);
   useEffect(()=>{
     const startYear=Number(form.yearStart);
     if(!Number.isInteger(startYear)||startYear<1900||startYear>2200)return;
@@ -974,6 +1000,25 @@ export default function HotelBudgetPage() {
                     {field("AVERAGE ROOM RATE (ARR)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",step:"1",placeholder:"Contoh: 650000",hint:"ARR dalam Rupiah per kamar terjual; dipakai sebagai acuan forecast."})}
                     {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",step:"any",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
                   </div>
+                </div>
+                <div className="rounded-2xl border border-amber-100 bg-amber-50/50 p-4 sm:p-5">
+                  <div className="mb-3"><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">F&B Revenue Statistics — mengikuti sheet STATISTIC</h3><p className="mt-1 text-xs leading-5 text-slate-600">Asumsi covers dan average check mengikuti struktur workbook: Restaurant/Breakfast, Meeting Room A, Meeting Room B, dan Ballroom. Totalnya otomatis menjadi sumber revenue F&B bulanan dan diteruskan ke Budget P&amp;L serta laporan 1 tahun/10 tahun setelah kamar dan occupancy diisi.</p></div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+                    {field("AVERAGE GUEST / ROOM",form.statistics.fbAverageGuestsPerRoom,v=>updateStats("fbAverageGuestsPerRoom",v),{type:"number",min:"0",step:"any"})}
+                    {field("LENGTH OF STAY",form.statistics.fbLengthOfStay,v=>updateStats("fbLengthOfStay",v),{type:"number",min:"0.1",step:"any"})}
+                    {field("RESTAURANT COVER (%)",form.statistics.fbRestaurantCoverPercent,v=>updateStats("fbRestaurantCoverPercent",v),{type:"number",min:"0",step:"any"})}
+                    {field("AVERAGE CHECK / GUEST — BREAKFAST (RP)",form.statistics.fbAverageBreakfastCheck,v=>updateStats("fbAverageBreakfastCheck",v),{type:"number",min:"0",step:"1"})}
+                    {field("MEETING ROOM A — UNITS",form.statistics.fbMeetingRoomAUnits,v=>updateStats("fbMeetingRoomAUnits",v),{type:"number",min:"0",step:"1"})}
+                    {field("MEETING ROOM A — PAX / UNIT",form.statistics.fbMeetingRoomAPax,v=>updateStats("fbMeetingRoomAPax",v),{type:"number",min:"0",step:"1"})}
+                    {field("MEETING ROOM A — COVER (%)",form.statistics.fbMeetingRoomACoverPercent,v=>updateStats("fbMeetingRoomACoverPercent",v),{type:"number",min:"0",step:"any"})}
+                    {field("MEETING ROOM B — UNITS",form.statistics.fbMeetingRoomBUnits,v=>updateStats("fbMeetingRoomBUnits",v),{type:"number",min:"0",step:"1"})}
+                    {field("MEETING ROOM B — PAX / UNIT",form.statistics.fbMeetingRoomBPax,v=>updateStats("fbMeetingRoomBPax",v),{type:"number",min:"0",step:"1"})}
+                    {field("MEETING ROOM B — COVER (%)",form.statistics.fbMeetingRoomBCoverPercent,v=>updateStats("fbMeetingRoomBCoverPercent",v),{type:"number",min:"0",step:"any"})}
+                    {field("BALLROOM CAPACITY (PAX)",form.statistics.fbBallroomCapacity,v=>updateStats("fbBallroomCapacity",v),{type:"number",min:"0",step:"1"})}
+                    {field("BALLROOM COVER (%)",form.statistics.fbBallroomCoverPercent,v=>updateStats("fbBallroomCoverPercent",v),{type:"number",min:"0",step:"any"})}
+                    {field("AVERAGE CHECK / PAX — MEETING (RP)",form.statistics.fbAverageMeetingCheck,v=>updateStats("fbAverageMeetingCheck",v),{type:"number",min:"0",step:"1"})}
+                  </div>
+                  <div className="mt-4 rounded-xl border border-amber-200 bg-white p-3"><p className="text-xs font-bold text-slate-600">ESTIMATED ANNUAL F&amp;B REVENUE</p><p className="mt-1 text-lg font-black text-slate-900">{idr(calculateFbStatisticsAnnual(form.statistics,Number(form.yearStart)))}</p><p className="mt-1 text-xs text-slate-500">Mengikuti rumus covers × average check pada sheet STATISTIC. Jika Budget P&amp;L F&amp;B diisi manual, angka manual tetap menjadi prioritas.</p></div>
                 </div>
                 <div>
                   <div className="mb-3 flex items-center gap-2"><span className="h-5 w-1 rounded-full bg-violet-500"/><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Ringkasan Statistik Otomatis</h3></div>

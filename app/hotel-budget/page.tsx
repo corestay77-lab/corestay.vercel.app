@@ -193,7 +193,6 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TELEPHONE & FACSIMILE",phone,"money","phoneRevenue",sumPresent(phone),revenue);
   add("MINOR OPERATING DEPARTMENT",other,"money","otherRevenue",sumPresent(other),revenue);
   add("TOTAL REVENUES (EXCL. TAX)",revenue,"sum",undefined,revenueTotal,revenue);
-  add("TOTAL REVENUES (INCL. 21% — reference workbook formula)",revenue.map(v=>v===null?null:v*1.21),"sum",undefined,revenueTotal===null?null:revenueTotal*1.21,revenue);
   section("COST OF SALES");
   add("Food & Beverage",monthly("fbCostOfSales"),"money","fbCostOfSales");
   add("Telephone & Facsimile",monthly("phoneCostOfSales"),"money","phoneCostOfSales");

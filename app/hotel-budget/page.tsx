@@ -414,14 +414,15 @@ export default function HotelBudgetPage() {
     const daysInYear=Number.isInteger(year)&&year>=1900&&year<=2200?(year%4===0&&(year%100!==0||year%400===0)?366:365):365;
     const roomNightsAtFullOccupancy=rooms!==null&&rooms>0?rooms*daysInYear:null;
     const enteredAdr=optional(form.statistics.averageSellingRate);
-    const sourceOccupancy=values.occupancy??optional(form.statistics.occupancy);
+    const sourceOccupancy=optional(form.statistics.occupancy)??values.occupancy;
     const sourceAdr=values.adr;
     // Budget room revenue plus a supplied ARR gives a derived occupancy.
     // If ARR is absent, use observed occupancy (when available) to derive the budget ADR.
     const occupancyFromBudget=roomBudget!==null&&enteredAdr!==null&&enteredAdr>0&&roomNightsAtFullOccupancy!==null
       ? roomBudget/(roomNightsAtFullOccupancy*enteredAdr)*100
       : null;
-    const occupancy=occupancyFromBudget!==null?occupancyFromBudget:sourceOccupancy;
+    // Explicit Step 1 occupancy is the forecast assumption; otherwise derive it from Budget Room Revenue and ARR, then use observed statistics.
+    const occupancy=sourceOccupancy!==null?sourceOccupancy:occupancyFromBudget;
     const occupiedRoomNights=roomNightsAtFullOccupancy!==null&&occupancy!==null?roomNightsAtFullOccupancy*occupancy/100:null;
     const adr=enteredAdr!==null&&enteredAdr>0?enteredAdr:
       roomBudget!==null&&occupiedRoomNights!==null&&occupiedRoomNights>0?roomBudget/occupiedRoomNights:sourceAdr;
@@ -463,7 +464,7 @@ export default function HotelBudgetPage() {
       payrollBudget,
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
     };
-  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.averageSellingRate,form.statistics.rooms,form.yearStart]);
+  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics.occupancy,form.statistics.averageSellingRate,form.statistics.rooms,form.yearStart]);
   useEffect(()=>{
     const startYear=Number(form.yearStart);
     if(!Number.isInteger(startYear)||startYear<1900||startYear>2200)return;
@@ -947,17 +948,40 @@ export default function HotelBudgetPage() {
               </tbody></table></div>
             <div className="rounded-xl border border-slate-200 bg-white p-4"><h4 className="font-extrabold text-slate-900">Rekap biaya per departemen</h4><div className="mt-3 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">{[["FO","Front Office"],["HK","Housekeeping"],["FB","Food & Beverage"],["MOD","Minor Operated Dept"],["AG","Administration & General"],["FN","Finance / Accounting"],["HR","Human Resource"],["SEC","Security / Engineering"],["SM","Sales & Marketing"],["POMEC","POMEC & Utilities"],["ROOM","Room Division"]].map(([key,label])=>{const v=payrollDepartmentMonthly(key);return <div key={key} className="rounded-lg border border-slate-100 bg-slate-50 p-3"><div className="font-bold">{label}</div><div className="mt-1 text-xs text-slate-500">Biaya payroll bulanan · {v.total>0?(form.payrollEmployees||[]).filter(e=>e.department===key).reduce((sum,e)=>sum+(Number(e.headcount)||0),0):0} staf</div><div className="mt-2 text-lg font-black text-slate-900">{idr(v.total)}</div></div>})}</div></div>
           </div>}
-          {activeTab==="statistics"&&<div className="space-y-6">
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {field("Nama hotel",form.hotelName,v=>updateMeta("hotelName",v),{placeholder:"Hotel Corestay"})}
-              {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari - Desember"})}
-              {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
-              {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
-              {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
-              {field("AVERAGE ROOM RATE (ARR)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",placeholder:"Isi nilai rata-rata"})}
-            </div>
-            <div className="rounded-2xl bg-gradient-to-r from-sky-50 via-indigo-50 to-violet-50 p-4 sm:p-5"><div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">{roomStats.map(([label,value])=>metric(label,label==="OCCUPANCY (%)"?(value===null?"—":fmt(value)+"%"):label==="AVERAGE ROOM RATE (RP)"||label==="REVPAR"?money(value):fmt(value,0)))}</div></div>
-            <div className="rounded-2xl border border-sky-100 bg-white p-4"><h3 className="font-bold">Checklist statistik sebelum finalisasi</h3><ul className="mt-2 grid gap-2 text-sm leading-5 text-slate-600 sm:grid-cols-2"><li>• Gunakan hari operasional sesuai periode.</li><li>• Room nights tidak boleh melebihi Room Available.</li><li>• Isi angka 0 secara eksplisit jika telah dipastikan tidak ada nilai.</li><li>• Cocokkan Room Revenue dengan laporan sumber.</li></ul></div>
+          {activeTab==="statistics"&&<div className="space-y-5">
+            <section className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+              <div className="bg-gradient-to-r from-[#173b67] via-[#245b8c] to-[#6554b7] px-5 py-5 text-white sm:px-7">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/15 text-2xl">🏨</div>
+                  <div><p className="text-[11px] font-bold uppercase tracking-[0.18em] text-sky-100">STEP 1 · HOTEL PROFILE</p><h2 className="mt-1 text-xl font-black sm:text-2xl">Hotel Statistics & Budget Assumptions</h2><p className="mt-1 max-w-2xl text-sm leading-5 text-blue-50">Satu sumber data untuk kapasitas kamar, occupancy, ARR, dan perhitungan forecast berikutnya.</p></div>
+                </div>
+              </div>
+              <div className="space-y-5 p-4 sm:p-6">
+                <div>
+                  <div className="mb-3 flex items-center gap-2"><span className="h-5 w-1 rounded-full bg-sky-500"/><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Identitas & Periode</h3></div>
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {field("Nama hotel",form.hotelName,v=>updateMeta("hotelName",v),{placeholder:"Contoh: CoreStay Hotel"})}
+                    {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari – Desember"})}
+                    {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-sky-100 bg-sky-50/60 p-4 sm:p-5">
+                  <div className="mb-4 flex flex-wrap items-center justify-between gap-2"><div><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Hotel Statistics</h3><p className="mt-1 text-xs leading-5 text-slate-600">Occupancy dan ARR menjadi acuan forecast. Room Available serta KPI hasil tetap dihitung dari rumus statistik.</p></div><span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-sky-800 ring-1 ring-sky-200">IDR · Rupiah</span></div>
+                  <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                    {statField("days","DAYS IN PERIOD","Jumlah hari pada periode statistik yang dipilih.")}
+                    {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
+                    {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",max:"100",step:"0.1",placeholder:"Contoh: 65",hint:"Asumsi occupancy forecast dalam persen (0–100)."})}
+                    {field("AVERAGE ROOM RATE (ARR)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",step:"1",placeholder:"Contoh: 650000",hint:"ARR dalam Rupiah per kamar terjual; dipakai sebagai acuan forecast."})}
+                    {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",step:"any",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
+                  </div>
+                </div>
+                <div>
+                  <div className="mb-3 flex items-center gap-2"><span className="h-5 w-1 rounded-full bg-violet-500"/><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Ringkasan Statistik Otomatis</h3></div>
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">{roomStats.map(([label,value])=>metric(label,label==="OCCUPANCY (%)"?(value===null?"—":fmt(value)+"%"):label==="AVERAGE ROOM RATE (RP)"||label==="REVPAR"?money(value):fmt(value,0)))}</div>
+                </div>
+                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-5 text-amber-950"><span className="text-lg">ⓘ</span><div><p className="font-bold">Pemeriksaan konsistensi</p><p className="mt-1">Room Available = jumlah kamar × hari periode, dikurangi kamar yang tidak tersedia bila datanya diisi. Occupancy statistik = paid rooms ÷ room available. ARR statistik = room revenue ÷ paid rooms; asumsi Occupancy dan ARR di atas diteruskan ke forecast.</p></div></div>
+              </div>
+            </section>
           </div>}
 
           {activeTab==="pnl"&&<div className="space-y-5">

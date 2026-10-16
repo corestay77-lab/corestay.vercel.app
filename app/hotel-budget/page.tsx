@@ -269,6 +269,121 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   return rows;
 };
 
+
+const buildStatisticsSheetRows=(form:BudgetForm):ConsolidatedRow[]=>{
+  const year=Number(form.yearStart);
+  const months=form.forecast.monthly.map((row,i)=>({row,days:new Date(year,i+1,0).getDate(),calc:calcMonthly(row,year,i,form.statistics.rooms)}));
+  const n=months.length;
+  const stat=form.statistics;
+  const roomCount=optional(stat.rooms);
+  const occupancy=months.map(({row})=>optional(row.occupancy)??optional(stat.occupancy));
+  const unavailable=[stat.outInventory,stat.houseUse,stat.outOfOrder].map(optional);
+  const unavailableTotal=unavailable.some(v=>v!==null)?unavailable.reduce<number>((s,v)=>s+(v??0),0):null;
+  const baseDays=optional(stat.days);
+  const available=months.map(({days})=>roomCount===null?null:Math.max(0,roomCount*days-(unavailableTotal!==null&&baseDays!==null&&baseDays>0?unavailableTotal*days/baseDays:unavailableTotal??0)));
+  const occupied=available.map((v,i)=>v===null||occupancy[i]===null?null:v*occupancy[i]!/100);
+  const complimentaryAnnual=optional(stat.complimentary);
+  const complimentary=months.map(({days})=>complimentaryAnnual===null?null:complimentaryAnnual*days/months.reduce((s,m)=>s+m.days,0));
+  const roomRevenue=months.map(({calc})=>calc.roomRevenue);
+  const exchange=months.map(()=>optional(stat.exchangeRate));
+  const arr=months.map(({row},i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(row.adr)??optional(stat.averageSellingRate));
+  const arrUsd=arr.map((v,i)=>v!==null&&exchange[i]!==null&&exchange[i]!>0?v/exchange[i]!:null);
+  const avgGuests=months.map(()=>optional(stat.fbAverageGuestsPerRoom));
+  const los=months.map(()=>optional(stat.fbLengthOfStay));
+  const guests=occupied.map((v,i)=>v!==null&&avgGuests[i]!==null?v*avgGuests[i]!:null);
+  const arrivals=guests.map((v,i)=>v!==null&&los[i]!==null&&los[i]!>0?v/los[i]!:null);
+  const restaurantCover=months.map(()=>optional(stat.fbRestaurantCoverPercent));
+  const restaurantCovers=arrivals.map((v,i)=>v!==null&&restaurantCover[i]!==null?v*restaurantCover[i]!/100:null);
+  const breakfastCheck=months.map(()=>optional(stat.fbAverageBreakfastCheck));
+  const meetingCheck=months.map(()=>optional(stat.fbAverageMeetingCheck));
+  const meetingACovers=months.map(({days})=>{const u=optional(stat.fbMeetingRoomAUnits),p=optional(stat.fbMeetingRoomAPax),c=optional(stat.fbMeetingRoomACoverPercent);return u!==null&&p!==null&&c!==null?u*p*days*c/100:null;});
+  const meetingBCovers=months.map(({days})=>{const u=optional(stat.fbMeetingRoomBUnits),p=optional(stat.fbMeetingRoomBPax),c=optional(stat.fbMeetingRoomBCoverPercent);return u!==null&&p!==null&&c!==null?u*p*days*c/100:null;});
+  const ballroomCovers=months.map(({days})=>{const p=optional(stat.fbBallroomCapacity),c=optional(stat.fbBallroomCoverPercent);return p!==null&&c!==null?p*days*c/100:null;});
+  const restaurantRevenue=restaurantCovers.map((v,i)=>v!==null&&breakfastCheck[i]!==null?v*breakfastCheck[i]!:null);
+  const meetingARevenue=meetingACovers.map((v,i)=>v!==null&&meetingCheck[i]!==null?v*meetingCheck[i]!:null);
+  const meetingBRevenue=meetingBCovers.map((v,i)=>v!==null&&meetingCheck[i]!==null?v*meetingCheck[i]!:null);
+  const ballroomRevenue=ballroomCovers.map((v,i)=>v!==null&&meetingCheck[i]!==null?v*meetingCheck[i]!:null);
+  const fbc=months.map(({row},i)=>optional(row.fbRevenue)??calculateFbStatisticsMonthly(stat,year,i)?.total??null);
+  const modAnnual=calculateModStatisticsAnnual(stat);
+  const mod=months.map(({row,days})=>optional(row.otherRevenue)??(modAnnual===null?null:modAnnual*days/months.reduce((s,m)=>s+m.days,0)));
+  const phone=months.map(({row})=>optional(row.phoneRevenue));
+  const totalRevenue=months.map((_,i)=>[roomRevenue[i],fbc[i],phone[i],mod[i]].some(v=>v!==null)?[roomRevenue[i],fbc[i],phone[i],mod[i]].reduce<number>((s,v)=>s+(v??0),0):null);
+  const revpar=roomRevenue.map((v,i)=>v!==null&&available[i]!==null&&available[i]!>0?v/available[i]!:null);
+  const total=(values:(number|null)[])=>values.some(v=>v!==null)?values.reduce<number>((s,v)=>s+(v??0),0):null;
+  const avg=(values:(number|null)[])=>{const valid=values.filter((v):v is number=>v!==null);return valid.length?valid.reduce((s,v)=>s+v,0)/valid.length:null;};
+  const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
+  const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",yearTotal?:number|null)=>{
+    const t=yearTotal===undefined?(kind==="sum"||kind==="money"?total(values):avg(values)):yearTotal;
+    rows.push({label,kind,values,total:t});
+  };
+  const rows:ConsolidatedRow[]=[];
+  const section=(label:string)=>rows.push({label,kind:"section",values:[]});
+  const blanks=()=>Array.from({length:n},()=>null as number|null);
+  const paidTotal=total(occupied), availableTotal=total(available), roomRevenueTotal=total(roomRevenue);
+  const occPct=pct(paidTotal,availableTotal);
+  section("STATISTICS");
+  add("# OF DAYS",months.map(m=>m.days),"sum",months.reduce((s,m)=>s+m.days,0));
+  add("OCCUPANCY (%)",occupied.map((v,i)=>pct(v,available[i])),"percent",occPct);
+  add("AVERAGE ROOM RATE (ARR) - RP",arr,"money",paidTotal!==null&&paidTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/paidTotal:optional(stat.averageSellingRate));
+  add("AVERAGE ROOM RATE (ARR) - USD",arrUsd,"money",arrUsd.some(v=>v!==null)?avg(arrUsd):null);
+  add("# OF ROOMS",months.map(()=>roomCount),"avg",roomCount);
+  add("ROOMS AVAILABLE",available,"sum",availableTotal);
+  add("OCCUPIED ROOMS",occupied,"sum",paidTotal);
+  add("ROOM REVENUE - RP",roomRevenue,"sum",roomRevenueTotal);
+  add("TOTAL GUESTS IN HOUSE",guests,"sum",total(guests));
+  add("AVERAGE GUEST / ROOM",avgGuests,"avg",avg(avgGuests));
+  add("LENGTH OF STAY",los,"avg",avg(los));
+  add("# OF ARRIVALS",arrivals,"sum",total(arrivals));
+  add("# OF COVERS - RESTAURANT",restaurantCovers,"sum",total(restaurantCovers));
+  add("# OF COVERS - MEETING ROOM A",meetingACovers,"sum",total(meetingACovers));
+  add("# OF COVERS - MEETING ROOM B",meetingBCovers,"sum",total(meetingBCovers));
+  add("# OF COVERS - BALLROOM",ballroomCovers,"sum",total(ballroomCovers));
+  add("AVERAGE CHECKS / GUEST (BREAKFAST)",breakfastCheck,"money",avg(breakfastCheck));
+  add("AVERAGE CHECKS / PAX FOR MEETING ROOM",meetingCheck,"money",avg(meetingCheck));
+  add("REVENUE F&B RESTAURANT - RP",restaurantRevenue,"sum",total(restaurantRevenue));
+  add("REVENUE MEETING ROOM A - RP",meetingARevenue,"sum",total(meetingARevenue));
+  add("REVENUE MEETING ROOM B - RP",meetingBRevenue,"sum",total(meetingBRevenue));
+  add("REVENUE BALLROOM - RP",ballroomRevenue,"sum",total(ballroomRevenue));
+  add("TOTAL PAX FOR MEETING ROOM",meetingACovers.map((v,i)=>[v,meetingBCovers[i],ballroomCovers[i]].some(x=>x!==null)?[v,meetingBCovers[i],ballroomCovers[i]].reduce<number>((s,x)=>s+(x??0),0):null),"sum",total(meetingACovers.map((v,i)=>[v,meetingBCovers[i],ballroomCovers[i]].some(x=>x!==null)?[v,meetingBCovers[i],ballroomCovers[i]].reduce<number>((s,x)=>s+(x??0),0):null)));
+  add("TOTAL F&B REVENUE - RP",fbc,"sum",total(fbc));
+  add("TOTAL MOD",mod,"sum",total(mod));
+  add("TELEPHONE & FACSIMILE REVENUE",phone,"sum",total(phone));
+  add("TOTAL REVENUE - RP",totalRevenue,"sum",total(totalRevenue));
+  add("REVPAR - RP",revpar,"money",availableTotal!==null&&availableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/availableTotal:null);
+  add("EXCHANGE RATE",exchange,"avg",optional(stat.exchangeRate));
+  add("ROOM PAID",occupied,"sum",paidTotal);
+  add("COMPLIMENTARY ROOM NIGHTS",complimentary,"sum",complimentaryAnnual);
+  add("OCCUPIED ROOMS (PAID + COMPLIMENTARY)",occupied.map((v,i)=>v===null&&complimentary[i]===null?null:(v??0)+(complimentary[i]??0)),"sum",total(occupied.map((v,i)=>v===null&&complimentary[i]===null?null:(v??0)+(complimentary[i]??0))));
+  section("UNIT OCCUPANCY");
+  add("INVENTORY ROOM CATEGORY 1 — AVAILABLE FOR SALE",blanks(),"sum",null);
+  add("INVENTORY ROOM CATEGORY 2 — AVAILABLE FOR SALE",blanks(),"sum",null);
+  add("INVENTORY ROOM CATEGORY 3 — AVAILABLE FOR SALE",blanks(),"sum",null);
+  add("TOTAL AVAILABLE FOR SALE",blanks(),"sum",null);
+  section("ARR");
+  add("ARR — INVENTORY ROOM CATEGORY 1",blanks(),"money",null);
+  add("ARR — INVENTORY ROOM CATEGORY 2",blanks(),"money",null);
+  add("ARR — INVENTORY ROOM CATEGORY 3",blanks(),"money",null);
+  add("TOTAL / AVERAGE ARR BY ROOM CATEGORY",blanks(),"money",null);
+  section("REVENUE (US $)");
+  add("REVENUE IN USD — ROOM CATEGORY 1",blanks(),"money",null);
+  add("REVENUE IN USD — ROOM CATEGORY 2",blanks(),"money",null);
+  add("REVENUE IN USD — ROOM CATEGORY 3",blanks(),"money",null);
+  add("TOTAL REVENUE IN USD",roomRevenue.map((v,i)=>v!==null&&exchange[i]!==null&&exchange[i]!>0?v/exchange[i]!:null),"sum",roomRevenueTotal!==null&&optional(stat.exchangeRate)!==null&&optional(stat.exchangeRate)!>0?roomRevenueTotal/optional(stat.exchangeRate)!:null);
+  section("REVENUE (IDR)");
+  add("REVENUE IN IDR — ROOM CATEGORY 1",blanks(),"money",null);
+  add("REVENUE IN IDR — ROOM CATEGORY 2",blanks(),"money",null);
+  add("REVENUE IN IDR — ROOM CATEGORY 3",blanks(),"money",null);
+  add("TOTAL REVENUE IN IDR",roomRevenue,"sum",roomRevenueTotal);
+  add("EXCHANGE RATE (ESTIMATED)",exchange,"avg",optional(stat.exchangeRate));
+  section("UNIT OCCUPANCY — MONTHLY / INVENTORY YEAR");
+  add("ROOMS AVAILABLE (MONTHLY)",available,"sum",availableTotal);
+  add("INVENTORY YEAR (ROOMS × DAYS)",months.map(m=>roomCount===null?null:roomCount*365),"sum",roomCount===null?null:roomCount*365);
+  add("OCCUPANCY (%)",occupied.map((v,i)=>pct(v,available[i])),"percent",occPct);
+  add("ADR",arr,"money",paidTotal!==null&&paidTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/paidTotal:optional(stat.averageSellingRate));
+  add("REVPAR",revpar,"money",availableTotal!==null&&availableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/availableTotal:null);
+  return rows;
+};
+
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
   const [activeTab,setActiveTab]=useState("payroll");
@@ -1375,10 +1490,12 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1250px] border-collapse text-[11px]">
                   <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 min-w-[180px] bg-slate-100 px-3 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-2 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-3 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
-                  <tbody>{buildConsolidatedRows(form).filter(line=>["Days","# OF ROOMS","ROOM AVAILABLE","ROOM PAID","OCCUPIED ROOMS (PAID + COMPLIMENTARY)","OCCUPANCY (%)","AVERAGE ROOM RATE (ARR) (RP)","REVPAR (RP)","COMPLIMENTARY ROOM NIGHTS","EXCHANGE RATE US $ TO RP"].includes(line.label)).map((line,i)=>{
-                    const isPercent=line.kind==="percent"||line.label==="OCCUPANCY (%)";
-                    const isCount=["Days","# OF ROOMS","ROOM AVAILABLE","ROOM PAID","OCCUPIED ROOMS (PAID + COMPLIMENTARY)","COMPLIMENTARY ROOM NIGHTS"].includes(line.label);
-                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):line.label==="EXCHANGE RATE US $ TO RP"?fmt(v,2):money(v);
+                  <tbody>{buildStatisticsSheetRows(form).map((line,i)=>{
+                    if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t border-slate-300 bg-slate-200 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
+                    const isPercent=line.kind==="percent";
+                    const isCount=/DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
+                    const isRate=/EXCHANGE RATE/i.test(line.label);
+                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isRate?fmt(v,2):money(v);
                     return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{display(v)}</td>)}<td className="border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>

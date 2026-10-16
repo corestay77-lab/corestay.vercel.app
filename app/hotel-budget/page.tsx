@@ -970,7 +970,7 @@ export default function HotelBudgetPage() {
                   <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     {statField("days","DAYS IN PERIOD","Jumlah hari pada periode statistik yang dipilih.")}
                     {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
-                    {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",max:"100",step:"0.1",placeholder:"Contoh: 65",hint:"Asumsi occupancy forecast dalam persen (0–100)."})}
+                    {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",step:"0.1",placeholder:"Contoh: 65",hint:"Asumsi occupancy forecast dalam persen (0–100)."})}
                     {field("AVERAGE ROOM RATE (ARR)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",step:"1",placeholder:"Contoh: 650000",hint:"ARR dalam Rupiah per kamar terjual; dipakai sebagai acuan forecast."})}
                     {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",step:"any",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
                   </div>

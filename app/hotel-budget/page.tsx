@@ -1485,8 +1485,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs leading-5 text-sky-100">Mengikuti item dan formula statistik hotel. Nilai bulanan, total tahunan, dan laporan 10 tahun memakai basis perhitungan yang sama; data yang belum tersedia tetap ditampilkan sebagai —.</p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1250px] border-collapse text-[11px]">
-                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 min-w-[180px] bg-slate-100 px-3 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-2 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-3 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
+                <table className="w-full min-w-[1120px] border-collapse text-[11px]">
+                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[130px] min-w-[130px] max-w-[130px] bg-slate-100 px-2 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-1 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-2 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
                   <tbody>{buildStatisticsSheetRows(form).map((line,i)=>{
                     if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
                     const isPercent=line.kind==="percent";

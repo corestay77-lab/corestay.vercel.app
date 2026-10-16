@@ -187,18 +187,6 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const t=total===undefined?(kind==="sum"||kind==="money"?sumPresent(values):(kind==="avg"||kind==="percent"?avgPresent(values):null)):total;
     rows.push({label,values,kind,inputKey,total:t,base,totalPct:base?pct(t,sumPresent(base)):undefined,editable});
   };
-  section("STATISTICS");
-  add("Days",months.map(m=>m.days),"sum",undefined,months.reduce((a,m)=>a+m.days,0));
-  add("# OF ROOMS",months.map(()=>roomCount),"avg",undefined,roomCount);
-  add("ROOM AVAILABLE",available,"sum",undefined,roomAvailableTotal);
-  add("ROOM PAID",occupied,"sum",undefined,occupiedTotal);
-  add("OCCUPIED ROOMS (PAID + COMPLIMENTARY)",totalOccupied,"sum",undefined,sumPresent(totalOccupied));
-  // Occupancy uses paid room nights divided by sellable room nights, matching the Statistics sheet.
-  add("OCCUPANCY (%)",occupied.map((sold,i)=>pct(sold,available[i])),"percent","occupancy",pct(occupiedTotal,roomAvailableTotal));
-  add("AVERAGE ROOM RATE (ARR) (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:optional(form.forecast.monthly[i].adr)??optional(form.statistics.averageSellingRate)),"money",undefined,occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:optional(form.statistics.averageSellingRate));
-  add("REVPAR (RP)",months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),"money",undefined,roomAvailableTotal!==null&&roomAvailableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/roomAvailableTotal:null);
-  add("COMPLIMENTARY ROOM NIGHTS",complimentary,"sum",undefined,complimentaryAnnual);
-  add("EXCHANGE RATE US $ TO RP",form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),"avg",undefined,optional(form.statistics.exchangeRate));
   section("REVENUES");
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
   add("FOOD & BEVERAGE",fb,"money","fbRevenue",sumPresent(fb),revenue);

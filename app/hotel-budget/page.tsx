@@ -57,15 +57,15 @@ const calcMonthly = (row:ForecastMonth,year:number,index:number,rooms:string) =>
   return {days,roomRevenue,revenue,costs,gop:revenue!==null&&costs!==null?revenue-costs:null};
 };
 const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthIndex:number) => {
+  if(!Number.isFinite(year))return null;
   const rooms=optional(statistics.rooms), occupancy=optional(statistics.occupancy);
-  if(rooms===null||occupancy===null||!Number.isFinite(year))return null;
   const days=new Date(year,monthIndex+1,0).getDate();
   const averageGuests=optional(statistics.fbAverageGuestsPerRoom), lengthOfStay=optional(statistics.fbLengthOfStay);
   const restaurantCover=optional(statistics.fbRestaurantCoverPercent), breakfastCheck=optional(statistics.fbAverageBreakfastCheck);
   const aUnits=optional(statistics.fbMeetingRoomAUnits), aPax=optional(statistics.fbMeetingRoomAPax), aCover=optional(statistics.fbMeetingRoomACoverPercent);
   const bUnits=optional(statistics.fbMeetingRoomBUnits), bPax=optional(statistics.fbMeetingRoomBPax), bCover=optional(statistics.fbMeetingRoomBCoverPercent);
   const ballroomCapacity=optional(statistics.fbBallroomCapacity), ballroomCover=optional(statistics.fbBallroomCoverPercent), meetingCheck=optional(statistics.fbAverageMeetingCheck);
-  const arrivals=averageGuests!==null&&lengthOfStay!==null&&lengthOfStay>0?rooms*days*occupancy/100*averageGuests/lengthOfStay:null;
+  const arrivals=rooms!==null&&occupancy!==null&&averageGuests!==null&&lengthOfStay!==null&&lengthOfStay>0?rooms*days*occupancy/100*averageGuests/lengthOfStay:null;
   const restaurantCovers=arrivals!==null&&restaurantCover!==null?arrivals*restaurantCover/100:null;
   const restaurantRevenue=restaurantCovers!==null&&breakfastCheck!==null?restaurantCovers*breakfastCheck:null;
   const roomACovers=aUnits!==null&&aPax!==null&&aCover!==null?aUnits*aPax*days*aCover/100:null;
@@ -74,14 +74,27 @@ const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthI
   const meetingRoomARevenue=roomACovers!==null&&meetingCheck!==null?roomACovers*meetingCheck:null;
   const meetingRoomBRevenue=roomBCovers!==null&&meetingCheck!==null?roomBCovers*meetingCheck:null;
   const ballroomRevenue=ballroomCovers!==null&&meetingCheck!==null?ballroomCovers*meetingCheck:null;
-  const additionalMeetingRevenue=(statistics.fbAdditionalMeetingRooms||[]).reduce((sum,room)=>sum+(optional(room.units)??0)*(optional(room.paxPerUnit)??0)*days*(optional(room.coverPercent)??0)/100*(meetingCheck??0),0);
-  const parts=[restaurantRevenue,meetingRoomARevenue,meetingRoomBRevenue,ballroomRevenue,statistics.fbAdditionalMeetingRooms?.length?additionalMeetingRevenue:null].filter((v):v is number=>v!==null);
+  const additionalRooms=(statistics.fbAdditionalMeetingRooms||[]);
+  const additionalValues=additionalRooms.map(room=>{
+    const units=optional(room.units),pax=optional(room.paxPerUnit),cover=optional(room.coverPercent);
+    return units!==null&&pax!==null&&cover!==null&&meetingCheck!==null?units*pax*days*cover/100*meetingCheck:null;
+  });
+  const additionalMeetingRevenue=additionalValues.some(v=>v!==null)?additionalValues.reduce<number>((sum,v)=>sum+(v??0),0):null;
+  const parts=[restaurantRevenue,meetingRoomARevenue,meetingRoomBRevenue,ballroomRevenue,additionalMeetingRevenue].filter((v):v is number=>v!==null);
   return {days,arrivals,restaurantCovers,restaurantRevenue,meetingRoomARevenue,meetingRoomBRevenue,ballroomRevenue,additionalMeetingRevenue,total:parts.length?parts.reduce((sum,v)=>sum+v,0):null};
 };
-const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => {
+const calculateFbStatisticsAnnualBreakdown = (statistics:Statistics, year:number) => {
   const months=Array.from({length:12},(_,i)=>calculateFbStatisticsMonthly(statistics,year,i));
-  return months.some(m=>m!==null)?months.reduce<number>((sum,m)=>sum+(m?.total??0),0):null;
+  const sum=(key:"restaurantRevenue"|"meetingRoomARevenue"|"meetingRoomBRevenue"|"ballroomRevenue"|"additionalMeetingRevenue")=>{
+    const values=months.map(m=>m?.[key]??null);
+    return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;
+  };
+  const restaurant=sum("restaurantRevenue");
+  const meetingParts=[sum("meetingRoomARevenue"),sum("meetingRoomBRevenue"),sum("ballroomRevenue"),sum("additionalMeetingRevenue")];
+  const meeting=meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null;
+  return {restaurant,meeting,total:restaurant!==null||meeting!==null?(restaurant??0)+(meeting??0):null};
 };
+const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => calculateFbStatisticsAnnualBreakdown(statistics,year).total;
 // Step 1 MOD assumptions follow the four revenue heads in the workbook MOD sheet.
 // Inputs are annual IDR budgets and are allocated to months by calendar-day share.
 const calculateModStatisticsAnnual = (statistics:Statistics) => {
@@ -639,20 +652,32 @@ export default function HotelBudgetPage() {
       return {...prev,forecast:{monthly:monthlyWithDetails,annual:annualWithManualOverrides}};
     });
   },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees,form.budgetAllocations,annualGrowthPct]);
-  // Step 1 MOD revenue is the source for matching Budget P&L accounts.
-  // Only the Budget column is derived; Actual, Last Year and YTD remain untouched.
+  // Step 1 revenue outlets are the source of truth for matching Budget P&L Budget cells.
+  // Only derived Budget values are updated; Actual, Last Year and YTD remain untouched.
+  // F&B restaurant maps to 41201; meeting/event-space revenue maps to 41205 because Step 1
+  // collects one average meeting check and does not split it into food vs beverage.
   useEffect(()=>{
-    const sources:[string,string][]=[
-      ["41301",form.statistics.modBusinessCenterRevenue],
-      ["41304",form.statistics.modMassageRevenue],
-      ["41303",form.statistics.modLaundryRevenue],
-      ["41308",form.statistics.modOtherIncomeRevenue]
+    const fb=calculateFbStatisticsAnnualBreakdown(form.statistics,Number(form.yearStart));
+    const sources:[string,number|null][]=[
+      ["41201",fb.restaurant],
+      ["41205",fb.meeting],
+      ["41301",optional(form.statistics.modBusinessCenterRevenue)],
+      ["41302",null],
+      ["41303",optional(form.statistics.modLaundryRevenue)],
+      ["41304",optional(form.statistics.modMassageRevenue)],
+      ["41305",null],
+      ["41306",null],
+      ["41307",null],
+      ["41308",optional(form.statistics.modOtherIncomeRevenue)],
+      ["41309",null]
     ];
     setForm(prev=>{
       let changed=false;
       const accounts={...prev.accounts};
-      for(const [code,raw] of sources){
-        if(!raw.trim())continue;
+      for(const [code,value] of sources){
+        // Keep unsupported Step 1 outlets untouched; they remain available for manual entry.
+        if(value===null && !["41201","41205","41301","41303","41304","41308"].includes(code))continue;
+        const raw=value===null?"":String(Math.round(value));
         const current=accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
         if(current.budget!==raw){
           accounts[code]={...current,budget:raw};
@@ -661,7 +686,7 @@ export default function HotelBudgetPage() {
       }
       return changed?{...prev,accounts}:prev;
     });
-  },[form.statistics.modBusinessCenterRevenue,form.statistics.modMassageRevenue,form.statistics.modLaundryRevenue,form.statistics.modOtherIncomeRevenue]);
+  },[form.statistics,form.yearStart]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",allAccountLines);

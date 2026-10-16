@@ -277,7 +277,7 @@ export default function HotelBudgetPage() {
     const monthlyBase=(get:(row:ForecastMonth,index:number)=>number|null)=>sumPresent(source.forecast.monthly.map(get));
     // STEP 2 departmental monthly entries are the source of truth for the 10-year projection.
     const roomBase=monthlyBase((row,i)=>calcMonthly(row,Number(source.yearStart),i,source.statistics.rooms).roomRevenue);
-    const fbBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodRevenue||""),optional(row.fbDetails?.beverageRevenue||"")])??optional(row.fbRevenue));
+    const fbBase=monthlyBase(row=>optional(row.fbRevenue)??sumPresent([optional(row.fbDetails?.foodRevenue||""),optional(row.fbDetails?.beverageRevenue||"")]));
     const otherRevenueKeys=["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"];
     const otherBase=monthlyBase(row=>sumPresent(otherRevenueKeys.map(key=>optional(row.modDetails?.[key]||"")))??optional(row.otherRevenue));
     const roomRevenue=years.map((_,i)=>roomBase===null?null:roomBase*growth(i));
@@ -484,7 +484,7 @@ export default function HotelBudgetPage() {
       roomBudget,
       occupancy:occupancy!==null&&Number.isFinite(occupancy)?occupancy:null,
       adr:adr!==null&&Number.isFinite(adr)?adr:null,
-      fb:total(["fbRevenue"])??calculateFbStatisticsAnnual(form.statistics,year),
+      fb:calculateFbStatisticsAnnual(form.statistics,year)??total(["fbRevenue"]),
       other:total(["otherRevenue"]),
       costOfSales:total(["costOfSales"]),
       payroll:total(["payroll"]),
@@ -521,8 +521,8 @@ export default function HotelBudgetPage() {
       const roomBudget=forecastSource.roomBudget;
       const foodShare=foodPct+beveragePct>0?foodPct/(foodPct+beveragePct):0.7;
       const fbMonth=fbMonthlyValues[index];
-      const fbFood=baseFb===null?"":String(Math.round(baseFb*share*foodShare));
-      const fbBeverage=baseFb===null?"":String((fbMonth??0)-Number(fbFood||0));
+      const fbFood=fbMonth===null?"":String(Math.round(fbMonth*foodShare));
+      const fbBeverage=fbMonth===null?"":String(fbMonth-Number(fbFood||0));
       const modDetails=Object.fromEntries(modRevenueCodes.map(([key,code])=>[key,monthlyShare(budgetForCode(code),share)]));
       const modTotal=Object.values(modDetails).some(v=>v!=="")?String(Object.values(modDetails).reduce((sum,v)=>sum+(v===""?0:Number(v)),0)):baseOther===null?"":String(Math.round(baseOther*share));
       return {

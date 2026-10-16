@@ -1485,15 +1485,15 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs leading-5 text-sky-100">Mengikuti item dan formula statistik hotel. Nilai bulanan, total tahunan, dan laporan 10 tahun memakai basis perhitungan yang sama; data yang belum tersedia tetap ditampilkan sebagai —.</p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-full min-w-[1120px] border-collapse text-[11px]">
-                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[130px] min-w-[130px] max-w-[130px] bg-slate-100 px-2 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-1 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-2 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
+                <table className="w-full min-w-[1040px] table-fixed border-collapse text-[11px]">
+                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[100px] min-w-[100px] max-w-[100px] bg-slate-100 px-1 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="w-[65px] px-1 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-2 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
                   <tbody>{buildStatisticsSheetRows(form).map((line,i)=>{
                     if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
                     const isPercent=line.kind==="percent";
                     const isCount=/DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
                     const isRate=/EXCHANGE RATE/i.test(line.label);
                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isRate?fmt(v,2):money(v);
-                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{display(v)}</td>)}<td className="border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums">{display(line.total)}</td></tr>;
+                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[100px] min-w-[100px] max-w-[100px] border-t border-slate-200 bg-inherit px-1 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="w-[65px] border-t border-slate-200 px-1 py-2 text-right tabular-nums">{display(v)}</td>)}<td className="w-[105px] border-t border-slate-200 bg-sky-50 px-1 py-2 text-right font-extrabold tabular-nums">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>
               </div>

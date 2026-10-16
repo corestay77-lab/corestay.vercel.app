@@ -952,7 +952,6 @@ export default function HotelBudgetPage() {
               {field("Periode laporan",form.period,v=>updateMeta("period",v),{placeholder:"Contoh: Januari - Desember"})}
               {field("Tahun awal forecast",form.yearStart,v=>updateMeta("yearStart",v),{type:"number",min:"1900",step:"1"})}
               {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
-              {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",step:"0.1",hint:"Masukkan persentase okupansi acuan 0–100%. Digunakan untuk forecast jika okupansi tidak dapat dihitung dari room nights."})}
               {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
               {field("AVERAGE ROOM RATE (ARR)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",placeholder:"Isi nilai rata-rata"})}
             </div>

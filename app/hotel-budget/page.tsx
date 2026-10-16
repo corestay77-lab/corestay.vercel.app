@@ -1505,7 +1505,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const isPercent=line.kind==="percent";
                     const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
                     const isRate=/EXCHANGE RATE/i.test(line.label);
-                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);\n                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
+                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
+                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
                     return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-2 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="min-w-[88px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="min-w-[140px] border-t border-slate-200 bg-sky-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>
@@ -1530,7 +1531,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   </thead>
                   <tbody>{buildConsolidatedRows(form).map((line,ri)=>{
                     if(line.kind==="section") return <tr key={line.label} className="bg-slate-200 text-slate-800"><th colSpan={27} className="border-t border-slate-300 px-3 py-2 text-left font-black tracking-wide">{line.label}</th></tr>;
-                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);\n                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="Days"||line.label==="# OF ROOMS"||line.label==="ROOM AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):isUsd?"$"+fmt(v,2):money(v);
+                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
+                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="Days"||line.label==="# OF ROOMS"||line.label==="ROOM AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):isUsd?"$"+fmt(v,2):money(v);
                     const values=line.values;
                     return <tr key={line.label} className={line.label.startsWith("TOTAL REVENUES")||line.label.includes("GOP")||line.label.includes("PROFIT")?"bg-teal-50 font-extrabold":ri%2?"bg-slate-50":"bg-white"}>
                       <th className="sticky left-0 z-[1] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left whitespace-normal">{line.label}</th>

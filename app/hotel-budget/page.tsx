@@ -270,7 +270,10 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
 };
 
 
-const buildStatisticsSheetRows=(form:BudgetForm):ConsolidatedRow[]=>{
+const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];labels?:Record<string,string>}):ConsolidatedRow[]=>{
+  const hiddenMenus=menuConfig?.hidden??[];
+  const menuLabels=menuConfig?.labels??{};
+  const menuLabel=(id:string,fallback:string)=>menuLabels[id]?.trim()||fallback;
   const year=Number(form.yearStart);
   const months=form.forecast.monthly.map((row,i)=>({row,days:new Date(year,i+1,0).getDate(),calc:calcMonthly(row,year,i,form.statistics.rooms)}));
   const n=months.length;
@@ -343,18 +346,18 @@ const buildStatisticsSheetRows=(form:BudgetForm):ConsolidatedRow[]=>{
   add("LENGTH OF STAY",los,"avg",avg(los));
   add("# OF ARRIVALS",arrivals,"sum",total(arrivals));
   section("04 · F&B — COVERS & AVERAGE CHECK");
-  add("# OF COVERS - RESTAURANT",restaurantCovers,"sum",total(restaurantCovers));
-  add("# OF COVERS - MEETING ROOM A",meetingACovers,"sum",total(meetingACovers));
-  add("# OF COVERS - MEETING ROOM B",meetingBCovers,"sum",total(meetingBCovers));
-  add("# OF COVERS - BALLROOM",ballroomCovers,"sum",total(ballroomCovers));
+  add(`# OF COVERS - ${menuLabel("restaurant","Restaurant & Breakfast")}`,restaurantCovers,"sum",total(restaurantCovers));
+  add(`# OF COVERS - ${menuLabel("meetingA","Meeting Room A")}`,meetingACovers,"sum",total(meetingACovers));
+  add(`# OF COVERS - ${menuLabel("meetingB","Meeting Room B")}`,meetingBCovers,"sum",total(meetingBCovers));
+  add(`# OF COVERS - ${menuLabel("ballroom","Ballroom")}`,ballroomCovers,"sum",total(ballroomCovers));
   add("TOTAL PAX FOR MEETING ROOM",meetingACovers.map((v,i)=>[v,meetingBCovers[i],ballroomCovers[i]].some(x=>x!==null)?[v,meetingBCovers[i],ballroomCovers[i]].reduce<number>((s,x)=>s+(x??0),0):null),"sum",total(meetingACovers.map((v,i)=>[v,meetingBCovers[i],ballroomCovers[i]].some(x=>x!==null)?[v,meetingBCovers[i],ballroomCovers[i]].reduce<number>((s,x)=>s+(x??0),0):null)));
-  add("AVERAGE CHECKS / GUEST (BREAKFAST)",breakfastCheck,"money",avg(breakfastCheck));
-  add("AVERAGE CHECKS / PAX FOR MEETING ROOM",meetingCheck,"money",avg(meetingCheck));
+  add(`${menuLabel("restaurant","Restaurant & Breakfast")} — AVERAGE CHECK / GUEST`,breakfastCheck,"money",avg(breakfastCheck));
+  add(`${menuLabel("pricing","Average Check — Meeting & Event")} — AVERAGE CHECK / PAX`,meetingCheck,"money",avg(meetingCheck));
   section("05 · PENDAPATAN PER OUTLET");
-  add("REVENUE F&B RESTAURANT - RP",restaurantRevenue,"sum",total(restaurantRevenue));
-  add("REVENUE MEETING ROOM A - RP",meetingARevenue,"sum",total(meetingARevenue));
-  add("REVENUE MEETING ROOM B - RP",meetingBRevenue,"sum",total(meetingBRevenue));
-  add("REVENUE BALLROOM - RP",ballroomRevenue,"sum",total(ballroomRevenue));
+  add(`REVENUE — ${menuLabel("restaurant","Restaurant & Breakfast")} - RP`,restaurantRevenue,"sum",total(restaurantRevenue));
+  add(`REVENUE — ${menuLabel("meetingA","Meeting Room A")} - RP`,meetingARevenue,"sum",total(meetingARevenue));
+  add(`REVENUE — ${menuLabel("meetingB","Meeting Room B")} - RP`,meetingBRevenue,"sum",total(meetingBRevenue));
+  add(`REVENUE — ${menuLabel("ballroom","Ballroom")} - RP`,ballroomRevenue,"sum",total(ballroomRevenue));
   add("TOTAL F&B REVENUE - RP",fbc,"sum",total(fbc));
   add("TOTAL MOD",mod,"sum",total(mod));
   add("TELEPHONE & FACSIMILE REVENUE",phone,"sum",total(phone));
@@ -378,7 +381,17 @@ const buildStatisticsSheetRows=(form:BudgetForm):ConsolidatedRow[]=>{
   add("REVENUE IN IDR — ROOM CATEGORY 3",blanks(),"money",null);
   add("TOTAL REVENUE IN IDR",roomRevenue,"sum",roomRevenueTotal);
   add("EXCHANGE RATE (ESTIMATED)",exchange,"avg",optional(stat.exchangeRate));
-  return rows;
+  const hiddenReportRows=new Set<string>();
+  if(hiddenMenus.includes("restaurant")) [
+    `# OF COVERS - ${menuLabel("restaurant","Restaurant & Breakfast")}`,
+    `${menuLabel("restaurant","Restaurant & Breakfast")} — AVERAGE CHECK / GUEST`,
+    `REVENUE — ${menuLabel("restaurant","Restaurant & Breakfast")} - RP`,
+  ].forEach(label=>hiddenReportRows.add(label));
+  if(hiddenMenus.includes("meetingA")) [`# OF COVERS - ${menuLabel("meetingA","Meeting Room A")}`,`REVENUE — ${menuLabel("meetingA","Meeting Room A")} - RP`].forEach(label=>hiddenReportRows.add(label));
+  if(hiddenMenus.includes("meetingB")) [`# OF COVERS - ${menuLabel("meetingB","Meeting Room B")}`,`REVENUE — ${menuLabel("meetingB","Meeting Room B")} - RP`].forEach(label=>hiddenReportRows.add(label));
+  if(hiddenMenus.includes("ballroom")) [`# OF COVERS - ${menuLabel("ballroom","Ballroom")}`,`REVENUE — ${menuLabel("ballroom","Ballroom")} - RP`].forEach(label=>hiddenReportRows.add(label));
+  if(hiddenMenus.includes("pricing")) hiddenReportRows.add(`${menuLabel("pricing","Average Check — Meeting & Event")} — AVERAGE CHECK / PAX`);
+  return rows.filter(line=>!hiddenReportRows.has(line.label));
 };
 
 export default function HotelBudgetPage() {
@@ -1501,7 +1514,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <div className="overflow-x-auto">
                 <table className="w-full min-w-[1040px] table-fixed border-collapse text-[11px]">
                   <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[100px] min-w-[100px] max-w-[100px] bg-slate-100 px-1 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="w-[65px] px-1 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-2 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
-                  <tbody>{buildStatisticsSheetRows(form).map((line,i)=>{
+                  <tbody>{buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels}).map((line,i)=>{
                     if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
                     const isPercent=line.kind==="percent";
                     const isCount=/DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);

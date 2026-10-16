@@ -1348,8 +1348,25 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           </div>}
 
           {activeTab==="forecast"&&<div className="space-y-7">
-            
-            
+            <section className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
+              <div className="bg-gradient-to-r from-sky-900 via-blue-800 to-indigo-800 px-4 py-4 text-white sm:px-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-200">STEP 4 · STATISTICS</p>
+                <h3 className="mt-1 text-lg font-extrabold">LAPORAN STATISTIK — {form.yearStart}</h3>
+                <p className="mt-1 text-xs leading-5 text-sky-100">Mengikuti item dan formula statistik hotel. Nilai bulanan, total tahunan, dan laporan 10 tahun memakai basis perhitungan yang sama; data yang belum tersedia tetap ditampilkan sebagai —.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full min-w-[1250px] border-collapse text-[11px]">
+                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 min-w-[180px] bg-slate-100 px-3 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="px-2 py-2 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-3 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
+                  <tbody>{buildConsolidatedRows(form).filter(line=>["Days","# OF ROOMS","ROOM AVAILABLE","ROOM PAID","OCCUPIED ROOMS (PAID + COMPLIMENTARY)","OCCUPANCY (%)","AVERAGE ROOM RATE (ARR) (RP)","REVPAR (RP)","COMPLIMENTARY ROOM NIGHTS","EXCHANGE RATE US $ TO RP"].includes(line.label)).map((line,i)=>{
+                    const isPercent=line.kind==="percent"||line.label==="OCCUPANCY (%)";
+                    const isCount=["Days","# OF ROOMS","ROOM AVAILABLE","ROOM PAID","OCCUPIED ROOMS (PAID + COMPLIMENTARY)","COMPLIMENTARY ROOM NIGHTS"].includes(line.label);
+                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):line.label==="EXCHANGE RATE US $ TO RP"?fmt(v,2):money(v);
+                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{display(v)}</td>)}<td className="border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums">{display(line.total)}</td></tr>;
+                  })}</tbody>
+                </table>
+              </div>
+            </section>
+
             <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Ubah satu kali; proyeksi seluruh tahun dan nilai terkait akan dihitung ulang otomatis. Contoh: 2 berarti naik 2% setiap tahun, 0 berarti tidak ada kenaikan.</p></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
             <div className="rounded-2xl border border-sky-200 bg-sky-50/70 p-4">
               <div className="mb-3"><h3 className="text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h3><p className="mt-1 text-xs leading-5 text-slate-600">Laporan tahunan Januari–Desember dengan kolom TOTAL / RATA-RATA. Nilai dihitung dari data yang tersedia; data yang belum ada tetap ditampilkan sebagai —.</p></div>

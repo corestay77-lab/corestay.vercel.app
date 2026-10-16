@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
 
 type AdditionalMeetingRoom = { id:string; name:string; units:string; paxPerUnit:string; coverPercent:string };
-type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string; fbAverageGuestsPerRoom: string; fbLengthOfStay: string; fbRestaurantCoverPercent: string; fbAverageBreakfastCheck: string; fbMeetingRoomAUnits: string; fbMeetingRoomAPax: string; fbMeetingRoomACoverPercent: string; fbMeetingRoomBUnits: string; fbMeetingRoomBPax: string; fbMeetingRoomBCoverPercent: string; fbBallroomCapacity: string; fbBallroomCoverPercent: string; fbAverageMeetingCheck: string; fbAdditionalMeetingRooms?: AdditionalMeetingRoom[] };
+type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string; modBusinessCenterRevenue: string; modMassageRevenue: string; modLaundryRevenue: string; modOtherIncomeRevenue: string; fbAverageGuestsPerRoom: string; fbLengthOfStay: string; fbRestaurantCoverPercent: string; fbAverageBreakfastCheck: string; fbMeetingRoomAUnits: string; fbMeetingRoomAPax: string; fbMeetingRoomACoverPercent: string; fbMeetingRoomBUnits: string; fbMeetingRoomBPax: string; fbMeetingRoomBCoverPercent: string; fbBallroomCapacity: string; fbBallroomCoverPercent: string; fbAverageMeetingCheck: string; fbAdditionalMeetingRooms?: AdditionalMeetingRoom[] };
 type ForecastMonth = { smDetails?:Record<string,string>; agDetails?:Record<string,string>; hrdDetails?:Record<string,string>; modDetails?:Record<string,string>; fbDetails?:Record<string,string>; roomDivisionDetails?:Record<string,string>; pomecDetails?:Record<string,string>; label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string };
 type ForecastYear = { label: string; days: string; rooms: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
 type PayrollEmployee = { id:string; department:string; position:string; headcount:string; basicSalary:string; medical:string; meal:string; ptkpAnnual:string; insuranceMonthly:string; otherMonthly:string };
@@ -31,7 +31,7 @@ const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>(
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>{const y=year+i;return {label:String(y),days:String(y%4===0&&(y%100!==0||y%400===0)?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""};});
 const makeBlank = (): BudgetForm => ({
   hotelName:"",period:"",yearStart:"2027",payrollEmployees:[],
-  statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:"",fbAverageGuestsPerRoom:"2",fbLengthOfStay:"1",fbRestaurantCoverPercent:"35",fbAverageBreakfastCheck:"90000",fbMeetingRoomAUnits:"3",fbMeetingRoomAPax:"20",fbMeetingRoomACoverPercent:"35",fbMeetingRoomBUnits:"1",fbMeetingRoomBPax:"40",fbMeetingRoomBCoverPercent:"35",fbBallroomCapacity:"1000",fbBallroomCoverPercent:"30",fbAverageMeetingCheck:"85000",fbAdditionalMeetingRooms:[]},
+  statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:"",modBusinessCenterRevenue:"",modMassageRevenue:"",modLaundryRevenue:"",modOtherIncomeRevenue:"",fbAverageGuestsPerRoom:"2",fbLengthOfStay:"1",fbRestaurantCoverPercent:"35",fbAverageBreakfastCheck:"90000",fbMeetingRoomAUnits:"3",fbMeetingRoomAPax:"20",fbMeetingRoomACoverPercent:"35",fbMeetingRoomBUnits:"1",fbMeetingRoomBPax:"40",fbMeetingRoomBCoverPercent:"35",fbBallroomCapacity:"1000",fbBallroomCoverPercent:"30",fbAverageMeetingCheck:"85000",fbAdditionalMeetingRooms:[]},
   accounts:emptyAccounts(),budgetAllocations:{parentPercentBySection:{},childPercentByCode:{}},accountLines:ACCOUNT_LINES,customAccounts:[],forecast:{monthly:makeMonthly(2027),annual:makeAnnual(2027)},
   confirmAccountReview:false,notes:"",actionRecommendation:"",actionOwner:"",actionDue:"",actionTarget:"",actionStatus:"Belum dimulai",actionProgress:"0"
 });
@@ -82,6 +82,12 @@ const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthI
 const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => {
   const months=Array.from({length:12},(_,i)=>calculateFbStatisticsMonthly(statistics,year,i));
   return months.some(m=>m!==null)?months.reduce<number>((sum,m)=>sum+(m?.total??0),0):null;
+};
+// Step 1 MOD assumptions follow the four revenue heads in the workbook MOD sheet.
+// Inputs are annual IDR budgets and are allocated to months by calendar-day share.
+const calculateModStatisticsAnnual = (statistics:Statistics) => {
+  const values=[statistics.modBusinessCenterRevenue,statistics.modMassageRevenue,statistics.modLaundryRevenue,statistics.modOtherIncomeRevenue].map(optional);
+  return values.some(value=>value!==null)?values.reduce<number>((sum,value)=>sum+(value??0),0):null;
 };
 const calcAnnual = (row: ForecastYear) => {
   const days=optional(row.days), rooms=optional(row.rooms), occ=optional(row.occupancy), adr=optional(row.adr);
@@ -485,7 +491,11 @@ export default function HotelBudgetPage() {
       occupancy:occupancy!==null&&Number.isFinite(occupancy)?occupancy:null,
       adr:adr!==null&&Number.isFinite(adr)?adr:null,
       fb:calculateFbStatisticsAnnual(form.statistics,year)??total(["fbRevenue"]),
-      other:total(["otherRevenue"]),
+      other:(()=>{
+        const statByCode:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue)};
+        const values=allAccountLines.filter(line=>line.group==="otherRevenue").map(line=>statByCode[line.code]!==undefined&&statByCode[line.code]!==null?statByCode[line.code]:optional(form.accounts[line.code]?.budget||""));
+        return values.some(value=>value!==null)?values.reduce<number>((sum,value)=>sum+(value??0),0):null;
+      })(),
       costOfSales:total(["costOfSales"]),
       payroll:total(["payroll"]),
       operatingExpenses:total(["operatingExpenses"]),
@@ -523,7 +533,8 @@ export default function HotelBudgetPage() {
       const fbMonth=fbMonthlyValues[index];
       const fbFood=fbMonth===null?"":String(Math.round(fbMonth*foodShare));
       const fbBeverage=fbMonth===null?"":String(fbMonth-Number(fbFood||0));
-      const modDetails=Object.fromEntries(modRevenueCodes.map(([key,code])=>[key,monthlyShare(budgetForCode(code),share)]));
+      const modStatByCode:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue)};
+      const modDetails=Object.fromEntries(modRevenueCodes.map(([key,code])=>{const statValue=modStatByCode[code];const sourceValue=statValue!==undefined&&statValue!==null?statValue:budgetForCode(code);return [key,monthlyShare(sourceValue,share)];}));
       const modTotal=Object.values(modDetails).some(v=>v!=="")?String(Object.values(modDetails).reduce((sum,v)=>sum+(v===""?0:Number(v)),0)):baseOther===null?"":String(Math.round(baseOther*share));
       return {
         ...makeMonthly(startYear)[index],
@@ -1048,6 +1059,16 @@ export default function HotelBudgetPage() {
                     <div className="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-3"><button type="button" onClick={addAdditionalMeetingRoom} className="inline-flex items-center gap-2 rounded-xl bg-slate-900 px-4 py-2.5 text-xs font-bold text-white shadow-sm transition hover:bg-slate-700">＋ Tambah Meeting Room</button><p className="text-xs text-slate-500">Bisa tambah ruang sesuai fasilitas hotel. Tarif meeting mengikuti Average Check di atas.</p></div>
                     <p className="rounded-xl bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-500">Rumus mengikuti sheet STATISTIC: jumlah covers × average check. Revenue hasil perhitungan diteruskan ke Forecast; jika Budget P&amp;L F&amp;B diisi manual, nilai manual tetap menjadi prioritas.</p>
                   </div>
+                </div>
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  <div className="bg-gradient-to-r from-violet-950 via-indigo-950 to-sky-900 p-4 text-white sm:p-5"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-200">MOD REVENUE BUILDER</p><h3 className="mt-1 text-lg font-black sm:text-xl">Minor Operating Departments Revenue</h3><p className="mt-1 text-xs leading-5 text-violet-100">Empat kelompok revenue mengikuti sheet MOD pada workbook acuan. Isi anggaran tahunan dalam Rupiah; total dan alokasi bulanan dihitung otomatis.</p><div className="mt-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-wide text-violet-100">Estimasi MOD / Tahun</p><p className="mt-1 text-lg font-black">{idr(calculateModStatisticsAnnual(form.statistics))}</p></div></div>
+                  <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-5">
+                    {field("BUSINESS CENTRE — REVENUE / YEAR (RP)",form.statistics.modBusinessCenterRevenue,v=>updateStats("modBusinessCenterRevenue",v),{type:"number",min:"0",step:"1",hint:"Pendapatan business centre selama satu tahun."})}
+                    {field("MASSAGE / SPA — REVENUE / YEAR (RP)",form.statistics.modMassageRevenue,v=>updateStats("modMassageRevenue",v),{type:"number",min:"0",step:"1",hint:"Pendapatan massage atau spa selama satu tahun."})}
+                    {field("LAUNDRY — REVENUE / YEAR (RP)",form.statistics.modLaundryRevenue,v=>updateStats("modLaundryRevenue",v),{type:"number",min:"0",step:"1",hint:"Pendapatan laundry selama satu tahun."})}
+                    {field("OTHERS INCOME — REVENUE / YEAR (RP)",form.statistics.modOtherIncomeRevenue,v=>updateStats("modOtherIncomeRevenue",v),{type:"number",min:"0",step:"1",hint:"Pendapatan MOD lain sesuai kelompok Others Income pada workbook."})}
+                  </div>
+                  <p className="mx-3 mb-3 rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-950 sm:mx-5 sm:mb-5">Nilai MOD dialokasikan ke bulan berdasarkan jumlah hari kalender, lalu diteruskan ke Monthly &amp; Annual Forecast dan proyeksi 10 tahun. Nilai yang kosong tetap kosong dan akun Budget P&amp;L yang sudah diisi untuk kelompok lain tetap menjadi sumber cadangan.</p>
                 </div>
                 <div>
                   <div className="mb-3 flex items-center gap-2"><span className="h-5 w-1 rounded-full bg-violet-500"/><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Ringkasan Statistik Otomatis</h3></div>

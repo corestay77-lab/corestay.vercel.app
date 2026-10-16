@@ -139,7 +139,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("# OF ROOMS",months.map(()=>roomCount),"avg",undefined,roomCount);
   add("ROOM AVAILABLE",available,"sum",undefined,roomAvailableTotal);
   add("OCCUPIED ROOMS",occupied,"sum",undefined,occupiedTotal);
-  add("OCCUPANCY (%)",form.forecast.monthly.map(r=>optional(r.occupancy)),"percent", "occupancy",pct(occupiedTotal,roomAvailableTotal));
+  // Hospitality KPI standard: occupancy is rooms sold / rooms available; keep annual occupancy weighted by room nights.
+  add("OCCUPANCY (%)",occupied.map((sold,i)=>pct(sold,available[i])),"percent", "occupancy",pct(occupiedTotal,roomAvailableTotal));
   add("REVPAR (RP)",months.map((m,i)=>m.roomRevenue!==null&&available[i]!==null&&available[i]!>0?m.roomRevenue/available[i]!:null),"money",undefined,roomAvailableTotal!==null&&roomAvailableTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/roomAvailableTotal:null);
   add("EXCHANGE RATE US $ TO RP",form.forecast.monthly.map(()=>optional(form.statistics.exchangeRate)),"money",undefined,optional(form.statistics.exchangeRate));
   add("AVERAGE ROOM RATE (ARR) (RP)",months.map((m,i)=>m.roomRevenue!==null&&occupied[i]!==null&&occupied[i]!>0?m.roomRevenue/occupied[i]!:null),"money",undefined,occupiedTotal!==null&&occupiedTotal>0&&roomRevenueTotal!==null?roomRevenueTotal/occupiedTotal:null);

@@ -1121,7 +1121,6 @@ export default function HotelBudgetPage() {
                   <div className="mb-3 flex items-center gap-2"><span className="h-5 w-1 rounded-full bg-violet-500"/><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Ringkasan Statistik Otomatis</h3></div>
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">{roomStats.map(([label,value])=>metric(label,label==="OCCUPANCY (%)"?(value===null?"—":fmt(value)+"%"):label==="AVERAGE ROOM RATE (RP)"||label==="REVPAR"?money(value):fmt(value,0)))}</div>
                 </div>
-                <div className="flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-5 text-amber-950"><span className="text-lg">ⓘ</span><div><p className="font-bold">Pemeriksaan konsistensi</p><p className="mt-1">Room Available = jumlah kamar × hari periode, dikurangi kamar yang tidak tersedia bila datanya diisi. Occupancy statistik = paid rooms ÷ room available. ARR statistik = room revenue ÷ paid rooms; asumsi Occupancy dan ARR di atas diteruskan ke forecast.</p></div></div>
               </div>
             </section>
           </div>}

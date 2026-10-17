@@ -91,13 +91,14 @@ const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthI
   const meetingRoomARevenue=useDirectRevenue?allocateDirectMonth(directMeeting,"meeting"):(roomACovers!==null&&meetingCheck!==null?roomACovers*meetingCheck:null);
   const meetingRoomBRevenue=useDirectRevenue?null:(roomBCovers!==null&&meetingCheck!==null?roomBCovers*meetingCheck:null);
   const ballroomRevenue=useDirectRevenue?null:(ballroomCovers!==null&&meetingCheck!==null?ballroomCovers*meetingCheck:null);
+  const allocateAdditionalAnnual=(annual:number|null)=>annual===null?null:monthIndex===11?Math.round(annual)-Array.from({length:11},(_,i)=>Math.round(annual*seasonalWeight(i,"meeting"))).reduce((sum,value)=>sum+value,0):Math.round(annual*meetingMonthWeight);
   const additionalRooms=(statistics.fbAdditionalMeetingRooms||[]);
   const additionalValues=additionalRooms.map(room=>{
     const method=room.method||"event";
     const averageCheck=optional(room.averageCheck??"")??meetingCheck;
     if(method==="direct"){
       const annualRevenue=optional(room.annualRevenue??"");
-      return annualRevenue!==null&&yearDays>0?Math.round(annualRevenue*meetingMonthWeight):null;
+      return annualRevenue!==null&&yearDays>0?allocateAdditionalAnnual(annualRevenue):null;
     }
     if(method==="covers"||method==="transactions"){
       const volume=optional(room.volumePerDay??""),operatingDays=optional(room.operatingDays??"");

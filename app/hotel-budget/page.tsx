@@ -688,7 +688,6 @@ export default function HotelBudgetPage() {
     const monthly=monthNames.map((label,index)=>{
       const days=new Date(startYear,index+1,0).getDate();
       const share=days/daysInYear;
-      const roomBudget=forecastSource.roomBudget;
       const foodShare=foodPct+beveragePct>0?foodPct/(foodPct+beveragePct):0.7;
       const fbMonth=fbMonthlyValues[index];
       const fbFood=fbMonth===null?"":String(Math.round(fbMonth*foodShare));

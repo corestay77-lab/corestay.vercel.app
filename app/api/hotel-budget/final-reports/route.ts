@@ -118,7 +118,7 @@ export async function POST(request: NextRequest) {
         else if (["units","paxPerUnit"].includes(key) && !Number.isInteger(value)) issues.push("Meeting room tambahan " + (index + 1) + " — " + key + " harus bilangan bulat.");
       }
     }
-    const meetingRoomConfigured = ["fbMeetingRoomAUnits","fbMeetingRoomAPax","fbMeetingRoomACoverPercent","fbMeetingRoomBUnits","fbMeetingRoomBPax","fbMeetingRoomBCoverPercent"].some(key => numeric(stats[key]) !== null) || additionalMeetingRooms.some(room => ["units","paxPerUnit","coverPercent"].some(key => numeric(room?.[key]) !== null));
+    const meetingRoomConfigured = ["fbMeetingRoomAUnits","fbMeetingRoomAPax","fbMeetingRoomACoverPercent","fbMeetingRoomBUnits","fbMeetingRoomBPax","fbMeetingRoomBCoverPercent"].some(key => numeric(stats[key]) !== null) || additionalMeetingRooms.some((room: Record<string, unknown>) => ["units","paxPerUnit","coverPercent"].some(key => numeric(room?.[key]) !== null));
     if (meetingRoomConfigured && numeric(stats.fbMeetingRoomOperatingDays) === null) issues.push("Isi Meeting Room Operating Days / Year sebelum menghitung revenue meeting room.");
     const ballroomConfigured = ["fbBallroomCapacity","fbBallroomCoverPercent"].some(key => numeric(stats[key]) !== null);
     if (ballroomConfigured && numeric(stats.fbBallroomEventsPerYear) === null) issues.push("Isi Ballroom Events / Year sebelum menghitung revenue ballroom.");

@@ -506,7 +506,6 @@ export default function HotelBudgetPage() {
     const modCostBase=monthlyBase(row=>optional(row.modDetails?.laundryCost||""));
     const modPayrollBase=monthlyBase(row=>optional(row.modPayroll));
     const modOtherBase=monthlyBase(row=>optional(row.modOtherExpenses));
-    const annualize=(base:number|null,i:number)=>base===null?null:base*growth(i);
     const deptRow=(rev:(number|null)[],bases:(number|null)[][])=>years.map((_,i)=>{
       const inputs=[rev[i],...bases.map(base=>annualize(base[i]??null,i))];
       return inputs.every(v=>v!==null)?(inputs[0] as number)-inputs.slice(1).reduce<number>((sum,v)=>sum+(v as number),0):null;

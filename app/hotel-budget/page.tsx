@@ -599,7 +599,7 @@ export default function HotelBudgetPage() {
     const daysInYear=Number.isInteger(year)&&year>=1900&&year<=2200?(year%4===0&&(year%100!==0||year%400===0)?366:365):365;
     const roomNightsAtFullOccupancy=rooms!==null&&rooms>0?rooms*daysInYear:null;
     const enteredAdr=optional(form.statistics.averageSellingRate);
-    const sourceOccupancy=optional(form.statistics.occupancy)??values.occupancy;
+    const sourceOccupancy=optional(form.statistics.occupancy)??values.paidOccupancy;
     const sourceAdr=values.adr;
     // Budget room revenue plus a supplied ARR gives a derived occupancy.
     // If ARR is absent, use observed occupancy (when available) to derive the budget ADR.
@@ -654,7 +654,7 @@ export default function HotelBudgetPage() {
       payrollBudget,
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
     };
-  },[form.accounts,allAccountLines,values.occupancy,values.adr,form.statistics,form.yearStart]);
+  },[form.accounts,allAccountLines,values.occupancy,values.paidOccupancy,values.adr,form.statistics,form.yearStart]);
   useEffect(()=>{
     const startYear=Number(form.yearStart);
     if(!Number.isInteger(startYear)||startYear<1900||startYear>2200)return;

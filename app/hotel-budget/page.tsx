@@ -1233,6 +1233,153 @@ export default function HotelBudgetPage() {
                   </div>
                 </div>
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+                  {(() => {
+                    const year = Number(form.yearStart);
+                    const annual = calculateFbStatisticsAnnualBreakdown(form.statistics, year);
+                    const months = Array.from({length:12}, (_,i) => calculateFbStatisticsMonthly(form.statistics, year, i));
+                    const sum = (key:"restaurantRevenue"|"meetingRoomARevenue"|"meetingRoomBRevenue"|"ballroomRevenue"|"additionalMeetingRevenue") => {
+                      const values = months.map(m => m?.[key] ?? null);
+                      return values.some(v => v !== null) ? values.reduce<number>((total,v) => total + (v ?? 0), 0) : null;
+                    };
+                    const outletRows = [
+                      {name:"Restaurant & Breakfast", type:"Covers · Average check", value:annual.restaurant, color:"bg-teal-50 text-teal-800 ring-teal-200"},
+                      {name:"Meeting Room A", type:"Event · Pax · Cover", value:sum("meetingRoomARevenue"), color:"bg-indigo-50 text-indigo-800 ring-indigo-200"},
+                      {name:"Meeting Room B", type:"Event · Pax · Cover", value:sum("meetingRoomBRevenue"), color:"bg-violet-50 text-violet-800 ring-violet-200"},
+                      {name:"Ballroom", type:"Event · Capacity · Cover", value:sum("ballroomRevenue"), color:"bg-amber-50 text-amber-800 ring-amber-200"},
+                      {name:"Additional meeting/event outlets", type:"Outlet tambahan", value:sum("additionalMeetingRevenue"), color:"bg-sky-50 text-sky-800 ring-sky-200"}
+                    ];
+                    const activeCount = outletRows.filter(row => row.value !== null).length;
+                    const monthTotal = (m:any) => m?.total ?? null;
+                    return <>
+                      <div className="bg-gradient-to-r from-[#123b5d] via-[#176b83] to-[#6356b7] p-4 text-white sm:p-6">
+                        <div className="flex flex-wrap items-start justify-between gap-3">
+                          <div className="flex items-start gap-3">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/20 bg-white/15 text-2xl">🍽️</div>
+                            <div>
+                              <p className="text-[10px] font-extrabold uppercase tracking-[0.2em] text-cyan-100">STEP 1 · REVENUE BUDGET</p>
+                              <h3 className="mt-1 text-xl font-black sm:text-2xl">F&amp;B Revenue Builder</h3>
+                              <p className="mt-1 max-w-2xl text-xs leading-5 text-blue-50 sm:text-sm">Atur asumsi outlet dengan input ringkas. Revenue dihitung dari driver yang tersedia dan tetap memakai jalur sinkronisasi CoreStay yang sudah ada.</p>
+                            </div>
+                          </div>
+                          <span className="rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-bold text-white">Hybrid · Driver + Historical</span>
+                        </div>
+                        <div className="mt-5 grid gap-3 sm:grid-cols-3">
+                          <div className="rounded-2xl border border-white/15 bg-white/10 p-3 sm:p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-100">Baseline / Tahun</p>
+                            <p className="mt-1 text-lg font-black sm:text-xl">{idr(annual.total)}</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/15 bg-white/10 p-3 sm:p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-100">Restaurant</p>
+                            <p className="mt-1 text-lg font-black sm:text-xl">{idr(annual.restaurant)}</p>
+                          </div>
+                          <div className="rounded-2xl border border-white/15 bg-white/10 p-3 sm:p-4">
+                            <p className="text-[10px] font-bold uppercase tracking-wider text-cyan-100">Meeting &amp; Event</p>
+                            <p className="mt-1 text-lg font-black sm:text-xl">{idr(annual.meeting)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="space-y-5 p-4 sm:p-6">
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <h4 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Outlet &amp; revenue assumptions</h4>
+                            <p className="mt-1 text-xs leading-5 text-slate-500">Isi kolom yang relevan saja. Nilai yang belum diketahui dibiarkan kosong, bukan dianggap nol.</p>
+                          </div>
+                          <span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200">{activeCount} sumber revenue aktif</span>
+                        </div>
+
+                        <div className="rounded-2xl border border-teal-200 bg-gradient-to-br from-teal-50 via-white to-cyan-50 p-4 sm:p-5">
+                          <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+                            <div className="flex items-start gap-3">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-teal-600 text-lg text-white shadow-sm">☕</span>
+                              <div><h4 className="font-extrabold text-slate-900">Restaurant &amp; Breakfast</h4><p className="mt-1 text-xs text-slate-600">Driver berbasis tamu, tingkat penggunaan outlet, dan average check.</p></div>
+                            </div>
+                            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-teal-800 ring-1 ring-teal-200">Covers-based</span>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {field("AVERAGE GUESTS / ROOM",form.statistics.fbAverageGuestsPerRoom,v=>updateStats("fbAverageGuestsPerRoom",v),{type:"number",min:"0",step:"0.1",placeholder:"Contoh: 1,8"})}
+                            {field("LENGTH OF STAY (MALAM)",form.statistics.fbLengthOfStay,v=>updateStats("fbLengthOfStay",v),{type:"number",min:"0",step:"0.1",placeholder:"Contoh: 2,0"})}
+                            {field("RESTAURANT COVER (%)",form.statistics.fbRestaurantCoverPercent,v=>updateStats("fbRestaurantCoverPercent",v),{type:"number",min:"0",max:"100",step:"0.1",placeholder:"Contoh: 65"})}
+                            {field("AVERAGE CHECK / GUEST (RP)",form.statistics.fbAverageBreakfastCheck,v=>updateStats("fbAverageBreakfastCheck",v),{type:"number",min:"0",step:"1",placeholder:"Contoh: 125000"})}
+                          </div>
+                          <p className="mt-3 rounded-xl border border-teal-100 bg-white/80 px-3 py-2 text-[11px] leading-5 text-slate-600">Basis perhitungan mengikuti asumsi kamar, occupancy, rata-rata tamu, lama menginap, restaurant cover, dan average check yang diisi di Step 1.</p>
+                        </div>
+
+                        <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 via-white to-violet-50 p-4 sm:p-5">
+                          <div className="mb-4 flex flex-wrap items-start justify-between gap-2">
+                            <div className="flex items-start gap-3">
+                              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-600 text-lg text-white shadow-sm">🗓️</span>
+                              <div><h4 className="font-extrabold text-slate-900">Meeting, Banquet &amp; Event</h4><p className="mt-1 text-xs text-slate-600">Jumlah event, pax, tingkat penggunaan kapasitas, dan average check.</p></div>
+                            </div>
+                            <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold text-indigo-800 ring-1 ring-indigo-200">Event-based</span>
+                          </div>
+                          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                            {field("AVERAGE CHECK / PAX (RP)",form.statistics.fbAverageMeetingCheck,v=>updateStats("fbAverageMeetingCheck",v),{type:"number",min:"0",step:"1",placeholder:"Contoh: 350000"})}
+                            {field("HARI OPERASIONAL / TAHUN",form.statistics.fbMeetingRoomOperatingDays,v=>updateStats("fbMeetingRoomOperatingDays",v),{type:"number",min:"0",max:"366",step:"1",placeholder:"Contoh: 300"})}
+                          </div>
+                          <div className="mt-4 grid gap-3 xl:grid-cols-3">
+                            <div className="rounded-xl border border-indigo-100 bg-white p-3">
+                              <div className="mb-3 flex items-center justify-between gap-2"><h5 className="font-extrabold text-slate-800">Meeting Room A</h5><span className="rounded-full bg-indigo-50 px-2 py-1 text-[10px] font-bold text-indigo-700">A</span></div>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                {field("EVENT / TAHUN",form.statistics.fbMeetingRoomAEventsPerYear,v=>updateStats("fbMeetingRoomAEventsPerYear",v),{type:"number",min:"0",step:"1",placeholder:"Jumlah event"})}
+                                {field("PAX / EVENT",form.statistics.fbMeetingRoomAPax,v=>updateStats("fbMeetingRoomAPax",v),{type:"number",min:"0",step:"1",placeholder:"Pax"})}
+                                {field("COVER (%)",form.statistics.fbMeetingRoomACoverPercent,v=>updateStats("fbMeetingRoomACoverPercent",v),{type:"number",min:"0",max:"100",step:"0.1",placeholder:"0–100"})}
+                                <div className="rounded-lg bg-indigo-50/70 p-3"><p className="text-[10px] font-bold uppercase text-indigo-700">Baseline / Tahun</p><p className="mt-1 text-sm font-black text-indigo-950">{idr(sum("meetingRoomARevenue"))}</p></div>
+                              </div>
+                            </div>
+                            <div className="rounded-xl border border-violet-100 bg-white p-3">
+                              <div className="mb-3 flex items-center justify-between gap-2"><h5 className="font-extrabold text-slate-800">Meeting Room B</h5><span className="rounded-full bg-violet-50 px-2 py-1 text-[10px] font-bold text-violet-700">B</span></div>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                {field("EVENT / TAHUN",form.statistics.fbMeetingRoomBEventsPerYear,v=>updateStats("fbMeetingRoomBEventsPerYear",v),{type:"number",min:"0",step:"1",placeholder:"Jumlah event"})}
+                                {field("PAX / EVENT",form.statistics.fbMeetingRoomBPax,v=>updateStats("fbMeetingRoomBPax",v),{type:"number",min:"0",step:"1",placeholder:"Pax"})}
+                                {field("COVER (%)",form.statistics.fbMeetingRoomBCoverPercent,v=>updateStats("fbMeetingRoomBCoverPercent",v),{type:"number",min:"0",max:"100",step:"0.1",placeholder:"0–100"})}
+                                <div className="rounded-lg bg-violet-50/70 p-3"><p className="text-[10px] font-bold uppercase text-violet-700">Baseline / Tahun</p><p className="mt-1 text-sm font-black text-violet-950">{idr(sum("meetingRoomBRevenue"))}</p></div>
+                              </div>
+                            </div>
+                            <div className="rounded-xl border border-amber-100 bg-white p-3">
+                              <div className="mb-3 flex items-center justify-between gap-2"><h5 className="font-extrabold text-slate-800">Ballroom</h5><span className="rounded-full bg-amber-50 px-2 py-1 text-[10px] font-bold text-amber-800">Banquet</span></div>
+                              <div className="grid gap-3 sm:grid-cols-2">
+                                {field("KAPASITAS PAX",form.statistics.fbBallroomCapacity,v=>updateStats("fbBallroomCapacity",v),{type:"number",min:"0",step:"1",placeholder:"Pax / event"})}
+                                {field("EVENT / TAHUN",form.statistics.fbBallroomEventsPerYear,v=>updateStats("fbBallroomEventsPerYear",v),{type:"number",min:"0",step:"1",placeholder:"Jumlah event"})}
+                                {field("COVER (%)",form.statistics.fbBallroomCoverPercent,v=>updateStats("fbBallroomCoverPercent",v),{type:"number",min:"0",max:"100",step:"0.1",placeholder:"0–100"})}
+                                <div className="rounded-lg bg-amber-50/70 p-3"><p className="text-[10px] font-bold uppercase text-amber-800">Baseline / Tahun</p><p className="mt-1 text-sm font-black text-amber-950">{idr(sum("ballroomRevenue"))}</p></div>
+                              </div>
+                            </div>
+                          </div>
+                          <div className="mt-4 rounded-xl border border-dashed border-indigo-300 bg-white/75 p-3">
+                            <div className="flex flex-wrap items-center justify-between gap-2"><div><h5 className="font-extrabold text-slate-800">Outlet meeting / event tambahan</h5><p className="mt-1 text-xs text-slate-500">Tambah atau hapus outlet tambahan sesuai fasilitas hotel.</p></div><button type="button" onClick={addAdditionalMeetingRoom} className="rounded-xl bg-indigo-600 px-3 py-2 text-xs font-extrabold text-white shadow-sm transition hover:bg-indigo-700">+ Tambah Outlet</button></div>
+                            {(form.statistics.fbAdditionalMeetingRooms||[]).length===0&&<p className="mt-3 rounded-lg bg-slate-50 px-3 py-4 text-center text-xs text-slate-500">Belum ada outlet tambahan. Gunakan tombol “Tambah Outlet” bila diperlukan.</p>}
+                            <div className="mt-3 space-y-3">
+                              {(form.statistics.fbAdditionalMeetingRooms||[]).map((room,index)=><div key={room.id} className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 sm:grid-cols-2 xl:grid-cols-6">
+                                <div className="xl:col-span-2"><label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Nama outlet</label><input value={room.name} onChange={e=>updateAdditionalMeetingRoom(room.id,"name",e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm font-semibold text-slate-800 focus:border-indigo-400 focus:outline-none" placeholder="Nama outlet"/></div>
+                                <div><label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Event / tahun</label><input type="number" min="0" step="1" value={room.eventsPerYear||""} onChange={e=>updateAdditionalMeetingRoom(room.id,"eventsPerYear",e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Jumlah"/></div>
+                                <div><label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Pax / event</label><input type="number" min="0" step="1" value={room.paxPerUnit} onChange={e=>updateAdditionalMeetingRoom(room.id,"paxPerUnit",e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="Pax"/></div>
+                                <div><label className="mb-1 block text-[10px] font-bold uppercase tracking-wide text-slate-500">Cover (%)</label><input type="number" min="0" max="100" step="0.1" value={room.coverPercent} onChange={e=>updateAdditionalMeetingRoom(room.id,"coverPercent",e.target.value)} className="w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none" placeholder="0–100"/></div>
+                                <div className="flex items-end justify-between gap-2 xl:flex-col xl:items-stretch"><div><p className="text-[10px] font-bold uppercase text-slate-500">Baseline / tahun</p><p className="mt-1 text-sm font-black text-indigo-900">{idr(sum("additionalMeetingRevenue"))}</p></div><button type="button" onClick={()=>removeAdditionalMeetingRoom(room.id)} className="rounded-lg border border-rose-200 px-3 py-2 text-xs font-bold text-rose-700 hover:bg-rose-50">Hapus</button></div>
+                              </div>)}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-slate-200">
+                          <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900 px-4 py-3 text-white"><div><h4 className="font-extrabold">Revenue Summary · Outlet</h4><p className="mt-1 text-[11px] text-slate-300">Estimasi berdasarkan asumsi yang terisi · Tahun {Number.isFinite(year)?year:"—"}</p></div><span className="rounded-full bg-white/10 px-3 py-1 text-xs font-bold">IDR · Rupiah</span></div>
+                          <div className="overflow-x-auto"><table className="w-full min-w-[540px] border-collapse text-sm"><thead><tr className="bg-slate-50 text-left text-[10px] uppercase tracking-wide text-slate-500"><th className="px-4 py-3">Outlet</th><th className="px-4 py-3">Metode</th><th className="px-4 py-3 text-right">Baseline / tahun</th></tr></thead><tbody>
+                            {outletRows.map(row=><tr key={row.name} className="border-t border-slate-100"><td className="px-4 py-3 font-bold text-slate-800">{row.name}</td><td className="px-4 py-3"><span className={"inline-flex rounded-full px-2.5 py-1 text-[10px] font-bold ring-1 "+row.color}>{row.type}</span></td><td className="px-4 py-3 text-right font-extrabold tabular-nums text-slate-900">{idr(row.value)}</td></tr>)}
+                            <tr className="bg-gradient-to-r from-sky-50 to-indigo-50"><td colSpan={2} className="px-4 py-3 font-black text-slate-900">TOTAL F&amp;B REVENUE BASELINE</td><td className="px-4 py-3 text-right text-base font-black tabular-nums text-indigo-900">{idr(annual.total)}</td></tr>
+                          </tbody></table></div>
+                        </div>
+
+                        <div className="overflow-hidden rounded-2xl border border-sky-200">
+                          <div className="bg-gradient-to-r from-sky-700 to-indigo-700 px-4 py-3 text-white"><h4 className="font-extrabold">Monthly Revenue Preview</h4><p className="mt-1 text-[11px] text-sky-100">Pratinjau alokasi berdasarkan formula F&amp;B Step 1 yang saat ini berlaku; belum termasuk input penyesuaian nominal per bulan.</p></div>
+                          <div className="overflow-x-auto"><table className="w-full min-w-[700px] border-collapse text-xs"><thead><tr className="bg-sky-50 text-slate-600"><th className="px-3 py-2 text-left">Bulan</th><th className="px-3 py-2 text-right">Restaurant</th><th className="px-3 py-2 text-right">Meeting &amp; Event</th><th className="px-3 py-2 text-right">Total F&amp;B</th></tr></thead><tbody>
+                            {months.map((m,i)=><tr key={monthNames[i]} className="border-t border-slate-100"><td className="px-3 py-2 font-semibold text-slate-700">{monthNames[i]}</td><td className="px-3 py-2 text-right tabular-nums">{idr(m?.restaurantRevenue??null)}</td><td className="px-3 py-2 text-right tabular-nums">{idr([m?.meetingRoomARevenue,m?.meetingRoomBRevenue,m?.ballroomRevenue,m?.additionalMeetingRevenue].some(v=>v!==null&&v!==undefined)?[m?.meetingRoomARevenue,m?.meetingRoomBRevenue,m?.ballroomRevenue,m?.additionalMeetingRevenue].reduce<number>((s,v)=>s+(v??0),0):null)}</td><td className="px-3 py-2 text-right font-extrabold tabular-nums text-sky-900">{idr(monthTotal(m))}</td></tr>)}
+                          </tbody></table></div>
+                        </div>
+                        <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2.5 text-[11px] leading-5 text-amber-950">Catatan: menu ini hanya menambah tampilan input F&amp;B Step 1. Rumus departemen lain, Budget P&amp;L, Monthly &amp; Annual Forecast, konsolidasi 10 tahun, dan jalur sinkronisasi yang sudah ada tidak diubah.</p>
+                      </div>
+                    </>;
+                  })()}
+                </div>
+                <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <div className="bg-gradient-to-r from-violet-950 via-indigo-950 to-sky-900 p-4 text-white sm:p-5"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-200">MOD REVENUE BUILDER</p><h3 className="mt-1 text-lg font-black sm:text-xl">Minor Operating Departments Revenue</h3><p className="mt-1 text-xs leading-5 text-violet-100">Empat kelompok revenue mengikuti sheet MOD pada workbook acuan. Isi anggaran tahunan dalam Rupiah; total dan alokasi bulanan dihitung otomatis.</p><div className="mt-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-wide text-violet-100">Estimasi MOD / Tahun</p><p className="mt-1 text-lg font-black">{idr(calculateModStatisticsAnnual(form.statistics))}</p></div></div>
                   <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-5">
                     {field("BUSINESS CENTRE — REVENUE / YEAR (RP)",form.statistics.modBusinessCenterRevenue,v=>updateStats("modBusinessCenterRevenue",v),{type:"number",min:"0",step:"1",hint:"Pendapatan business centre selama satu tahun."})}

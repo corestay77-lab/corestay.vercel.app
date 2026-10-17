@@ -492,7 +492,8 @@ export default function HotelBudgetPage() {
       : detailCostBase!==null||costOfSalesBase!==null
         ? sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]])
         : y.calc.costs??sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]]));
-    const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
+    const costBucketsComplete=years.map((y,i)=>monthlyOperatingCostBase!==null||([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]].every(v=>v!==null))||(detailCostBase===null&&costOfSalesBase===null&&y.calc.costs!==null));
+    const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null&&costBucketsComplete[i]?revenue[i]!-costs[i]!:null);
     const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
     const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
     const totalRevenue=sum(revenue), totalRoomRev=sum(roomRevenue), totalAvailable=sum(roomAvail), totalOccupied=sum(occupied);

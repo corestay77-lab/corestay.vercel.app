@@ -72,7 +72,8 @@ const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthI
   const restaurantCovers=arrivals!==null&&restaurantCover!==null?arrivals*restaurantCover/100:null;
   const legacyRestaurantRevenue=restaurantCovers!==null&&breakfastCheck!==null?restaurantCovers*breakfastCheck:null;
   const directRestaurant=optional(statistics.fbRestaurantAnnualRevenue), directMeeting=optional(statistics.fbMeetingEventAnnualRevenue);
-  const useDirectRevenue=directRestaurant!==null||directMeeting!==null;
+  const hasStatisticsInputs=[statistics.fbAverageGuestsPerRoom,statistics.fbLengthOfStay,statistics.fbRestaurantCoverPercent,statistics.fbAverageBreakfastCheck,statistics.fbMeetingRoomAUnits,statistics.fbMeetingRoomAEventsPerYear,statistics.fbMeetingRoomAPax,statistics.fbMeetingRoomACoverPercent,statistics.fbMeetingRoomBUnits,statistics.fbMeetingRoomBEventsPerYear,statistics.fbMeetingRoomBPax,statistics.fbMeetingRoomBCoverPercent,statistics.fbBallroomCapacity,statistics.fbBallroomCoverPercent,statistics.fbBallroomEventsPerYear,statistics.fbAverageMeetingCheck,...(statistics.fbAdditionalMeetingRooms||[]).flatMap(room=>[room.units,room.eventsPerYear,room.paxPerUnit,room.coverPercent])].some(value=>String(value??"").trim()!=="");
+  const useDirectRevenue=!hasStatisticsInputs&&(directRestaurant!==null||directMeeting!==null);
   const annualDays=Array.from({length:12},(_,i)=>new Date(year,i+1,0).getDate()).reduce((sum,value)=>sum+value,0);
   const allocateDirectMonth=(annual:number|null)=>annual===null?null:monthIndex===11?Math.round(annual)-Array.from({length:11},(_,i)=>Math.round(annual*new Date(year,i+1,0).getDate()/annualDays)).reduce((sum,value)=>sum+value,0):Math.round(annual*days/annualDays);
   const restaurantRevenue=useDirectRevenue?allocateDirectMonth(directRestaurant):legacyRestaurantRevenue;
@@ -98,7 +99,8 @@ const calculateFbStatisticsAnnualBreakdown = (statistics:Statistics, year:number
     return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;
   };
   const directRestaurant=optional(statistics.fbRestaurantAnnualRevenue), directMeeting=optional(statistics.fbMeetingEventAnnualRevenue);
-  const hasDirect=directRestaurant!==null||directMeeting!==null;
+  const hasStatisticsInputs=[statistics.fbAverageGuestsPerRoom,statistics.fbLengthOfStay,statistics.fbRestaurantCoverPercent,statistics.fbAverageBreakfastCheck,statistics.fbMeetingRoomAUnits,statistics.fbMeetingRoomAEventsPerYear,statistics.fbMeetingRoomAPax,statistics.fbMeetingRoomACoverPercent,statistics.fbMeetingRoomBUnits,statistics.fbMeetingRoomBEventsPerYear,statistics.fbMeetingRoomBPax,statistics.fbMeetingRoomBCoverPercent,statistics.fbBallroomCapacity,statistics.fbBallroomCoverPercent,statistics.fbBallroomEventsPerYear,statistics.fbAverageMeetingCheck,...(statistics.fbAdditionalMeetingRooms||[]).flatMap(room=>[room.units,room.eventsPerYear,room.paxPerUnit,room.coverPercent])].some(value=>String(value??"").trim()!=="");
+  const hasDirect=!hasStatisticsInputs&&(directRestaurant!==null||directMeeting!==null);
   const restaurant=hasDirect?directRestaurant:sum("restaurantRevenue");
   const meetingParts=[sum("meetingRoomARevenue"),sum("meetingRoomBRevenue"),sum("ballroomRevenue"),sum("additionalMeetingRevenue")];
   const meeting=hasDirect?directMeeting:(meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null);
@@ -1234,21 +1236,52 @@ export default function HotelBudgetPage() {
                 </div>
                 <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-sky-50 px-4 py-4 sm:px-5">
-                    <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">REVENUE PLAN</p><h3 className="mt-1 text-lg font-black text-slate-900">Food &amp; Beverage Revenue Plan</h3><p className="mt-1 text-xs text-slate-600">Masukkan anggaran tahunan per kelompok revenue. Total, pembagian bulanan, Budget P&amp;L, dan forecast diperbarui otomatis.</p></div>
+                    <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">STATISTICS · F&amp;B</p><h3 className="mt-1 text-lg font-black text-slate-900">Food &amp; Beverage Revenue Plan</h3><p className="mt-1 text-xs text-slate-600">Input asumsi seperti sheet STATISTICS Excel. Estimasi revenue dihitung otomatis dari cover, kapasitas, event, dan average check.</p></div>
                     <span className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800">Tahun {form.yearStart} · IDR</span>
                   </div>
                   <div className="p-3 sm:p-5">
                     <div className="overflow-x-auto rounded-xl border border-slate-200">
-                      <table className="w-full min-w-[520px] border-collapse text-sm">
-                        <thead><tr className="bg-slate-800 text-white"><th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide">Revenue outlet</th><th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide">Akun Budget P&amp;L</th><th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide">Anggaran tahunan (Rp)</th></tr></thead>
+                      <table className="w-full min-w-[620px] border-collapse text-sm">
+                        <thead><tr className="bg-slate-800 text-white"><th className="px-3 py-3 text-left text-xs font-bold uppercase tracking-wide">Statistics / Assumption</th><th className="px-3 py-3 text-right text-xs font-bold uppercase tracking-wide">Input</th><th className="px-3 py-3 text-left text-xs font-bold uppercase tracking-wide">Unit</th></tr></thead>
                         <tbody>
-                          <tr className="border-t border-slate-100"><td className="px-4 py-3"><p className="font-bold text-slate-800">Restaurant &amp; Breakfast</p><p className="mt-0.5 text-xs text-slate-500">Pendapatan restoran dan sarapan</p></td><td className="px-4 py-3 text-xs font-semibold text-slate-500">41201</td><td className="px-4 py-2"><input aria-label="Restaurant and Breakfast annual revenue" type="number" min="0" step="1" inputMode="numeric" placeholder="—" value={form.statistics.fbRestaurantAnnualRevenue} onChange={e=>updateStats("fbRestaurantAnnualRevenue",e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-right font-semibold tabular-nums outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td></tr>
-                          <tr className="border-t border-slate-100 bg-slate-50/70"><td className="px-4 py-3"><p className="font-bold text-slate-800">Meeting &amp; Event</p><p className="mt-0.5 text-xs text-slate-500">Pendapatan meeting room, ballroom, dan event</p></td><td className="px-4 py-3 text-xs font-semibold text-slate-500">41205</td><td className="px-4 py-2"><input aria-label="Meeting and Event annual revenue" type="number" min="0" step="1" inputMode="numeric" placeholder="—" value={form.statistics.fbMeetingEventAnnualRevenue} onChange={e=>updateStats("fbMeetingEventAnnualRevenue",e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-right font-semibold tabular-nums outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td></tr>
+                          <tr className="bg-emerald-50"><td colSpan={3} className="px-3 py-2 font-extrabold text-emerald-900">RESTAURANT &amp; BREAKFAST</td></tr>
+                          {([
+                            ["AVERAGE GUEST / ROOM","fbAverageGuestsPerRoom","guest / room"],
+                            ["LENGTH OF STAY","fbLengthOfStay","nights"],
+                            ["RESTAURANT COVER (%)","fbRestaurantCoverPercent","%"],
+                            ["AVERAGE BREAKFAST CHECK","fbAverageBreakfastCheck","Rp / cover"]
+                          ] as const).map(([label,key,unit])=><tr key={key} className="border-t border-slate-100"><td className="px-3 py-2.5 font-medium text-slate-700">{label}</td><td className="px-3 py-2"><input aria-label={label} type="number" min="0" step="any" inputMode="decimal" placeholder="—" value={form.statistics[key]} onChange={e=>updateStats(key,e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-right font-semibold tabular-nums outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td><td className="px-3 py-2 text-xs text-slate-500">{unit}</td></tr>)}
+                          <tr className="bg-sky-50"><td colSpan={3} className="px-3 py-2 font-extrabold text-sky-900">MEETING ROOM A</td></tr>
+                          {([
+                            ["UNITS","fbMeetingRoomAUnits","room"],
+                            ["EVENTS PER YEAR","fbMeetingRoomAEventsPerYear","events"],
+                            ["PAX / UNIT","fbMeetingRoomAPax","pax"],
+                            ["COVER (%)","fbMeetingRoomACoverPercent","%"]
+                          ] as const).map(([label,key,unit])=><tr key={key} className="border-t border-slate-100"><td className="px-3 py-2.5 font-medium text-slate-700">{label}</td><td className="px-3 py-2"><input aria-label={"Meeting Room A "+label} type="number" min="0" step="any" inputMode="decimal" placeholder="—" value={form.statistics[key]} onChange={e=>updateStats(key,e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-right font-semibold tabular-nums outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td><td className="px-3 py-2 text-xs text-slate-500">{unit}</td></tr>)}
+                          <tr className="bg-sky-50"><td colSpan={3} className="px-3 py-2 font-extrabold text-sky-900">MEETING ROOM B</td></tr>
+                          {([
+                            ["UNITS","fbMeetingRoomBUnits","room"],
+                            ["EVENTS PER YEAR","fbMeetingRoomBEventsPerYear","events"],
+                            ["PAX / UNIT","fbMeetingRoomBPax","pax"],
+                            ["COVER (%)","fbMeetingRoomBCoverPercent","%"]
+                          ] as const).map(([label,key,unit])=><tr key={key} className="border-t border-slate-100"><td className="px-3 py-2.5 font-medium text-slate-700">{label}</td><td className="px-3 py-2"><input aria-label={"Meeting Room B "+label} type="number" min="0" step="any" inputMode="decimal" placeholder="—" value={form.statistics[key]} onChange={e=>updateStats(key,e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-right font-semibold tabular-nums outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td><td className="px-3 py-2 text-xs text-slate-500">{unit}</td></tr>)}
+                          <tr className="bg-sky-50"><td colSpan={3} className="px-3 py-2 font-extrabold text-sky-900">BALLROOM &amp; MEETING / EVENT PRICING</td></tr>
+                          {([
+                            ["BALLROOM CAPACITY","fbBallroomCapacity","pax / event"],
+                            ["BALLROOM COVER (%)","fbBallroomCoverPercent","%"],
+                            ["BALLROOM EVENTS PER YEAR","fbBallroomEventsPerYear","events"],
+                            ["AVERAGE MEETING CHECK","fbAverageMeetingCheck","Rp / pax"],
+                            ["MEETING ROOM OPERATING DAYS","fbMeetingRoomOperatingDays","days / year"]
+                          ] as const).map(([label,key,unit])=><tr key={key} className="border-t border-slate-100"><td className="px-3 py-2.5 font-medium text-slate-700">{label}</td><td className="px-3 py-2"><input aria-label={label} type="number" min="0" step="any" inputMode="decimal" placeholder="—" value={form.statistics[key]} onChange={e=>updateStats(key,e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-right font-semibold tabular-nums outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td><td className="px-3 py-2 text-xs text-slate-500">{unit}</td></tr>)}
                         </tbody>
-                        <tfoot><tr className="border-t-2 border-slate-200 bg-emerald-50"><td colSpan={2} className="px-4 py-3 font-black text-emerald-950">TOTAL F&amp;B REVENUE / YEAR</td><td className="px-4 py-3 text-right font-black tabular-nums text-emerald-950">{idr((optional(form.statistics.fbRestaurantAnnualRevenue)??0)+(optional(form.statistics.fbMeetingEventAnnualRevenue)??0) || (optional(form.statistics.fbRestaurantAnnualRevenue)!==null||optional(form.statistics.fbMeetingEventAnnualRevenue)!==null?0:null))}</td></tr></tfoot>
                       </table>
                     </div>
-                    <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600">Nilai tahunan dialokasikan menurut hari kalender; pembulatan disesuaikan pada Desember agar total 12 bulan sama persis dengan anggaran tahunan. Data yang kosong tetap kosong. Nilai otomatis tersinkron ke Budget P&amp;L (Budget), Monthly &amp; Annual Forecast, dan konsolidasi 10 tahun.</p>
+                    <div className="mt-4 grid gap-3 sm:grid-cols-3">
+                      <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">Restaurant &amp; Breakfast / Year</p><p className="mt-1 text-lg font-black text-slate-900">{idr(calculateFbStatisticsAnnualBreakdown(form.statistics,Number(form.yearStart)).restaurant)}</p></div>
+                      <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">Meeting &amp; Event / Year</p><p className="mt-1 text-lg font-black text-slate-900">{idr(calculateFbStatisticsAnnualBreakdown(form.statistics,Number(form.yearStart)).meeting)}</p></div>
+                      <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3"><p className="text-xs font-semibold text-emerald-800">TOTAL F&amp;B REVENUE / YEAR</p><p className="mt-1 text-lg font-black text-emerald-950">{idr(calculateFbStatisticsAnnual(form.statistics,Number(form.yearStart)))}</p></div>
+                    </div>
+                    <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600">Rumus mengikuti statistik hotel: arrivals × restaurant cover × average check; meeting/event memakai events × pax/capacity × cover × average check. Revenue dialokasikan menurut hari kalender dan diteruskan ke Budget P&amp;L, Monthly Forecast, Annual Forecast, serta konsolidasi 10 tahun. Input kosong tetap kosong.</p>
                   </div>
                 </section>
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">

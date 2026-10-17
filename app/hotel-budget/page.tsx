@@ -182,15 +182,19 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Department income can be derived from total revenue less the three
   // departmental cost buckets even when the costs have not been allocated
   // to every individual department line.
-  const departmentalOperatingCost=costParts.map(c=>sumComplete([c.cos,c.payroll,c.deptOther]));
-  const deptIncomeTotal=deptIncome.map(d=>sumComplete([d.room,d.fb,d.phone,d.mod]));
-  // Do not classify an unexplained cost residual as overhead. Keep this
-  // subtotal blank unless both overhead buckets have entered detail.
-  const overheadTotal=costParts.map(c=>sumComplete([c.overheadPayroll,c.overheadOther]));
-  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&overheadTotal[i]!==null?v-overheadTotal[i]!:null);
+  // Subtotals add all entered amounts, even if other account lines are still blank.
+  // Missing source values remain blank and are never converted to zero in the report.
+  const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
+  const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.phone,d.mod]));
+  const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
+  // Profit lines require complete inputs for the calculation; a partial overhead subtotal
+  // must not be mistaken for the full expense amount.
+  const overheadComplete=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null);
+  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&overheadComplete[i]?v-(overheadTotal[i]??0):null);
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
-  const nonOp= form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
-  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
+  const nonOp= form.forecast.monthly.map(r=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
+  const nonOpComplete=form.forecast.monthly.map(r=>val(r,"otherManagementFee")!==null&&val(r,"insuranceGeneral")!==null);
+  const gop=goi.map((v,i)=>v!==null&&nonOpComplete[i]&&nonOp[i]!==null?v-nonOp[i]!:null);
   const otherExpense= form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
   const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
   // Owner/operator share is a profit allocation, not an operating expense.

@@ -96,6 +96,21 @@ export async function POST(request: NextRequest) {
       else if (numeric(raw) === null) issues.push("Statistik "+key+" harus berupa angka yang valid.");
       else if (!Number.isInteger(numeric(raw))) issues.push("Statistik "+key+" harus berupa bilangan bulat room-night.");
     }
+    const fnbNumericKeys = ["occupancy","exchangeRate","averageSellingRate","modBusinessCenterRevenue","modMassageRevenue","modLaundryRevenue","modOtherIncomeRevenue","fbAverageGuestsPerRoom","fbLengthOfStay","fbRestaurantCoverPercent","fbAverageBreakfastCheck","fbMeetingRoomAUnits","fbMeetingRoomAPax","fbMeetingRoomACoverPercent","fbMeetingRoomBUnits","fbMeetingRoomBPax","fbMeetingRoomBCoverPercent","fbMeetingRoomOperatingDays","fbBallroomCapacity","fbBallroomCoverPercent","fbBallroomEventsPerYear","fbAverageMeetingCheck"];
+    for (const key of fnbNumericKeys) {
+      const raw = stats[key];
+      if (raw === "" || raw === null || raw === undefined) continue;
+      const value = numeric(raw);
+      if (value === null || value < 0) issues.push("Asumsi " + key + " harus berupa angka valid dan tidak negatif.");
+      else if (key.toLowerCase().includes("coverpercent") && value > 100) issues.push("Asumsi " + key + " tidak boleh melebihi 100%.");
+      else if (["fbMeetingRoomOperatingDays","fbBallroomEventsPerYear"].includes(key) && !Number.isInteger(value)) issues.push("Asumsi " + key + " harus berupa bilangan bulat.");
+      else if (key === "fbMeetingRoomOperatingDays" && value > (new Date(Number(form.yearStart), 0, 1).getFullYear() % 4 === 0 && (new Date(Number(form.yearStart), 0, 1).getFullYear() % 100 !== 0 || new Date(Number(form.yearStart), 0, 1).getFullYear() % 400 === 0) ? 366 : 365)) issues.push("Hari operasional meeting room tidak boleh melebihi jumlah hari dalam tahun forecast.");
+      else if (key === "fbLengthOfStay" && value <= 0) issues.push("Length of Stay harus lebih besar dari nol.");
+    }
+    const meetingRoomConfigured = ["fbMeetingRoomAUnits","fbMeetingRoomAPax","fbMeetingRoomACoverPercent","fbMeetingRoomBUnits","fbMeetingRoomBPax","fbMeetingRoomBCoverPercent"].some(key => numeric(stats[key]) !== null);
+    if (meetingRoomConfigured && numeric(stats.fbMeetingRoomOperatingDays) === null) issues.push("Isi Meeting Room Operating Days / Year sebelum menghitung revenue meeting room.");
+    const ballroomConfigured = ["fbBallroomCapacity","fbBallroomCoverPercent"].some(key => numeric(stats[key]) !== null);
+    if (ballroomConfigured && numeric(stats.fbBallroomEventsPerYear) === null) issues.push("Isi Ballroom Events / Year sebelum menghitung revenue ballroom.");
     const deductions: [string,number][] = ["outInventory","houseUse","outOfOrder"].map(k => [k,numeric(stats[k]) ?? 0] as [string,number]);
     for (const [key,value] of deductions) if (!Number.isFinite(value) || value < 0) issues.push("Statistik "+key+" tidak boleh negatif atau tidak valid.");
     if (deductions.reduce((s,x)=>s+x[1],0)>totalRoomBuild) issues.push("Out of Inventory + House Use + Out of Order melebihi Total Room Build.");
@@ -200,7 +215,7 @@ export async function POST(request: NextRequest) {
     const apiKey=process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ passed:false, issues:["GEMINI_API_KEY tidak tersedia; AI Orchestrator wajib menyelesaikan validasi sebelum penyimpanan."], warnings, error:"Validasi AI belum tersedia. Laporan belum disimpan." }, { status:503 });
     const google=createGoogleGenerativeAI({apiKey});
-    const reviewPrompt=`Validasi akhir laporan hotel CoreStay. Jangan mengubah angka, jangan mengarang nilai kosong, dan jangan menyatakan akun kosong sama dengan nol. Periksa konsistensi statistik kamar, occupancy, ADR, RevPAR, rekonsiliasi total revenue, operating cost, GOP, margin, serta variance actual-budget-last year. Kalkulasi server (sumber kebenaran matematis): ${JSON.stringify(calculations)}. Statistik: ${JSON.stringify(stats)}. Akun P&L (JSON): ${JSON.stringify(accounts)}. Forecast: ${JSON.stringify(form.forecast)}. Jika ada ketidaksesuaian material, passed=false. Ringkasan Bahasa Indonesia singkat. Warnings boleh berisi data yang belum lengkap, tetapi jangan meloloskan kesalahan aritmetika.`;
+    const reviewPrompt=`Validasi akhir laporan hotel CoreStay. Jangan mengubah angka, jangan mengarang nilai kosong, dan jangan menyatakan akun kosong sama dengan nol. Periksa konsistensi statistik kamar, occupancy, ADR, RevPAR, rekonsiliasi total revenue, operating cost, GOP, margin, serta variance actual-budget-last year. Kalkulasi server (sumber kebenaran matematis): ${JSON.stringify(calculations)}. Statistik: ${JSON.stringify(stats)}. Akun P&L (JSON): ${JSON.stringify(accounts)}. Forecast: ${JSON.stringify(form.forecast)}. Periksa juga konsistensi Step 1 ke forecast: Meeting Room A/B harus memakai hari operasional tahunan, Ballroom harus memakai jumlah event per tahun; pastikan total 12 bulan, Annual Forecast, dan 10-Year Consolidated tidak menggandakan atau menghilangkan pendapatan. Tinjau payroll, klasifikasi biaya departemen vs overhead, GOP, OSP/NOSP, serta jangan menganggap nilai kosong sebagai nol. Jika ada ketidaksesuaian material, passed=false. Ringkasan Bahasa Indonesia singkat. Warnings boleh berisi data yang belum lengkap, tetapi jangan meloloskan kesalahan aritmetika.`;
     let review: z.infer<typeof ReviewSchema>|null=null;
     let lastError: unknown=null;
     for (const modelId of ["gemini-3.8-flash","gemini-3.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"]) {

@@ -83,11 +83,10 @@ const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthI
   const legacyRestaurantRevenue=restaurantCovers!==null&&breakfastCheck!==null?restaurantCovers*breakfastCheck:null;
   const directRestaurant=optional(statistics.fbRestaurantAnnualRevenue), directMeeting=optional(statistics.fbMeetingEventAnnualRevenue);
   const useDirectRevenue=directRestaurant!==null||directMeeting!==null;
-  const annualDays=Array.from({length:12},(_,i)=>new Date(year,i+1,0).getDate()).reduce((sum,value)=>sum+value,0);
   const allocateDirectMonth=(annual:number|null,kind:"restaurant"|"meeting")=>{if(annual===null)return null;const weight=seasonalWeight(monthIndex,kind);if(monthIndex===11){const prior=Array.from({length:11},(_,i)=>Math.round(annual*seasonalWeight(i,kind))).reduce((sum,value)=>sum+value,0);return Math.round(annual)-prior;}return Math.round(annual*weight);};
   const restaurantRevenue=useDirectRevenue?allocateDirectMonth(directRestaurant,"restaurant"):legacyRestaurantRevenue;
-  const roomACovers=aEvents!==null&&aPax!==null&&aCover!==null&&yearDays>0?aEvents*days/yearDays*aPax*aCover/100:null;
-  const roomBCovers=bEvents!==null&&bPax!==null&&bCover!==null&&yearDays>0?bEvents*days/yearDays*bPax*bCover/100:null;
+  const roomACovers=aEvents!==null&&aPax!==null&&aCover!==null&&yearDays>0?aEvents*meetingMonthWeight*aPax*aCover/100:null;
+  const roomBCovers=bEvents!==null&&bPax!==null&&bCover!==null&&yearDays>0?bEvents*meetingMonthWeight*bPax*bCover/100:null;
   const ballroomCovers=ballroomCapacity!==null&&ballroomCover!==null&&ballroomEventsThisMonth!==null?ballroomCapacity*ballroomEventsThisMonth*ballroomCover/100:null;
   const meetingRoomARevenue=useDirectRevenue?allocateDirectMonth(directMeeting,"meeting"):(roomACovers!==null&&meetingCheck!==null?roomACovers*meetingCheck:null);
   const meetingRoomBRevenue=useDirectRevenue?null:(roomBCovers!==null&&meetingCheck!==null?roomBCovers*meetingCheck:null);
@@ -112,10 +111,11 @@ const calculateFbStatisticsAnnualBreakdown = (statistics:Statistics, year:number
     return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;
   };
   const directRestaurant=optional(statistics.fbRestaurantAnnualRevenue), directMeeting=optional(statistics.fbMeetingEventAnnualRevenue);
-  const hasDirect=directRestaurant!==null||directMeeting!==null;
-  const restaurant=hasDirect?directRestaurant:sum("restaurantRevenue");
+  const calculatedRestaurant=sum("restaurantRevenue");
+  const restaurant=calculatedRestaurant!==null?calculatedRestaurant:directRestaurant;
   const meetingParts=[sum("meetingRoomARevenue"),sum("meetingRoomBRevenue"),sum("ballroomRevenue"),sum("additionalMeetingRevenue")];
-  const meeting=hasDirect?directMeeting:(meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null);
+  const calculatedMeeting=meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null;
+  const meeting=calculatedMeeting!==null?calculatedMeeting:directMeeting;
   return {restaurant,meeting,total:restaurant!==null||meeting!==null?(restaurant??0)+(meeting??0):null};
 };
 const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => calculateFbStatisticsAnnualBreakdown(statistics,year).total;

@@ -1010,10 +1010,10 @@ export default function HotelBudgetPage() {
 
 
   const inputClass="w-full min-w-0 rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-sky-400 focus:ring-4 focus:ring-sky-100";
-  const field=(label:string,value:string,onChange:(value:string)=>void,options:{type?:string;hint?:string;min?:string;step?:string;placeholder?:string}={})=>(
+  const field=(label:string,value:string,onChange:(value:string)=>void,options:{type?:string;hint?:string;min?:string;max?:string;step?:string;placeholder?:string}={})=>(
     <label className="block min-w-0">
       <span className="mb-1.5 block text-sm font-semibold text-slate-700">{label}</span>
-      <input className={inputClass} type={options.type||"text"} value={value} onChange={e=>onChange(e.target.value)} min={options.min} step={options.step||"any"} placeholder={options.placeholder||"Isi sesuai sumber"} />
+      <input className={inputClass} type={options.type||"text"} value={value} onChange={e=>onChange(e.target.value)} min={options.min} max={options.max} step={options.step||"any"} placeholder={options.placeholder||"Isi sesuai sumber"} />
       {options.hint&&<span className="mt-1 block text-xs leading-5 text-slate-500">{options.hint}</span>}
     </label>
   );

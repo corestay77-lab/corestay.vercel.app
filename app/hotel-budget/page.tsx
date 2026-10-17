@@ -6,7 +6,7 @@ import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
 
 type AdditionalMeetingRoom = { id:string; name:string; units:string; eventsPerYear?:string; paxPerUnit:string; coverPercent:string };
-type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string; modBusinessCenterRevenue: string; modMassageRevenue: string; modLaundryRevenue: string; modOtherIncomeRevenue: string; fbAverageGuestsPerRoom: string; fbLengthOfStay: string; fbRestaurantCoverPercent: string; fbAverageBreakfastCheck: string; fbMeetingRoomAUnits: string; fbMeetingRoomAEventsPerYear: string; fbMeetingRoomAPax: string; fbMeetingRoomACoverPercent: string; fbMeetingRoomBUnits: string; fbMeetingRoomBEventsPerYear: string; fbMeetingRoomBPax: string; fbMeetingRoomBCoverPercent: string; fbMeetingRoomOperatingDays: string; fbBallroomCapacity: string; fbBallroomCoverPercent: string; fbBallroomEventsPerYear: string; fbAverageMeetingCheck: string; fbAdditionalMeetingRooms?: AdditionalMeetingRoom[] };
+type Statistics = { days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string; modBusinessCenterRevenue: string; modMassageRevenue: string; modLaundryRevenue: string; modOtherIncomeRevenue: string; fbRestaurantAnnualRevenue: string; fbMeetingEventAnnualRevenue: string; fbAverageGuestsPerRoom: string; fbLengthOfStay: string; fbRestaurantCoverPercent: string; fbAverageBreakfastCheck: string; fbMeetingRoomAUnits: string; fbMeetingRoomAEventsPerYear: string; fbMeetingRoomAPax: string; fbMeetingRoomACoverPercent: string; fbMeetingRoomBUnits: string; fbMeetingRoomBEventsPerYear: string; fbMeetingRoomBPax: string; fbMeetingRoomBCoverPercent: string; fbMeetingRoomOperatingDays: string; fbBallroomCapacity: string; fbBallroomCoverPercent: string; fbBallroomEventsPerYear: string; fbAverageMeetingCheck: string; fbAdditionalMeetingRooms?: AdditionalMeetingRoom[] };
 type ForecastMonth = { smDetails?:Record<string,string>; agDetails?:Record<string,string>; hrdDetails?:Record<string,string>; modDetails?:Record<string,string>; fbDetails?:Record<string,string>; roomDivisionDetails?:Record<string,string>; pomecDetails?:Record<string,string>; label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string };
 type ForecastYear = { label: string; days: string; rooms: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
 type PayrollEmployee = { id:string; department:string; position:string; headcount:string; basicSalary:string; medical:string; meal:string; ptkpAnnual:string; insuranceMonthly:string; otherMonthly:string };
@@ -31,7 +31,7 @@ const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>(
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>{const y=year+i;return {label:String(y),days:String(y%4===0&&(y%100!==0||y%400===0)?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""};});
 const makeBlank = (): BudgetForm => ({
   hotelName:"",period:"",yearStart:"2027",payrollEmployees:[],
-  statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:"",modBusinessCenterRevenue:"",modMassageRevenue:"",modLaundryRevenue:"",modOtherIncomeRevenue:"",fbAverageGuestsPerRoom:"",fbLengthOfStay:"",fbRestaurantCoverPercent:"",fbAverageBreakfastCheck:"",fbMeetingRoomAUnits:"",fbMeetingRoomAEventsPerYear:"",fbMeetingRoomAPax:"",fbMeetingRoomACoverPercent:"",fbMeetingRoomBUnits:"",fbMeetingRoomBEventsPerYear:"",fbMeetingRoomBPax:"",fbMeetingRoomBCoverPercent:"",fbMeetingRoomOperatingDays:"200",fbBallroomCapacity:"",fbBallroomCoverPercent:"",fbBallroomEventsPerYear:"",fbAverageMeetingCheck:"",fbAdditionalMeetingRooms:[]},
+  statistics:{days:"30",rooms:"",outInventory:"",houseUse:"",outOfOrder:"",complimentary:"",roomPaid:"",occupancy:"",exchangeRate:"",averageSellingRate:"",modBusinessCenterRevenue:"",modMassageRevenue:"",modLaundryRevenue:"",modOtherIncomeRevenue:"",fbRestaurantAnnualRevenue:"",fbMeetingEventAnnualRevenue:"",fbAverageGuestsPerRoom:"",fbLengthOfStay:"",fbRestaurantCoverPercent:"",fbAverageBreakfastCheck:"",fbMeetingRoomAUnits:"",fbMeetingRoomAEventsPerYear:"",fbMeetingRoomAPax:"",fbMeetingRoomACoverPercent:"",fbMeetingRoomBUnits:"",fbMeetingRoomBEventsPerYear:"",fbMeetingRoomBPax:"",fbMeetingRoomBCoverPercent:"",fbMeetingRoomOperatingDays:"200",fbBallroomCapacity:"",fbBallroomCoverPercent:"",fbBallroomEventsPerYear:"",fbAverageMeetingCheck:"",fbAdditionalMeetingRooms:[]},
   accounts:emptyAccounts(),budgetAllocations:{parentPercentBySection:{},childPercentByCode:{}},accountLines:ACCOUNT_LINES,customAccounts:[],forecast:{monthly:makeMonthly(2027),annual:makeAnnual(2027)},
   confirmAccountReview:false,notes:"",actionRecommendation:"",actionOwner:"",actionDue:"",actionTarget:"",actionStatus:"Belum dimulai",actionProgress:"0"
 });
@@ -70,19 +70,24 @@ const calculateFbStatisticsMonthly = (statistics:Statistics, year:number, monthI
   const ballroomEventsThisMonth=ballroomEvents!==null&&yearDays>0?ballroomEvents*days/yearDays:null;
   const arrivals=rooms!==null&&occupancy!==null&&averageGuests!==null&&lengthOfStay!==null&&lengthOfStay>0?rooms*days*occupancy/100*averageGuests/lengthOfStay:null;
   const restaurantCovers=arrivals!==null&&restaurantCover!==null?arrivals*restaurantCover/100:null;
-  const restaurantRevenue=restaurantCovers!==null&&breakfastCheck!==null?restaurantCovers*breakfastCheck:null;
+  const legacyRestaurantRevenue=restaurantCovers!==null&&breakfastCheck!==null?restaurantCovers*breakfastCheck:null;
+  const directRestaurant=optional(statistics.fbRestaurantAnnualRevenue), directMeeting=optional(statistics.fbMeetingEventAnnualRevenue);
+  const useDirectRevenue=directRestaurant!==null||directMeeting!==null;
+  const annualDays=Array.from({length:12},(_,i)=>new Date(year,i+1,0).getDate()).reduce((sum,value)=>sum+value,0);
+  const allocateDirectMonth=(annual:number|null)=>annual===null?null:monthIndex===11?Math.round(annual)-Array.from({length:11},(_,i)=>Math.round(annual*new Date(year,i+1,0).getDate()/annualDays)).reduce((sum,value)=>sum+value,0):Math.round(annual*days/annualDays);
+  const restaurantRevenue=useDirectRevenue?allocateDirectMonth(directRestaurant):legacyRestaurantRevenue;
   const roomACovers=aEvents!==null&&aPax!==null&&aCover!==null&&yearDays>0?aEvents*days/yearDays*aPax*aCover/100:null;
   const roomBCovers=bEvents!==null&&bPax!==null&&bCover!==null&&yearDays>0?bEvents*days/yearDays*bPax*bCover/100:null;
   const ballroomCovers=ballroomCapacity!==null&&ballroomCover!==null&&ballroomEventsThisMonth!==null?ballroomCapacity*ballroomEventsThisMonth*ballroomCover/100:null;
-  const meetingRoomARevenue=roomACovers!==null&&meetingCheck!==null?roomACovers*meetingCheck:null;
-  const meetingRoomBRevenue=roomBCovers!==null&&meetingCheck!==null?roomBCovers*meetingCheck:null;
-  const ballroomRevenue=ballroomCovers!==null&&meetingCheck!==null?ballroomCovers*meetingCheck:null;
+  const meetingRoomARevenue=useDirectRevenue?allocateDirectMonth(directMeeting):(roomACovers!==null&&meetingCheck!==null?roomACovers*meetingCheck:null);
+  const meetingRoomBRevenue=useDirectRevenue?null:(roomBCovers!==null&&meetingCheck!==null?roomBCovers*meetingCheck:null);
+  const ballroomRevenue=useDirectRevenue?null:(ballroomCovers!==null&&meetingCheck!==null?ballroomCovers*meetingCheck:null);
   const additionalRooms=(statistics.fbAdditionalMeetingRooms||[]);
   const additionalValues=additionalRooms.map(room=>{
     const legacyUnits=optional(room.units),events=optional(room.eventsPerYear)??(legacyUnits!==null&&legacyOperatingDays!==null?legacyUnits*legacyOperatingDays:null),pax=optional(room.paxPerUnit),cover=optional(room.coverPercent);
     return events!==null&&pax!==null&&cover!==null&&meetingCheck!==null&&yearDays>0?events*days/yearDays*pax*cover/100*meetingCheck:null;
   });
-  const additionalMeetingRevenue=additionalValues.some(v=>v!==null)?additionalValues.reduce<number>((sum,v)=>sum+(v??0),0):null;
+  const additionalMeetingRevenue=useDirectRevenue?null:(additionalValues.some(v=>v!==null)?additionalValues.reduce<number>((sum,v)=>sum+(v??0),0):null);
   const parts=[restaurantRevenue,meetingRoomARevenue,meetingRoomBRevenue,ballroomRevenue,additionalMeetingRevenue].filter((v):v is number=>v!==null);
   return {days,arrivals,restaurantCovers,restaurantRevenue,meetingRoomARevenue,meetingRoomBRevenue,ballroomRevenue,additionalMeetingRevenue,total:parts.length?parts.reduce((sum,v)=>sum+v,0):null};
 };
@@ -92,9 +97,11 @@ const calculateFbStatisticsAnnualBreakdown = (statistics:Statistics, year:number
     const values=months.map(m=>m?.[key]??null);
     return values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;
   };
-  const restaurant=sum("restaurantRevenue");
+  const directRestaurant=optional(statistics.fbRestaurantAnnualRevenue), directMeeting=optional(statistics.fbMeetingEventAnnualRevenue);
+  const hasDirect=directRestaurant!==null||directMeeting!==null;
+  const restaurant=hasDirect?directRestaurant:sum("restaurantRevenue");
   const meetingParts=[sum("meetingRoomARevenue"),sum("meetingRoomBRevenue"),sum("ballroomRevenue"),sum("additionalMeetingRevenue")];
-  const meeting=meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null;
+  const meeting=hasDirect?directMeeting:(meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null);
   return {restaurant,meeting,total:restaurant!==null||meeting!==null?(restaurant??0)+(meeting??0):null};
 };
 const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => calculateFbStatisticsAnnualBreakdown(statistics,year).total;
@@ -1225,6 +1232,25 @@ export default function HotelBudgetPage() {
                     {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",step:"any",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
                   </div>
                 </div>
+                <section className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+                  <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-gradient-to-r from-emerald-50 via-white to-sky-50 px-4 py-4 sm:px-5">
+                    <div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-emerald-700">REVENUE PLAN</p><h3 className="mt-1 text-lg font-black text-slate-900">Food &amp; Beverage Revenue Plan</h3><p className="mt-1 text-xs text-slate-600">Masukkan anggaran tahunan per kelompok revenue. Total, pembagian bulanan, Budget P&amp;L, dan forecast diperbarui otomatis.</p></div>
+                    <span className="rounded-full border border-emerald-200 bg-white px-3 py-1.5 text-xs font-bold text-emerald-800">Tahun {form.yearStart} · IDR</span>
+                  </div>
+                  <div className="p-3 sm:p-5">
+                    <div className="overflow-x-auto rounded-xl border border-slate-200">
+                      <table className="w-full min-w-[520px] border-collapse text-sm">
+                        <thead><tr className="bg-slate-800 text-white"><th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide">Revenue outlet</th><th className="px-4 py-3 text-left text-xs font-bold uppercase tracking-wide">Akun Budget P&amp;L</th><th className="px-4 py-3 text-right text-xs font-bold uppercase tracking-wide">Anggaran tahunan (Rp)</th></tr></thead>
+                        <tbody>
+                          <tr className="border-t border-slate-100"><td className="px-4 py-3"><p className="font-bold text-slate-800">Restaurant &amp; Breakfast</p><p className="mt-0.5 text-xs text-slate-500">Pendapatan restoran dan sarapan</p></td><td className="px-4 py-3 text-xs font-semibold text-slate-500">41201</td><td className="px-4 py-2"><input aria-label="Restaurant and Breakfast annual revenue" type="number" min="0" step="1" inputMode="numeric" placeholder="—" value={form.statistics.fbRestaurantAnnualRevenue} onChange={e=>updateStats("fbRestaurantAnnualRevenue",e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-right font-semibold tabular-nums outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td></tr>
+                          <tr className="border-t border-slate-100 bg-slate-50/70"><td className="px-4 py-3"><p className="font-bold text-slate-800">Meeting &amp; Event</p><p className="mt-0.5 text-xs text-slate-500">Pendapatan meeting room, ballroom, dan event</p></td><td className="px-4 py-3 text-xs font-semibold text-slate-500">41205</td><td className="px-4 py-2"><input aria-label="Meeting and Event annual revenue" type="number" min="0" step="1" inputMode="numeric" placeholder="—" value={form.statistics.fbMeetingEventAnnualRevenue} onChange={e=>updateStats("fbMeetingEventAnnualRevenue",e.target.value)} className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-right font-semibold tabular-nums outline-none transition focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100"/></td></tr>
+                        </tbody>
+                        <tfoot><tr className="border-t-2 border-slate-200 bg-emerald-50"><td colSpan={2} className="px-4 py-3 font-black text-emerald-950">TOTAL F&amp;B REVENUE / YEAR</td><td className="px-4 py-3 text-right font-black tabular-nums text-emerald-950">{idr((optional(form.statistics.fbRestaurantAnnualRevenue)??0)+(optional(form.statistics.fbMeetingEventAnnualRevenue)??0) || (optional(form.statistics.fbRestaurantAnnualRevenue)!==null||optional(form.statistics.fbMeetingEventAnnualRevenue)!==null?0:null))}</td></tr></tfoot>
+                      </table>
+                    </div>
+                    <p className="mt-3 rounded-lg bg-slate-50 px-3 py-2.5 text-xs leading-5 text-slate-600">Nilai tahunan dialokasikan menurut hari kalender; pembulatan disesuaikan pada Desember agar total 12 bulan sama persis dengan anggaran tahunan. Data yang kosong tetap kosong. Nilai otomatis tersinkron ke Budget P&amp;L (Budget), Monthly &amp; Annual Forecast, dan konsolidasi 10 tahun.</p>
+                  </div>
+                </section>
                 <div className="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
                   <div className="bg-gradient-to-r from-violet-950 via-indigo-950 to-sky-900 p-4 text-white sm:p-5"><p className="text-[10px] font-bold uppercase tracking-[0.2em] text-violet-200">MOD REVENUE BUILDER</p><h3 className="mt-1 text-lg font-black sm:text-xl">Minor Operating Departments Revenue</h3><p className="mt-1 text-xs leading-5 text-violet-100">Empat kelompok revenue mengikuti sheet MOD pada workbook acuan. Isi anggaran tahunan dalam Rupiah; total dan alokasi bulanan dihitung otomatis.</p><div className="mt-3 rounded-2xl border border-white/20 bg-white/10 px-4 py-3"><p className="text-[10px] font-bold uppercase tracking-wide text-violet-100">Estimasi MOD / Tahun</p><p className="mt-1 text-lg font-black">{idr(calculateModStatisticsAnnual(form.statistics))}</p></div></div>
                   <div className="grid gap-3 p-3 sm:grid-cols-2 sm:p-5">

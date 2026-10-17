@@ -499,7 +499,7 @@ export default function HotelBudgetPage() {
     const fbCostBase=deptBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||"")]));
     const fbPayrollBase=deptBase(row=>optional(row.fbPayroll));
     const fbOtherBase=deptBase(row=>optional(row.fbOtherExpenses));
-    const phoneRevenueBase=monthlyBase(row=>optional(row.telephoneRevenue));
+    const phoneRevenueBase=monthlyBase(row=>optional(row.phoneRevenue));
     const phoneCostBase=monthlyBase(row=>optional(row.phoneCostOfSales));
     const phonePayrollBase=monthlyBase(row=>optional(row.phonePayroll));
     const phoneOtherBase=monthlyBase(row=>optional(row.phoneOtherExpenses));

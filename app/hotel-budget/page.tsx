@@ -1282,10 +1282,6 @@ export default function HotelBudgetPage() {
                   </div>
                   <p className="mx-3 mb-3 rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-950 sm:mx-5 sm:mb-5">Nilai MOD dialokasikan ke bulan berdasarkan jumlah hari kalender, lalu diteruskan ke Monthly &amp; Annual Forecast dan proyeksi 10 tahun. Nilai yang kosong tetap kosong dan akun Budget P&amp;L yang sudah diisi untuk kelompok lain tetap menjadi sumber cadangan.</p>
                 </div>
-                <div>
-                  <div className="mb-3 flex items-center gap-2"><span className="h-5 w-1 rounded-full bg-violet-500"/><h3 className="text-sm font-extrabold uppercase tracking-wide text-slate-800">Ringkasan Statistik Otomatis</h3></div>
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-6">{roomStats.map(([label,value])=>metric(label,label==="OCCUPANCY (%)"?(value===null?"—":fmt(value)+"%"):label==="AVERAGE ROOM RATE (RP)"||label==="REVPAR"?money(value):fmt(value,0)))}</div>
-                </div>
               </div>
             </section>
           </div>}

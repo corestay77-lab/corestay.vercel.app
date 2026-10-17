@@ -602,7 +602,8 @@ export default function HotelBudgetPage() {
       ? roomBudget/(roomNightsAtFullOccupancy*enteredAdr)*100
       : null;
     // Explicit Step 1 occupancy is the forecast assumption; otherwise derive it from Budget Room Revenue and ARR, then use observed statistics.
-    const occupancy=sourceOccupancy!==null?sourceOccupancy:occupancyFromBudget;
+    // ARR + Budget Room Revenue define forecast occupancy; observed occupancy is only the fallback when that basis is unavailable.
+    const occupancy=occupancyFromBudget!==null?occupancyFromBudget:sourceOccupancy;
     const occupiedRoomNights=roomNightsAtFullOccupancy!==null&&occupancy!==null?roomNightsAtFullOccupancy*occupancy/100:null;
     const adr=enteredAdr!==null&&enteredAdr>0?enteredAdr:
       roomBudget!==null&&occupiedRoomNights!==null&&occupiedRoomNights>0?roomBudget/occupiedRoomNights:sourceAdr;
@@ -660,11 +661,26 @@ export default function HotelBudgetPage() {
     const baseCosts=forecastSource.costs!==null&&masterPayrollMonthly!==null?forecastSource.costs-(forecastSource.payroll??0)+masterPayrollMonthly*12:forecastSource.costs;
     const daysInYear=Number.isInteger(startYear)&&startYear>=1900&&startYear<=2200?(startYear%4===0&&(startYear%100!==0||startYear%400===0)?366:365):365;
     const budgetForCode=(code:string)=>optional(form.accounts[code]?.budget||"");
-    const monthlyShare=(value:number|null,share:number)=>value===null?"":String(Math.round(value*share));
     const foodPct=optional(form.budgetAllocations?.parentPercentBySection?.["__fbFoodPercent"]||"70")??70;
     const beveragePct=optional(form.budgetAllocations?.parentPercentBySection?.["__fbBeveragePercent"]||"30")??30;
     const modRevenueCodes=[["businessCenterRevenue","41301"],["rentCarRevenue","41302"],["laundryRevenue","41303"],["spaRevenue","41304"],["telephoneRevenue","41305"],["sportRecreationRevenue","41306"],["rentedSpaceRevenue","41307"],["miscellaneousRevenue","41308"],["otherRevenueDiscounts","41309"]] as const;
     const rooms=optional(form.statistics.rooms);
+    // Allocate annual totals by calendar days and make December absorb rounding remainders.
+    // This keeps monthly totals exactly aligned with the annual forecast without changing Jan–Nov values.
+    const allocateAnnual=(value:number|null):string[]=>{
+      if(value===null)return monthNames.map(()=>"");
+      const allocated=monthNames.map((_,i)=>Math.round(value*new Date(startYear,i+1,0).getDate()/daysInYear));
+      allocated[11]=Math.round(value)-allocated.slice(0,11).reduce<number>((sum,amount)=>sum+amount,0);
+      return allocated.map(String);
+    };
+    const roomMonthlyValues=allocateAnnual(forecastSource.roomBudget);
+    const modAnnualValues:Record<string,number|null>=Object.fromEntries(modRevenueCodes.map(([key,code])=>{
+      const statValue:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue)};
+      const sourceValue=statValue[code]!==undefined&&statValue[code]!==null?statValue[code]:budgetForCode(code);
+      return [key,sourceValue];
+    }));
+    const modMonthlyValues:Record<string,string[]>=Object.fromEntries(modRevenueCodes.map(([key])=>[key,allocateAnnual(modAnnualValues[key])]));
+    const operatingCostMonthlyValues=allocateAnnual(baseCosts);
     // Reconcile monthly F&B allocation to the same rounded annual base used by Annual Forecast.
     // Keep Jan–Nov allocation unchanged; December absorbs only the rounding remainder.
     const fbMonthlyValues:(number|null)[]=baseFb===null?monthNames.map(()=>null):monthNames.map((_,i)=>Math.round(baseFb*new Date(startYear,i+1,0).getDate()/daysInYear));
@@ -677,15 +693,14 @@ export default function HotelBudgetPage() {
       const fbMonth=fbMonthlyValues[index];
       const fbFood=fbMonth===null?"":String(Math.round(fbMonth*foodShare));
       const fbBeverage=fbMonth===null?"":String(fbMonth-Number(fbFood||0));
-      const modStatByCode:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue)};
-      const modDetails=Object.fromEntries(modRevenueCodes.map(([key,code])=>{const statValue=modStatByCode[code];const sourceValue=statValue!==undefined&&statValue!==null?statValue:budgetForCode(code);return [key,monthlyShare(sourceValue,share)];}));
+      const modDetails=Object.fromEntries(modRevenueCodes.map(([key])=>[key,modMonthlyValues[key][index]]));
       const modTotal=Object.values(modDetails).some(v=>v!=="")?String(Object.values(modDetails).reduce((sum,v)=>sum+(v===""?0:Number(v)),0)):baseOther===null?"":String(Math.round(baseOther*share));
       return {
         ...makeMonthly(startYear)[index],
         label:label+" "+startYear,
         occupancy:baseOccupancy===null?"":String(Math.round(baseOccupancy*100)/100),
         adr:baseAdr===null?"":String(Math.round(baseAdr*100)/100),
-        roomDivisionDetails:{roomRevenue:monthlyShare(roomBudget,share)},
+        roomDivisionDetails:{roomRevenue:roomMonthlyValues[index]},
         fbDetails:{foodRevenue:fbFood,beverageRevenue:fbBeverage},
         modDetails:{...modDetails},
         fbRevenue:fbMonth===null?"":String(fbMonth),
@@ -699,14 +714,15 @@ export default function HotelBudgetPage() {
         energyCost:forecastSource.deptBudget.energy===null?"":String(Math.round(forecastSource.deptBudget.energy*share)),
         smOtherExpenses:forecastSource.deptBudget.smOther===null?"":String(Math.round(forecastSource.deptBudget.smOther*share)),
         agOtherExpenses:forecastSource.deptBudget.agOther===null?"":String(Math.round(forecastSource.deptBudget.agOther*share)),
-        operatingCosts:baseCosts===null?"":String(Math.round(baseCosts*share))
+        operatingCosts:operatingCostMonthlyValues[index]
       };
     });
     const annual=Array.from({length:10},(_,index)=>{
       const year=startYear+index;
       const factor=Math.pow(1+annualGrowthPct/100,index);
       const grow=(value:number|null)=>value===null?"":String(Math.round(value*factor));
-      const occ=baseOccupancy===null?null:baseOccupancy*factor;
+      // Apply the annual growth assumption once to room revenue through ADR; growing occupancy and ADR together would compound growth twice.
+      const occ=baseOccupancy;
       return {
         label:String(year),
         days:String(year%4===0&&(year%100!==0||year%400===0)?366:365),

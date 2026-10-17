@@ -186,11 +186,12 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Missing source values remain blank and are never converted to zero in the report.
   const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
   const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.phone,d.mod]));
+  const deptIncomeComplete=deptIncome.map(d=>[d.room,d.fb,d.phone,d.mod].every(v=>v!==null));
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
   // Profit lines require complete inputs for the calculation; a partial overhead subtotal
   // must not be mistaken for the full expense amount.
   const overheadComplete=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null);
-  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&overheadComplete[i]?v-(overheadTotal[i]??0):null);
+  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null&&deptIncomeComplete[i]&&overheadComplete[i]?v-(overheadTotal[i]??0):null);
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
   const nonOp= form.forecast.monthly.map(r=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
   const nonOpComplete=form.forecast.monthly.map(r=>val(r,"otherManagementFee")!==null&&val(r,"insuranceGeneral")!==null);

@@ -429,7 +429,17 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
     byLabel("TOTAL MOD",find(x=>x==="TOTAL MOD")),
     byLabel("TOTAL REVENUE - RP",find(x=>x==="TOTAL REVENUE - RP")),
     byLabel("REVPAR - RP",find(x=>x==="REVPAR - RP")),
-    byLabel("Exchange Rate",find(x=>x==="EXCHANGE RATE US $ TO RP"))
+    byLabel("Exchange Rate",find(x=>x==="EXCHANGE RATE US $ TO RP")),
+    byLabel("Total Guests in House",find(x=>x==="TOTAL GUESTS IN HOUSE")),
+    byLabel("Average Guest / Room",find(x=>x==="AVERAGE GUEST / ROOM")),
+    byLabel("Length of Stay",find(x=>x==="LENGTH OF STAY")),
+    byLabel("# of Arrivals",find(x=>x==="# OF ARRIVALS")),
+    byLabel("# of Covers - Resto",find(x=>x.startsWith("# OF COVERS - ") && /restaurant|breakfast/i.test(x))),
+    byLabel("# of Covers - MRoom (30 Pax)",find(x=>x.startsWith("# OF COVERS - ") && /meeting room a/i.test(x))),
+    byLabel("Average Checks / Guest (Brfst)",find(x=>/AVERAGE CHECK \/ GUEST/i.test(x))),
+    byLabel("Average Checks per Pax for Mtg Room",find(x=>/AVERAGE CHECK \/ PAX/i.test(x))),
+    byLabel("Revenue F&B Restaurant - RP",find(x=>/^REVENUE — .* - RP$/i.test(x) && /restaurant|breakfast/i.test(x))),
+    byLabel("Rev. M.Room (30 Pax) - RP",find(x=>/^REVENUE — .* - RP$/i.test(x) && /meeting room a/i.test(x)))
   ];
   return wanted.filter((line):line is ConsolidatedRow=>line!==null);
 };

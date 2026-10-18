@@ -926,13 +926,13 @@ export default function HotelBudgetPage() {
         const payrollTotal=(dept:string)=>{
           const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR","HRD","HUMAN RESOURCES"],MOD:["MOD","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","FN"],POMEC:["POMEC","SEC"]};
           const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());
-          if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase()))?String(payrollDepartmentMonthly(dept).total):"0";
+          if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase()))?String(payrollDepartmentMonthly(dept).total):"";
           const fallback:Record<string,number|null>={FO:forecastSource.payrollBudget.fo,HK:forecastSource.payrollBudget.hk,FB:forecastSource.payrollBudget.fb,MOD:forecastSource.payrollBudget.mod,AG:forecastSource.payrollBudget.ag,SM:forecastSource.payrollBudget.sm,HRD:forecastSource.payrollBudget.hrd,POMEC:forecastSource.payrollBudget.pomec};
           const value=fallback[dept];
           return value===null||value===undefined?"":String(Math.round(value*monthShare));
         };
         const foPayroll=payrollTotal("FO"),hkPayroll=payrollTotal("HK");
-        const roomPayroll=masterPayrollExists?String(Number(foPayroll||0)+Number(hkPayroll||0)):((foPayroll||hkPayroll)?String(Number(foPayroll||0)+Number(hkPayroll||0)):"");
+        const roomPayroll=(foPayroll!==""||hkPayroll!=="")?String(Number(foPayroll||0)+Number(hkPayroll||0)):"";
         const fbDetail=has(fbDetails),modDetail=has(modDetails),roomDetail=has(roomDivisionDetails),agDetail=has(agDetails),smDetail=has(smDetails),hrdDetail=has(hrdDetails),pomecDetail=has(pomecDetails);
         return {...row,
           occupancy:preserveManual(prior.occupancy,previousAuto?.monthly[i]?.occupancy,row.occupancy),

@@ -295,7 +295,15 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
   const occupied=available.map((v,i)=>v===null||occupancy[i]===null?null:v*occupancy[i]!/100);
   const complimentaryAnnual=optional(stat.complimentary);
   const complimentary=months.map(({days})=>complimentaryAnnual===null?null:complimentaryAnnual*days/months.reduce((s,m)=>s+m.days,0));
-  const roomRevenue=months.map(({calc})=>calc.roomRevenue);
+  const roomRevenue=months.map(({row,calc},i)=>{
+    const sourceRevenue=optional(row.roomDivisionDetails?.roomRevenue);
+    if(sourceRevenue!==null)return sourceRevenue;
+    if(calc.roomRevenue!==null)return calc.roomRevenue;
+    const rate=optional(row.adr)??optional(stat.averageSellingRate);
+    return available[i]!==null&&occupancy[i]!==null&&rate!==null
+      ? available[i]!*occupancy[i]!/100*rate
+      : null;
+  });
   const exchange=months.map(()=>optional(stat.exchangeRate));
   const arr=months.map(({row},i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(row.adr)??optional(stat.averageSellingRate));
   const arrUsd=arr.map((v,i)=>v!==null&&exchange[i]!==null&&exchange[i]!>0?v/exchange[i]!:null);
@@ -312,11 +320,15 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
   const meetingACovers=months.map(({days})=>{const events=optional(stat.fbMeetingRoomAEventsPerYear)??(optional(stat.fbMeetingRoomAUnits)!==null&&legacyMeetingDays!==null?optional(stat.fbMeetingRoomAUnits)!*legacyMeetingDays:null),p=optional(stat.fbMeetingRoomAPax),c=optional(stat.fbMeetingRoomACoverPercent);return events!==null&&p!==null&&c!==null&&yearDays>0?events*days/yearDays*p*c/100:null;});
   const meetingBCovers=months.map(({days})=>{const events=optional(stat.fbMeetingRoomBEventsPerYear)??(optional(stat.fbMeetingRoomBUnits)!==null&&legacyMeetingDays!==null?optional(stat.fbMeetingRoomBUnits)!*legacyMeetingDays:null),p=optional(stat.fbMeetingRoomBPax),c=optional(stat.fbMeetingRoomBCoverPercent);return events!==null&&p!==null&&c!==null&&yearDays>0?events*days/yearDays*p*c/100:null;});
   const ballroomCovers=months.map(({days})=>{const p=optional(stat.fbBallroomCapacity),c=optional(stat.fbBallroomCoverPercent),events=ballroomEvents!==null&&yearDays>0?ballroomEvents*days/yearDays:null;return p!==null&&c!==null&&events!==null?p*events*c/100:null;});
-  const restaurantRevenue=restaurantCovers.map((v,i)=>v!==null&&breakfastCheck[i]!==null?v*breakfastCheck[i]!:null);
-  const meetingARevenue=meetingACovers.map((v,i)=>v!==null&&meetingCheck[i]!==null?v*meetingCheck[i]!:null);
-  const meetingBRevenue=meetingBCovers.map((v,i)=>v!==null&&meetingCheck[i]!==null?v*meetingCheck[i]!:null);
-  const ballroomRevenue=ballroomCovers.map((v,i)=>v!==null&&meetingCheck[i]!==null?v*meetingCheck[i]!:null);
-  const fbc=months.map(({row},i)=>optional(row.fbRevenue)??calculateFbStatisticsMonthly(stat,year,i)?.total??null);
+  const restaurantRevenue=months.map((_,i)=>fbMonthly[i]?.restaurantRevenue??null);
+  const meetingARevenue=months.map((_,i)=>fbMonthly[i]?.meetingRoomARevenue??null);
+  const meetingBRevenue=months.map((_,i)=>fbMonthly[i]?.meetingRoomBRevenue??null);
+  const ballroomRevenue=months.map((_,i)=>fbMonthly[i]?.ballroomRevenue??null);
+  const fbMonthly=months.map((_,i)=>calculateFbStatisticsMonthly(
+    {...stat,occupancy:occupancy[i]===null?stat.occupancy:String(occupancy[i])},
+    year,i
+  ));
+  const fbc=months.map(({row},i)=>optional(row.fbRevenue)??fbMonthly[i]?.total??null);
   const modAnnual=calculateModStatisticsAnnual(stat);
   const mod=months.map(({row,days})=>optional(row.otherRevenue)??(modAnnual===null?null:modAnnual*days/months.reduce((s,m)=>s+m.days,0)));
   const phone=months.map(({row})=>optional(row.phoneRevenue));
@@ -418,7 +430,7 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
     byLabel("Average Room Rate (ARR) - USD",find(x=>x==="AVERAGE ROOM RATE (ARR) - USD")),
     byLabel("# of Rooms",find(x=>x==="# OF ROOMS")),
     byLabel("Rooms Available",find(x=>x==="ROOMS AVAILABLE")),
-    byLabel("Occupied Rooms",find(x=>x==="OCCUPIED ROOMS (PAID + COMPLIMENTARY)")??find(x=>"ROOM PAID"===x)),
+    byLabel("Occupied Rooms",find(x=>x==="ROOM PAID")),
     byLabel("ROOM REVENUE - RP",find(x=>x==="ROOM REVENUE - RP")),
     byLabel("Total Guests in House",find(x=>x==="TOTAL GUESTS IN HOUSE")),
     byLabel("Average Guest / Room",find(x=>x==="AVERAGE GUEST / ROOM")),

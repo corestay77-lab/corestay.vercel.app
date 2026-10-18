@@ -763,7 +763,7 @@ export default function HotelBudgetPage() {
       fb:calculateFbStatisticsAnnual(form.statistics,year)??total(["fbRevenue"]),
       other:(()=>{
         const statByCode:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41302":optional(form.statistics.modRentCarRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41305":optional(form.statistics.modTelephoneRevenue),"41306":optional(form.statistics.modSportRecreationRevenue),"41307":optional(form.statistics.modRentedSpaceRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue),"41309":optional(form.statistics.modOtherRevenueDiscounts)};
-        const values=allAccountLines.filter(line=>line.group==="otherRevenue").map(line=>statByCode[line.code]!==undefined&&statByCode[line.code]!==null?statByCode[line.code]:optional(form.accounts[line.code]?.budget||""));
+        const values=allAccountLines.filter(line=>line.group==="otherRevenue").map(line=>statByCode[line.code]!==undefined?statByCode[line.code]:optional(form.accounts[line.code]?.budget||""));
         return values.some(value=>value!==null)?values.reduce<number>((sum,value)=>sum+(value??0),0):null;
       })(),
       costOfSales:total(["costOfSales"]),
@@ -801,7 +801,7 @@ export default function HotelBudgetPage() {
     const roomMonthlyValues=allocateAnnual(forecastSource.roomBudget);
     const modAnnualValues:Record<string,number|null>=Object.fromEntries(modRevenueCodes.map(([key,code])=>{
       const statValue:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41302":optional(form.statistics.modRentCarRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41305":optional(form.statistics.modTelephoneRevenue),"41306":optional(form.statistics.modSportRecreationRevenue),"41307":optional(form.statistics.modRentedSpaceRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue),"41309":optional(form.statistics.modOtherRevenueDiscounts)};
-      const sourceValue=statValue[code]!==undefined&&statValue[code]!==null?statValue[code]:budgetForCode(code);
+      const sourceValue=statValue[code]!==undefined?statValue[code]:budgetForCode(code);
       return [key,sourceValue];
     }));
     const modMonthlyValues:Record<string,string[]>=Object.fromEntries(modRevenueCodes.map(([key])=>[key,allocateAnnual(modAnnualValues[key])]));
@@ -949,8 +949,9 @@ export default function HotelBudgetPage() {
       for(const [code,value] of sources){
         // Keep unsupported Step 1 outlets untouched; they remain available for manual entry.
         // Empty assumptions are not zero: preserve any existing Budget cell until a real value is calculated.
-        if(value===null)continue;
-        const raw=String(Math.round(value));
+        const isModRevenueCode=code.startsWith("413");
+        if(value===null&&!isModRevenueCode)continue;
+        const raw=value===null?"":String(Math.round(value));
         const current=accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
         if(current.budget!==raw){
           accounts[code]={...current,budget:raw};
@@ -1405,7 +1406,7 @@ export default function HotelBudgetPage() {
                     {field("MISCELLANEOUS OTHER REVENUE — REVENUE / YEAR (RP)",form.statistics.modOtherIncomeRevenue,v=>updateStats("modOtherIncomeRevenue",v),{type:"number",min:"0",step:"1",hint:"Akun Step 3: Miscellaneous Other Revenue."})}
                     {field("OTHER REVENUE DISCOUNTS / ALLOWANCES — REVENUE / YEAR (RP)",form.statistics.modOtherRevenueDiscounts,v=>updateStats("modOtherRevenueDiscounts",v),{type:"number",min:"0",step:"1",hint:"Akun Step 3: Other Revenue Discounts / Allowances; masukkan nilai pengurang sebagai nilai negatif jika diperlukan."})}
                   </div>
-                  <p className="mx-3 mb-3 rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-950 sm:mx-5 sm:mb-5">Nilai revenue MOD dialokasikan ke bulan berdasarkan jumlah hari kalender dan disinkronkan ke akun Budget Step 3 dengan kode 41301–41309. Nilai kosong tetap kosong; Actual, Last Year, dan YTD tidak ditimpa. Cost of Sales, Payroll &amp; Related, dan Other Expenses tetap mengikuti input biaya pada bagian terkait di Step 3.</p>
+                  <p className="mx-3 mb-3 rounded-xl bg-violet-50 px-3 py-2.5 text-xs leading-5 text-violet-950 sm:mx-5 sm:mb-5">Nilai revenue MOD dialokasikan ke bulan berdasarkan jumlah hari kalender dan disinkronkan ke akun Budget Step 3 dengan kode 41301–41309. Jika input Step 1 dikosongkan, Budget akun MOD terkait juga dikosongkan agar tidak tertinggal nilai lama; Actual, Last Year, dan YTD tidak ditimpa. Cost of Sales, Payroll &amp; Related, dan Other Expenses tetap mengikuti input biaya pada bagian terkait di Step 3.</p>
                 </div>
               </div>
             </section>

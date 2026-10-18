@@ -424,16 +424,16 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
     byLabel("# of Rooms",find(x=>x==="# OF ROOMS")),
     byLabel("Rooms Available",find(x=>x==="ROOMS AVAILABLE")),
     byLabel("Occupied Rooms",find(x=>x==="ROOM PAID")),
+    byLabel("Total Guests in House",find(x=>x==="TOTAL GUESTS IN HOUSE")),
+    byLabel("Average Guest / Room",find(x=>x==="AVERAGE GUEST / ROOM")),
+    byLabel("Length of Stay",find(x=>x==="LENGTH OF STAY")),
+    byLabel("# of Arrivals",find(x=>x==="# OF ARRIVALS")),
     byLabel("ROOM REVENUE - RP",find(x=>x==="ROOM REVENUE - RP")),
     byLabel("TOTAL F&B REVENUE - RP",find(x=>x==="TOTAL F&B REVENUE - RP")),
     byLabel("TOTAL MOD",find(x=>x==="TOTAL MOD")),
     byLabel("TOTAL REVENUE - RP",find(x=>x==="TOTAL REVENUE - RP")),
     byLabel("REVPAR - RP",find(x=>x==="REVPAR - RP")),
     byLabel("Exchange Rate",find(x=>x==="EXCHANGE RATE US $ TO RP")),
-    byLabel("Total Guests in House",find(x=>x==="TOTAL GUESTS IN HOUSE")),
-    byLabel("Average Guest / Room",find(x=>x==="AVERAGE GUEST / ROOM")),
-    byLabel("Length of Stay",find(x=>x==="LENGTH OF STAY")),
-    byLabel("# of Arrivals",find(x=>x==="# OF ARRIVALS")),
 
   ];
   return wanted.filter((line):line is ConsolidatedRow=>line!==null);

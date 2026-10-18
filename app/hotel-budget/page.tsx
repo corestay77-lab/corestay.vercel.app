@@ -424,14 +424,14 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
   const byLabel=(label:string,source:ConsolidatedRow|null|undefined)=>source?{...source,label}:null;
   const wanted:(ConsolidatedRow|null)[]=[
     byLabel("# of Days",find(x=>x==="# OF DAYS")),
-    byLabel("Occupancy (%)",find(x=>x==="OCCUPANCY (%)")),
     byLabel("# of Rooms",find(x=>x==="# OF ROOMS")),
+    byLabel("# of Arrivals",find(x=>x==="# OF ARRIVALS")),
+    byLabel("Occupancy (%)",find(x=>x==="OCCUPANCY (%)")),
     byLabel("Rooms Available",find(x=>x==="ROOMS AVAILABLE")),
     byLabel("Occupied Rooms",find(x=>x==="ROOM PAID")),
     byLabel("Total Guests in House",find(x=>x==="TOTAL GUESTS IN HOUSE")),
     byLabel("Average Guest / Room",find(x=>x==="AVERAGE GUEST / ROOM")),
     byLabel("Length of Stay",find(x=>x==="LENGTH OF STAY")),
-    byLabel("# of Arrivals",find(x=>x==="# OF ARRIVALS")),
     byLabel("Average Room Rate (ARR) - RP",find(x=>x==="AVERAGE ROOM RATE (ARR) - RP")),
     byLabel("Average Room Rate (ARR) - USD",find(x=>x==="AVERAGE ROOM RATE (ARR) - USD")),
     byLabel("ROOM REVENUE - RP",find(x=>x==="ROOM REVENUE - RP")),

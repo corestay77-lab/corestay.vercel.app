@@ -509,7 +509,13 @@ export default function HotelBudgetPage() {
       optional(row.roomOtherExpenses),optional(row.fbOtherExpenses),
       optional(row.phoneOtherExpenses),optional(row.modOtherExpenses)
     ]));
-    const costOfSalesBase=monthlyBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||""),optional(row.phoneCostOfSales||""),optional(row.modDetails?.laundryCost||"")]));
+    const costOfSalesBase=monthlyBase(row=>sumPresent([
+      optional(row.fbDetails?.foodCost||"")!==null||optional(row.fbDetails?.beverageCost||"")!==null
+        ?sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||"")])
+        :optional(row.fbCostOfSales),
+      optional(row.phoneCostOfSales||""),
+      optional(row.modDetails?.laundryCost||"")??optional(row.modCostOfSales)
+    ]));
     const detailOverheadBase=monthlyBase(row=>{
       const explicit=sumPresent([optional(row.agOtherExpenses),optional(row.smOtherExpenses),optional(row.hrdOtherExpenses)]);
       const pomecOther=pomecTotal(row,"other")??optional(row.pomecOtherExpenses);
@@ -537,14 +543,18 @@ export default function HotelBudgetPage() {
     const deptBase=(get:(row:ForecastMonth,index:number)=>number|null)=>monthlyBase(get);
     const roomPayrollBase=deptBase(row=>optional(row.roomPayroll));
     const roomOtherBase=deptBase(row=>optional(row.roomOtherExpenses));
-    const fbCostBase=deptBase(row=>sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||"")]));
+    const fbCostBase=deptBase(row=>
+      optional(row.fbDetails?.foodCost||"")!==null||optional(row.fbDetails?.beverageCost||"")!==null
+        ?sumPresent([optional(row.fbDetails?.foodCost||""),optional(row.fbDetails?.beverageCost||"")])
+        :optional(row.fbCostOfSales)
+    );
     const fbPayrollBase=deptBase(row=>optional(row.fbPayroll));
     const fbOtherBase=deptBase(row=>optional(row.fbOtherExpenses));
     const phoneRevenueBase=monthlyBase(row=>optional(row.phoneRevenue));
     const phoneCostBase=monthlyBase(row=>optional(row.phoneCostOfSales));
     const phonePayrollBase=monthlyBase(row=>optional(row.phonePayroll));
     const phoneOtherBase=monthlyBase(row=>optional(row.phoneOtherExpenses));
-    const modCostBase=monthlyBase(row=>optional(row.modDetails?.laundryCost||""));
+    const modCostBase=monthlyBase(row=>optional(row.modDetails?.laundryCost||"")??optional(row.modCostOfSales));
     const modPayrollBase=monthlyBase(row=>optional(row.modPayroll));
     const modOtherBase=monthlyBase(row=>optional(row.modOtherExpenses));
     const annualize=(base:number|null,i:number)=>base===null?null:base*growth(i);

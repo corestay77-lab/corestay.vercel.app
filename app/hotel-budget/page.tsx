@@ -1808,6 +1808,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="w-[128px] min-w-[128px] max-w-[128px] border-t border-slate-200 px-3 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[180px] min-w-[180px] max-w-[180px] border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>
+        </div>
       </section>
       <section className="mt-7 break-before-page print-ten-year-statistics">
         <h3 className="mb-1 text-sm font-extrabold">3. 10 YEARS HOTEL STATISTICS — {form.yearStart}–{Number(form.yearStart)+9}</h3>

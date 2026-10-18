@@ -1882,7 +1882,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                       <th colSpan={2} className="w-[220px] min-w-[220px] max-w-[220px] border-l border-teal-200 bg-teal-100 px-3 py-2 text-center">TOTAL / AVERAGE</th>
                     </tr>
                     <tr className="bg-slate-50 text-slate-600">
-                      {form.forecast.monthly.map(row=><React.Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></React.Fragment>)}
+                      {form.forecast.monthly.map(row=><Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></React.Fragment>)}
                       <th className="border-l border-teal-200 bg-teal-50 px-2 py-1.5 text-right">VALUE</th><th className="bg-teal-50 px-2 py-1.5 text-right">%</th>
                     </tr>
                   </thead>
@@ -1897,10 +1897,10 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                         {line.values.map((v,j)=>{
                           const base=line.base?.[j]??null;
                           const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
-                          return <React.Fragment key={j}>
+                          return <Fragment key={j}>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(percentage)}</td>
-                          </React.Fragment>;
+                          </Fragment>;
                         })}
                         <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-l border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{displayValue(line.total)}</td>
                         <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums whitespace-nowrap">{displayPct(isPercent?null:line.totalPct)}</td>

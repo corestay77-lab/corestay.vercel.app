@@ -1585,7 +1585,7 @@ const row=form.forecast.monthly[i];
 if(k==="roomRevenue"){
 const saved=optional(row?.roomDivisionDetails?.roomRevenue);
 if(saved!==null)return saved;
-const calculated=calcMonthly(row, Number(form.forecast.year)||new Date().getFullYear(), i, form.statistics.rooms);
+const calculated=calcMonthly(row, Number(form.yearStart)||new Date().getFullYear(), i, form.statistics.rooms);
 return calculated.roomRevenue;
 }
 if(k.startsWith("rd")){

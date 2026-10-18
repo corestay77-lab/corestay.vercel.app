@@ -1584,7 +1584,8 @@ const value=(i:number,k:string)=>{const payrollValue=payrollInputKey(k)?payrollV
 const total=(i:number,keys:string[])=>{const a=keys.map(k=>value(i,k));return a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null};
 const fmtMoney=(n:number|null)=>n===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
 const rev=order.every(i=>value(i,"roomRevenue")===null)?null:order.reduce<number>((s,i)=>s+(value(i,"roomRevenue")??0),0);
-const costKeys=groups.flatMap(g=>g.sections.flatMap(s=>s.rows.map(r=>r[0]))).filter(k=>k!=="roomRevenue");
+// Room Division consolidated cost = Front Office & Reservation + House Keeping. The ROOM DEPARTMENT block is shown separately and is not added into this source-template total.
+const costKeys=groups.filter(g=>g.title==="FRONT OFFICE & RESERVATION"||g.title==="HOUSE KEEPING").flatMap(g=>g.sections.flatMap(s=>s.rows.map(r=>r[0]))).filter(k=>k!=="roomRevenue");
 const groupCostKeys=(g:typeof groups[number])=>g.sections.flatMap(section=>section.rows.map(row=>row[0])).filter(key=>key!=="roomRevenue");
 const costTotal=order.every(i=>total(i,costKeys)===null)?null:order.reduce<number>((s,i)=>s+(total(i,costKeys)??0),0);
 const pct=(n:number|null)=>n===null||rev===null||rev===0?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n/rev*100)+"%";

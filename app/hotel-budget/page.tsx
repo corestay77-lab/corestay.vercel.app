@@ -401,7 +401,42 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
   if(hiddenMenus.includes("meetingB")) [`# OF COVERS - ${menuLabel("meetingB","Meeting Room B")}`,`REVENUE — ${menuLabel("meetingB","Meeting Room B")} - RP`].forEach(label=>hiddenReportRows.add(label));
   if(hiddenMenus.includes("ballroom")) [`# OF COVERS - ${menuLabel("ballroom","Ballroom")}`,`REVENUE — ${menuLabel("ballroom","Ballroom")} - RP`].forEach(label=>hiddenReportRows.add(label));
   if(hiddenMenus.includes("pricing")) hiddenReportRows.add(`${menuLabel("pricing","Average Check — Meeting & Event")} — AVERAGE CHECK / PAX`);
-  return rows.filter(line=>!hiddenReportRows.has(line.label));
+  const visible=rows.filter(line=>!hiddenReportRows.has(line.label));
+  const find=(test:(label:string)=>boolean)=>visible.find(line=>test(line.label));
+  const byLabel=(label:string,source:ConsolidatedRow|null|undefined)=>source?{...source,label}:null;
+  const combinedMeeting=(a:ConsolidatedRow|null|undefined,b:ConsolidatedRow|null|undefined,d:ConsolidatedRow|null|undefined):ConsolidatedRow|null=>{
+    const lines=[a,b,d].filter((x):x is ConsolidatedRow=>!!x);
+    if(!lines.length)return null;
+    const values=Array.from({length:n},(_,i)=>lines.some(x=>x.values[i]!==null&&x.values[i]!==undefined)?lines.reduce<number>((sum,x)=>sum+(x.values[i]??0),0):null);
+    const totalValue=values.some(v=>v!==null)?values.reduce<number>((sum,v)=>sum+(v??0),0):null;
+    return {label:"Rev. M.Room (30 Pax) - RP",kind:"sum",values,total:totalValue};
+  };
+  const wanted:(ConsolidatedRow|null)[]=[
+    byLabel("# of Days",find(x=>x==="# OF DAYS")),
+    byLabel("Occupancy (%)",find(x=>x==="OCCUPANCY (%)")),
+    byLabel("Average Room Rate (ARR) - RP",find(x=>x==="AVERAGE ROOM RATE (ARR) - RP")),
+    byLabel("Average Room Rate (ARR) - USD",find(x=>x==="AVERAGE ROOM RATE (ARR) - USD")),
+    byLabel("# of Rooms",find(x=>x==="# OF ROOMS")),
+    byLabel("Rooms Available",find(x=>x==="ROOMS AVAILABLE")),
+    byLabel("Occupied Rooms",find(x=>x==="OCCUPIED ROOMS (PAID + COMPLIMENTARY)")??find(x=>"ROOM PAID"===x)),
+    byLabel("ROOM REVENUE - RP",find(x=>x==="ROOM REVENUE - RP")),
+    byLabel("Total Guests in House",find(x=>x==="TOTAL GUESTS IN HOUSE")),
+    byLabel("Average Guest / Room",find(x=>x==="AVERAGE GUEST / ROOM")),
+    byLabel("Length of Stay",find(x=>x==="LENGTH OF STAY")),
+    byLabel("# of Arrivals",find(x=>x==="# OF ARRIVALS")),
+    byLabel("# of Covers - Resto",find(x=>x.startsWith("# OF COVERS - ")&&/restaurant|breakfast/i.test(x))),
+    byLabel("# of Covers - MRoom (30 Pax)",find(x=>x==="TOTAL PAX FOR MEETING ROOM")),
+    byLabel("Average Checks / Guest (Brfst)",find(x=>/AVERAGE CHECK \/ GUEST/i.test(x))),
+    byLabel("Average Checks per Pax for Mtg Room",find(x=>/AVERAGE CHECK \/ PAX/i.test(x))),
+    byLabel("Revenue F&B Restaurant - RP",find(x=>/^REVENUE — .* - RP$/.test(x)&&/restaurant|breakfast/i.test(x))),
+    combinedMeeting(find(x=>/^REVENUE — .* - RP$/.test(x)&&/meeting room a/i.test(x)),find(x=>/^REVENUE — .* - RP$/.test(x)&&/meeting room b/i.test(x)),find(x=>/^REVENUE — .* - RP$/.test(x)&&/ballroom/i.test(x))),
+    byLabel("TOTAL F&B REVENUE - RP",find(x=>x==="TOTAL F&B REVENUE - RP")),
+    byLabel("TOTAL MOD",find(x=>x==="TOTAL MOD")),
+    byLabel("TOTAL REVENUE - RP",find(x=>x==="TOTAL REVENUE - RP")),
+    byLabel("REVPAR - RP",find(x=>x==="REVPAR - RP")),
+    byLabel("Exchange Rate",find(x=>x==="EXCHANGE RATE US $ TO RP"))
+  ];
+  return wanted.filter((line):line is ConsolidatedRow=>line!==null);
 };
 
 export default function HotelBudgetPage() {

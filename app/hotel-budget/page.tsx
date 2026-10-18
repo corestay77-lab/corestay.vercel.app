@@ -1361,6 +1361,7 @@ export default function HotelBudgetPage() {
     const workbook=XLSX.utils.book_new();
     const add=(name:string,rows:any[][],widths:number[],pageFit:"wide"|"single"="wide")=>{
       const ws=XLSX.utils.aoa_to_sheet(rows);
+      rows.forEach((row,rowIndex)=>{if(/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(String(row[0]??"").trim())){for(let col=1;col<row.length;col++){const cell=ws[XLSX.utils.encode_cell({r:rowIndex,c:col})];if(cell&&typeof cell.v==="number")cell.z="0.00";}}});
       ws["!cols"]=widths.map(w=>({wch:w}));
       ws["!freeze"]={xSplit:0,ySplit:1};
       ws["!autofilter"]={ref:ws["!ref"]||"A1"};
@@ -1857,7 +1858,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
                     const isRate=/EXCHANGE RATE/i.test(line.label);
                     const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
-                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
+                    const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());
+                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
                     return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="w-[128px] min-w-[128px] max-w-[128px] border-t border-slate-200 px-3 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[180px] min-w-[180px] max-w-[180px] border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>
@@ -1918,7 +1920,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
                     const isRate=/EXCHANGE RATE/i.test(line.label);
                     const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
-                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
+                    const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());
+                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
                     return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="w-[128px] min-w-[128px] max-w-[128px] border-t border-slate-200 px-3 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[180px] min-w-[180px] max-w-[180px] border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>
@@ -1929,7 +1932,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Ringkasan statistik tahunan dengan struktur kolom yang sama: YEAR 1–10 dan TOTAL / AVG. Menggunakan sumber forecast yang sama, tanpa mengubah input atau rumus forecast.</p>
         <div className="overflow-x-auto"><table className="w-max min-w-[1500px] border-collapse text-[9px]">
           <thead><tr className="bg-indigo-900 text-white"><th className="sticky left-0 z-10 min-w-[240px] bg-indigo-900 px-3 py-2 text-left">Description</th>{form.forecast.annual.map((row,i)=><th key={row.label} className="min-w-[112px] px-2 py-2 text-right">YEAR {i+1}<span className="block text-[8px] font-normal">{row.label}</span></th>)}<th className="min-w-[150px] bg-teal-700 px-2 py-2 text-right">TOTAL / AVG</th></tr></thead>
-          <tbody>{annualStatisticsForPreview.map((line,i)=>{const valid=line.values.filter((v):v is number=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null;const display=(v:number|null)=>v===null||v===undefined||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="# OF DAYS"||line.label==="ROOMS AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums">{display(total)}</td></tr>;})}</tbody>
+          <tbody>{annualStatisticsForPreview.map((line,i)=>{const valid=line.values.filter((v):v is number=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null;const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());const display=(v:number|null)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):line.kind==="percent"?fmt(v,1)+"%":line.label==="# OF DAYS"||line.label==="ROOMS AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums">{display(total)}</td></tr>;})}</tbody>
         </table></div>
       </section>
       <section className="mt-7 break-before-page print-department-details">

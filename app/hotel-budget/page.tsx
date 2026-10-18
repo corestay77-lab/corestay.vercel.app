@@ -885,7 +885,7 @@ export default function HotelBudgetPage() {
         label:label+" "+startYear,
         occupancy:baseOccupancy===null?"":String(Math.round(baseOccupancy*100)/100),
         adr:baseAdr===null?"":String(Math.round(baseAdr*100)/100),
-        roomDivisionDetails:{roomRevenue:roomMonthlyValues[index]},
+        roomDivisionDetails:{...Object.fromEntries(Object.entries(roomDivisionDetailMonthlyValues).map(([key,values])=>[key,values[index]])),roomRevenue:roomMonthlyValues[index]},
         fbDetails:{foodRevenue:fbFood,beverageRevenue:fbBeverage},
         modDetails:{...modDetails},
         fbRevenue:fbMonth===null?"":String(fbMonth),

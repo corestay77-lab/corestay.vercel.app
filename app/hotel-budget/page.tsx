@@ -664,7 +664,6 @@ export default function HotelBudgetPage() {
       make("TOTAL OTHER EXPENSES",ownerExpenses,"money",revenue),
       make("OWNER SHARE PROFIT (OSP)",osp,"money",revenue),
       make("OTHER OWNER EXPENSES",ownerOtherExpenses,"money",revenue),
-      make("NET OWNER SHARE PROFIT (NOSP)",nosp,"money",revenue)
     ];
   };
 

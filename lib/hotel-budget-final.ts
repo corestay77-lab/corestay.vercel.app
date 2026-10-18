@@ -32,6 +32,13 @@ export const ACCOUNT_LINES: AccountLine[] = [
       label:department+" — "+item,group:"payroll" as const,section:"Payroll & Related Expenses"
     }))
   ),
+  // Dedicated HRD and Minor Operating Department payroll accounts; existing codes remain unchanged.
+  ...["Human Resources","Minor Operating Dept."].flatMap((department,di)=>
+    ["Salary & Wages","Overtime","THR","Bonus / Incentive","Income Tax Allowance","Meal Allowance","Jamsostek / BPJS","Medical & Insurance","Pension","Temporary Staff","Employee Benefits","Other Payroll"].map((item,i)=>({
+      code:"6"+String(di+7).padStart(2,"0")+String(i+1).padStart(2,"0"),
+      label:department+" — "+item,group:"payroll" as const,section:"Payroll & Related Expenses"
+    }))
+  ),
   ...[
     ["Room Department","Cleaning Supplies"],["Room Department","Guest Supplies"],["Room Department","Laundry & Linen"],["Room Department","Commissions"],["Room Department","Other Room Expenses"],
     ["F&B Department","Kitchen Supplies"],["F&B Department","Crockery & Cutlery"],["F&B Department","Cleaning Supplies"],["F&B Department","Music & Entertainment"],["F&B Department","Other F&B Expenses"],

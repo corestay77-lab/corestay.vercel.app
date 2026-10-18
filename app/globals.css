@@ -34,3 +34,7 @@ body { background: var(--background); color: var(--foreground); font-family: Ari
   }
 }
 
+
+/* Hotel Budget: temporarily hide the 1 Year Consolidated report only; keep 10 Years Consolidated visible. */
+body:has(.hotel-budget-page) [class~="bg-sky-50/70"]:has(h3) { display: none !important; }
+body:has(.hotel-budget-page) section.print-one-year { display: none !important; }

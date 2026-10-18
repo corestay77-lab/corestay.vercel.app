@@ -933,7 +933,15 @@ export default function HotelBudgetPage() {
   // Budget is updated only; Actual, Last Year and YTD remain unchanged.
   useEffect(()=>{
     const fb=calculateFbStatisticsAnnualBreakdown(form.statistics,Number(form.yearStart));
+    const year=Number(form.yearStart);
+    const yearDays=Number.isInteger(year)&&year>=1900&&year<=2200?(year%4===0&&(year%100!==0||year%400===0)?366:365):365;
+    const roomCount=optional(form.statistics.rooms);
+    const roomOccupancy=optional(form.statistics.occupancy)??values.paidOccupancy;
+    const roomArr=optional(form.statistics.averageSellingRate);
+    const roomRevenueBudget=roomCount!==null&&roomCount>0&&roomOccupancy!==null&&roomArr!==null&&roomArr>0
+      ?Math.round(roomCount*yearDays*roomOccupancy/100*roomArr):null;
     const sources:[string,number|null][]=[
+      ["41101",roomRevenueBudget],
       ["41207",fb.banquet],
       ["41208",fb.roomService],
       ["41209",fb.otherFb],
@@ -965,7 +973,7 @@ export default function HotelBudgetPage() {
       }
       return changed?{...prev,accounts}:prev;
     });
-  },[form.statistics,form.yearStart]);
+  },[form.statistics,form.yearStart,values.paidOccupancy]);
   const revenueActual=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"actual",allAccountLines);
   const revenueBudget=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"budget",allAccountLines);
   const revenueLastYear=totalColumn(["roomRevenue","fbRevenue","otherRevenue"],form.accounts,"lastYear",allAccountLines);

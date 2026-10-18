@@ -531,13 +531,26 @@ export default function HotelBudgetPage() {
       years.map((_,i)=>modPayrollBase===null?null:modPayrollBase*growth(i)),
       years.map((_,i)=>modOtherBase===null?null:modOtherBase*growth(i))
     ]);
-    const deptIncomeTotal=years.map((_,i)=>[deptRoomIncome[i],deptFbIncome[i],deptPhoneIncome[i],deptModIncome[i]].every(v=>v!==null)
-      ? (deptRoomIncome[i]??0)+(deptFbIncome[i]??0)+(deptPhoneIncome[i]??0)+(deptModIncome[i]??0):null);
+    const deptIncomeTotal=years.map((_,i)=>sumPresent([deptRoomIncome[i],deptFbIncome[i],deptPhoneIncome[i],deptModIncome[i]]));
     const overheadPayrollBase=monthlyBase(row=>sumPresent([optional(row.agPayroll),optional(row.smPayroll),optional(row.hrdPayroll)]));
     const overheadOtherBase=detailOverheadBase;
     const overheadPayroll=years.map((_,i)=>overheadPayrollBase===null?null:overheadPayrollBase*growth(i));
     const overheadOther=years.map((_,i)=>overheadOtherBase===null?null:overheadOtherBase*growth(i));
-    const gop=years.map((y,i)=>revenue[i]!==null&&costs[i]!==null&&costBucketsComplete[i]?revenue[i]!-costs[i]!:null);
+    // GOP is calculated from the consolidated revenue and operating-cost total when both are available.
+    // Keep it blank only when its underlying total is unavailable/incomplete.
+    const gop=years.map((_,i)=>revenue[i]!==null&&costs[i]!==null&&costBucketsComplete[i]?revenue[i]!-costs[i]!:null);
+    const landLeaseBase=monthlyBase(row=>optional(row.landLease));
+    const ownerInsuranceBase=monthlyBase(row=>optional(row.ownerInsurance));
+    const maintenanceFeeBase=monthlyBase(row=>optional(row.maintenanceFee));
+    const ownerOtherBase=monthlyBase(row=>optional(row.ownerOtherExpenses));
+    const landLease=years.map((_,i)=>landLeaseBase===null?null:landLeaseBase*growth(i));
+    const ownerInsurance=years.map((_,i)=>ownerInsuranceBase===null?null:ownerInsuranceBase*growth(i));
+    const maintenanceFee=years.map((_,i)=>maintenanceFeeBase===null?null:maintenanceFeeBase*growth(i));
+    const ownerOtherExpenses=years.map((_,i)=>ownerOtherBase===null?null:ownerOtherBase*growth(i));
+    const ownerExpenses=years.map((_,i)=>[landLease[i],ownerInsurance[i],maintenanceFee[i]].every(v=>v!==null)
+      ? (landLease[i]??0)+(ownerInsurance[i]??0)+(maintenanceFee[i]??0):null);
+    const osp=years.map((_,i)=>gop[i]!==null&&ownerExpenses[i]!==null?gop[i]!-ownerExpenses[i]!:null);
+    const nosp=years.map((_,i)=>osp[i]!==null&&ownerOtherExpenses[i]!==null?osp[i]!-ownerOtherExpenses[i]!:null);
     const sum=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((n,v)=>n+(v??0),0):null;
     const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
     const totalRevenue=sum(revenue), totalRoomRev=sum(roomRevenue), totalAvailable=sum(roomAvail), totalOccupied=sum(occupied);
@@ -588,8 +601,13 @@ export default function HotelBudgetPage() {
       section("OTHER NON-OPERATING / OWNER EXPENSES"),
       make("MANAGEMENT FEES",years.map(()=>null),"money",revenue),
       make("PROPERTY INSURANCE",years.map(()=>null),"money",revenue),
-      make("LAND LEASE / CAPEX / OWNER EXPENSES",years.map(()=>null),"money",revenue),
-      make("NET OWNER PROFIT — requires owner-level expenses",years.map(()=>null),"money",revenue)
+      make("LAND LEASE / HOLD",landLease,"money",revenue),
+      make("INSURANCE",ownerInsurance,"money",revenue),
+      make("MAINTENANCE FEE (SERVICE CHARGE)",maintenanceFee,"money",revenue),
+      make("TOTAL OTHER EXPENSES",ownerExpenses,"money",revenue),
+      make("OWNER SHARE PROFIT (OSP)",osp,"money",revenue),
+      make("OTHER OWNER EXPENSES",ownerOtherExpenses,"money",revenue),
+      make("NET OWNER SHARE PROFIT (NOSP)",nosp,"money",revenue)
     ];
   };
 

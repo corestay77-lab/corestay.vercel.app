@@ -788,6 +788,23 @@ export default function HotelBudgetPage() {
       overhead:total(["overhead"]),
       deptBudget,
       payrollBudget,
+      // Map Step 3 account-level POMEC values to the matching detail rows.
+      // Unmapped detail rows stay blank; do not copy one aggregate into multiple rows.
+      pomecDetailBudget:{
+        salaryWages:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"salary & wages")),
+        incomeTax:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"income tax")),
+        jamsostek:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"jamsostek")),
+        insurancePayroll:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"medical & insurance")),
+        thr:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"thr")),
+        mealAllowances:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"meal allowance")),
+        medical:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"medical & insurance")),
+        otherPayroll:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"other payroll")),
+        engineeringSupplies:budgetByLabel("overhead",label=>labelHas(label,"engineering")&&labelHas(label,"tools & supplies")),
+        others:budgetByLabel("overhead",label=>labelHas(label,"engineering")&&labelHas(label,"repairs & maintenance")),
+        electricityConsumed:budgetByLabel("overhead",label=>labelHas(label,"energy cost")&&labelHas(label,"electricity")),
+        waterConsumed:budgetByLabel("overhead",label=>labelHas(label,"energy cost")&&labelHas(label,"water")),
+        fuelDieselConsumed:budgetByLabel("overhead",label=>labelHas(label,"energy cost")&&labelHas(label,"gas & fuel"))
+      },
       fbCostOfSales:budgetByLabel("costOfSales",label=>labelHas(label,"f&b cost of sales","food & beverage cost")),
       modCostOfSales:budgetByLabel("costOfSales",label=>labelHas(label,"other department cost of sales","minor operating cost of sales","mod cost of sales")),
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
@@ -826,6 +843,9 @@ export default function HotelBudgetPage() {
     const operatingCostMonthlyValues=allocateAnnual(baseCosts);
     const fbCostOfSalesMonthlyValues=allocateAnnual(forecastSource.fbCostOfSales);
     const modCostOfSalesMonthlyValues=allocateAnnual(forecastSource.modCostOfSales);
+    const pomecDetailMonthlyValues=Object.fromEntries(
+      Object.entries(forecastSource.pomecDetailBudget||{}).map(([key,value])=>[key,allocateAnnual(value)])
+    ) as Record<string,string[]>;
     // Reconcile monthly F&B allocation to the same rounded annual base used by Annual Forecast.
     // Keep Jan–Nov allocation unchanged; December absorbs only the rounding remainder.
     const fbMonthlyValues:(number|null)[]=baseFb===null?monthNames.map(()=>null):monthNames.map((_,i)=>Math.round(baseFb*new Date(startYear,i+1,0).getDate()/daysInYear));
@@ -930,6 +950,12 @@ export default function HotelBudgetPage() {
           hrdOtherExpenses:hrdDetail?(prior.hrdOtherExpenses||row.hrdOtherExpenses):row.hrdOtherExpenses,
           pomecOtherExpenses:pomecDetail?(prior.pomecOtherExpenses||row.pomecOtherExpenses):row.pomecOtherExpenses,
           energyCost:pomecDetail?(prior.energyCost||row.energyCost):row.energyCost,
+          // Preserve any manually entered POMEC detail; otherwise fill each matching
+          // detail line from its own Step 3 budget account, allocated by calendar days.
+          pomecDetails:Object.fromEntries([...new Set([...Object.keys(pomecDetails),...Object.keys(pomecDetailMonthlyValues)])].map(key=>[
+            key,
+            String(pomecDetails[key]??"").trim()!==""?pomecDetails[key]:(pomecDetailMonthlyValues[key]?.[i]??"")
+          ])),
           roomPayroll,
           fbPayroll:payrollTotal("FB"),
           modPayroll:payrollTotal("MOD"),

@@ -169,7 +169,9 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
   const costParts=form.forecast.monthly.map(monthlyCost);
-  const totalOperatingCosts=costParts.map(c=>c.detailTotal??c.fallback??sumPresent([c.cos,c.payroll,c.deptOther,c.overheadPayroll,c.overheadOther]));
+  // A total operating-cost figure is valid only when every required cost bucket is present,
+  // or when the user supplied an explicit total. Never turn missing cost buckets into zero.
+  const totalOperatingCosts=costParts.map(c=>c.detailTotal??c.fallback);
   const deptIncome=form.forecast.monthly.map((r,i)=>{
     const room=roomRevenue[i], rp=val(r,"roomPayroll"), ro=val(r,"roomOtherExpenses");
     const f=fb[i], fc=val(r,"fbCostOfSales"), fp=val(r,"fbPayroll"), fo=val(r,"fbOtherExpenses");
@@ -534,16 +536,16 @@ export default function HotelBudgetPage() {
     const overheadBase=detailOverheadBase??pomecNonPayrollBase??baseCost("overhead");
     const overhead=years.map((_,i)=>overheadBase===null?null:overheadBase*growth(i));
     const sumKnown=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((n,v)=>n+(v??0),0):null;
-    const monthlyOperatingCostBase=monthlyBase(row=>optional(row.operatingCosts));
-    // Keep the 10-year Year 1 cost basis identical to the 1-year consolidated report.
-    // Monthly operatingCosts is the canonical total when entered; detailed account
-    // buckets are fallback inputs only and must not be added on top of that total.
-    const costs=years.map((y,i)=>monthlyOperatingCostBase!==null
+    const monthlyOperatingCostValues=source.forecast.monthly.map(row=>optional(row.operatingCosts));
+    const monthlyOperatingCostBase=monthlyOperatingCostValues.length===12&&monthlyOperatingCostValues.every((v):v is number=>v!==null)
+      ?monthlyOperatingCostValues.reduce((sum,v)=>sum+v,0):null;
+    // Use the same strict completeness rule as the 1-year consolidated report.
+    // Missing cost categories must not be silently treated as zero, otherwise GOP is overstated.
+    const costs=years.map((_,i)=>monthlyOperatingCostBase!==null
       ? monthlyOperatingCostBase*growth(i)
-      : detailCostBase!==null||costOfSalesBase!==null
+      : [costOfSales[i],payroll[i],deptExpenses[i],overhead[i]].every(v=>v!==null)
         ? sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]])
-        : y.calc.costs??sumKnown([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]]));
-    const costBucketsComplete=years.map((y,i)=>monthlyOperatingCostBase!==null||([costOfSales[i],payroll[i],deptExpenses[i],overhead[i]].every(v=>v!==null))||(detailCostBase===null&&costOfSalesBase===null&&y.calc.costs!==null));
+        : null);
     const deptBase=(get:(row:ForecastMonth,index:number)=>number|null)=>monthlyBase(get);
     const roomPayrollBase=deptBase(row=>optional(row.roomPayroll));
     const roomOtherBase=deptBase(row=>optional(row.roomOtherExpenses));

@@ -1362,6 +1362,8 @@ export default function HotelBudgetPage() {
                     {statField("rooms","# OF ROOMS","Jumlah kamar fisik hotel.")}
                     {field("OCCUPANCY (%)",form.statistics.occupancy,v=>updateStats("occupancy",v),{type:"number",min:"0",step:"0.1",placeholder:"Contoh: 65",hint:"Asumsi occupancy forecast dalam persen (0–100)."})}
                     {field("AVERAGE ROOM RATE (ARR)",form.statistics.averageSellingRate,v=>updateStats("averageSellingRate",v),{type:"number",min:"0",step:"1",placeholder:"Contoh: 650000",hint:"ARR dalam Rupiah per kamar terjual; dipakai sebagai acuan forecast."})}
+                    {field("AVERAGE GUEST / ROOM",form.statistics.fbAverageGuestsPerRoom,v=>updateStats("fbAverageGuestsPerRoom",v),{type:"number",min:"0",step:"0.1",placeholder:"Contoh: 1.8",hint:"Rata-rata jumlah tamu per kamar terisi."})}
+                    {field("LENGTH OF STAY",form.statistics.fbLengthOfStay,v=>updateStats("fbLengthOfStay",v),{type:"number",min:"0",step:"0.1",placeholder:"Contoh: 2.3",hint:"Rata-rata lama menginap tamu dalam malam."})}
                     {field("EXCHANGE RATE US $ TO RP",form.statistics.exchangeRate,v=>updateStats("exchangeRate",v),{type:"number",min:"0",step:"any",hint:"Kurs USD ke Rupiah sesuai sumber/periode.",placeholder:"Contoh: 16000"})}
                   </div>
                 </div>

@@ -320,14 +320,14 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
   const meetingACovers=months.map(({days})=>{const events=optional(stat.fbMeetingRoomAEventsPerYear)??(optional(stat.fbMeetingRoomAUnits)!==null&&legacyMeetingDays!==null?optional(stat.fbMeetingRoomAUnits)!*legacyMeetingDays:null),p=optional(stat.fbMeetingRoomAPax),c=optional(stat.fbMeetingRoomACoverPercent);return events!==null&&p!==null&&c!==null&&yearDays>0?events*days/yearDays*p*c/100:null;});
   const meetingBCovers=months.map(({days})=>{const events=optional(stat.fbMeetingRoomBEventsPerYear)??(optional(stat.fbMeetingRoomBUnits)!==null&&legacyMeetingDays!==null?optional(stat.fbMeetingRoomBUnits)!*legacyMeetingDays:null),p=optional(stat.fbMeetingRoomBPax),c=optional(stat.fbMeetingRoomBCoverPercent);return events!==null&&p!==null&&c!==null&&yearDays>0?events*days/yearDays*p*c/100:null;});
   const ballroomCovers=months.map(({days})=>{const p=optional(stat.fbBallroomCapacity),c=optional(stat.fbBallroomCoverPercent),events=ballroomEvents!==null&&yearDays>0?ballroomEvents*days/yearDays:null;return p!==null&&c!==null&&events!==null?p*events*c/100:null;});
-  const restaurantRevenue=months.map((_,i)=>fbMonthly[i]?.restaurantRevenue??null);
-  const meetingARevenue=months.map((_,i)=>fbMonthly[i]?.meetingRoomARevenue??null);
-  const meetingBRevenue=months.map((_,i)=>fbMonthly[i]?.meetingRoomBRevenue??null);
-  const ballroomRevenue=months.map((_,i)=>fbMonthly[i]?.ballroomRevenue??null);
   const fbMonthly=months.map((_,i)=>calculateFbStatisticsMonthly(
     {...stat,occupancy:occupancy[i]===null?stat.occupancy:String(occupancy[i])},
     year,i
   ));
+  const restaurantRevenue=months.map((_,i)=>fbMonthly[i]?.restaurantRevenue??null);
+  const meetingARevenue=months.map((_,i)=>fbMonthly[i]?.meetingRoomARevenue??null);
+  const meetingBRevenue=months.map((_,i)=>fbMonthly[i]?.meetingRoomBRevenue??null);
+  const ballroomRevenue=months.map((_,i)=>fbMonthly[i]?.ballroomRevenue??null);
   const fbc=months.map(({row},i)=>optional(row.fbRevenue)??fbMonthly[i]?.total??null);
   const modAnnual=calculateModStatisticsAnnual(stat);
   const mod=months.map(({row,days})=>optional(row.otherRevenue)??(modAnnual===null?null:modAnnual*days/months.reduce((s,m)=>s+m.days,0)));

@@ -777,6 +777,8 @@ export default function HotelBudgetPage() {
       overhead:total(["overhead"]),
       deptBudget,
       payrollBudget,
+      fbCostOfSales:budgetByLabel("costOfSales",label=>labelHas(label,"f&b cost of sales","food & beverage cost")),
+      modCostOfSales:budgetByLabel("costOfSales",label=>labelHas(label,"other department cost of sales","minor operating cost of sales","mod cost of sales")),
       costs:total(["costOfSales","payroll","operatingExpenses","overhead"])
     };
   },[form.accounts,allAccountLines,values.occupancy,values.paidOccupancy,values.adr,form.statistics,form.yearStart]);
@@ -811,6 +813,8 @@ export default function HotelBudgetPage() {
     }));
     const modMonthlyValues:Record<string,string[]>=Object.fromEntries(modRevenueCodes.map(([key])=>[key,allocateAnnual(modAnnualValues[key])]));
     const operatingCostMonthlyValues=allocateAnnual(baseCosts);
+    const fbCostOfSalesMonthlyValues=allocateAnnual(forecastSource.fbCostOfSales);
+    const modCostOfSalesMonthlyValues=allocateAnnual(forecastSource.modCostOfSales);
     // Reconcile monthly F&B allocation to the same rounded annual base used by Annual Forecast.
     // Keep Jan–Nov allocation unchanged; December absorbs only the rounding remainder.
     const fbMonthlyValues:(number|null)[]=baseFb===null?monthNames.map(()=>null):monthNames.map((_,i)=>Math.round(baseFb*new Date(startYear,i+1,0).getDate()/daysInYear));
@@ -834,7 +838,8 @@ export default function HotelBudgetPage() {
         modDetails:{...modDetails},
         fbRevenue:fbMonth===null?"":String(fbMonth),
         otherRevenue:modTotal,
-        fbCostOfSales:forecastSource.costOfSales===null?"":String(Math.round(forecastSource.costOfSales*share)),
+        fbCostOfSales:fbCostOfSalesMonthlyValues[index],
+        modCostOfSales:modCostOfSalesMonthlyValues[index],
         roomPayroll:forecastSource.payroll===null?"":String(Math.round(forecastSource.payroll*share)),
         roomOtherExpenses:forecastSource.deptBudget.roomOther===null?"":String(Math.round(forecastSource.deptBudget.roomOther*share)),
         fbOtherExpenses:forecastSource.deptBudget.fbOther===null?"":String(Math.round(forecastSource.deptBudget.fbOther*share)),

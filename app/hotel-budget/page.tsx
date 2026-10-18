@@ -195,7 +195,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
   const nonOp= form.forecast.monthly.map(r=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
   const nonOpComplete=form.forecast.monthly.map(r=>val(r,"otherManagementFee")!==null&&val(r,"insuranceGeneral")!==null);
-  const gop=goi.map((v,i)=>v!==null&&nonOpComplete[i]&&nonOp[i]!==null?v-nonOp[i]!:revenue[i]!==null&&(costParts[i].detailTotal!==null||costParts[i].fallback!==null)&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
+  const gop=goi.map((v,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:v!==null&&nonOpComplete[i]&&nonOp[i]!==null?v-nonOp[i]!:null);
   const otherExpense= form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
   const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
   // Owner/operator share is a profit allocation, not an operating expense.
@@ -576,7 +576,7 @@ export default function HotelBudgetPage() {
     const overheadOther=years.map((_,i)=>overheadOtherBase===null?null:overheadOtherBase*growth(i));
     // GOP is calculated from the consolidated revenue and operating-cost total when both are available.
     // Keep it blank only when its underlying total is unavailable/incomplete.
-    const gop=years.map((_,i)=>revenue[i]!==null&&costs[i]!==null&&costBucketsComplete[i]?revenue[i]!-costs[i]!:null);
+    const gop=years.map((_,i)=>revenue[i]!==null&&costs[i]!==null?revenue[i]!-costs[i]!:null);
     const landLeaseBase=monthlyBase(row=>optional(row.landLease));
     const ownerInsuranceBase=monthlyBase(row=>optional(row.ownerInsurance));
     const maintenanceFeeBase=monthlyBase(row=>optional(row.maintenanceFee));

@@ -1645,8 +1645,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs leading-5 text-sky-100">Mengikuti item dan formula statistik hotel. Nilai bulanan, total tahunan, dan laporan 10 tahun memakai basis perhitungan yang sama; data yang belum tersedia tetap ditampilkan sebagai —.</p>
               </div>
               <div className="overflow-x-auto">
-                <table className="w-max min-w-[1500px] table-auto border-collapse text-[11px]">
-                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[240px] min-w-[240px] max-w-[240px] bg-slate-100 px-2 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="min-w-[88px] px-2 py-2 text-right whitespace-nowrap">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-2 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
+                <table className="w-max min-w-[1000px] table-fixed border-collapse text-[11px]">
+                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[100px] min-w-[100px] max-w-[100px] bg-slate-100 px-1 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="w-[65px] min-w-[65px] max-w-[65px] px-1 py-2 text-right whitespace-nowrap">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="bg-sky-100 px-2 py-2 text-right">YEAR TOTAL / AVG</th></tr></thead>
                   <tbody>{buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels}).map((line,i)=>{
                     if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
                     const isPercent=line.kind==="percent";
@@ -1654,7 +1654,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const isRate=/EXCHANGE RATE/i.test(line.label);
                     const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
-                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-2 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="min-w-[88px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="min-w-[140px] border-t border-slate-200 bg-sky-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
+                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[100px] min-w-[100px] max-w-[100px] border-t border-slate-200 bg-inherit px-1 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="w-[65px] min-w-[65px] max-w-[65px] border-t border-slate-200 px-1 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[120px] min-w-[120px] max-w-[120px] border-t border-slate-200 bg-sky-50 px-1 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
                   })}</tbody>
                 </table>
               </div>

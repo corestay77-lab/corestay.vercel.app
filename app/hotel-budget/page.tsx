@@ -181,7 +181,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     return {
       room:room!==null&&rp!==null&&ro!==null?room-rp-ro:null,
       fb:f!==null&&fc!==null&&fp!==null&&fo!==null?f-fc-fp-fo:null,
-      phone:ph!==null&&pc!==null&&pp!==null&&po!==null?ph-pc-pp-po:null,
+      // The source 1 Year Consolidated sheet has no Telephone cost-of-sales line; do not require a non-existent input.
+      phone:ph!==null&&pp!==null&&po!==null?ph-pp-po:null,
       mod:mo!==null&&mc!==null&&mp!==null&&mx!==null?mo-mc-mp-mx:null
     };
   });
@@ -192,7 +193,13 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Missing source values remain blank and are never converted to zero in the report.
   const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
   const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.phone,d.mod]));
-  const deptIncomeComplete=deptIncome.map(d=>[d.room,d.fb,d.phone,d.mod].every(v=>v!==null));
+  // Only departments with revenue in that month are required for a complete departmental-income total.
+  // This mirrors the source workbook where inactive/unused departments are left blank.
+  const deptIncomeComplete=deptIncome.map((d,i)=>{
+    const revenues=[roomRevenue[i],fb[i],phone[i],other[i]];
+    const incomes=[d.room,d.fb,d.phone,d.mod];
+    return incomes.every((value,j)=>revenues[j]===null||value!==null);
+  });
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
   // Profit lines require complete inputs for the calculation; a partial overhead subtotal
   // must not be mistaken for the full expense amount.
@@ -201,7 +208,9 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const goi=houseProfit.map((v,i)=>v!==null&&val(form.forecast.monthly[i],"basicManagementFee")!==null?v-val(form.forecast.monthly[i],"basicManagementFee")!:null);
   const nonOp= form.forecast.monthly.map(r=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
   const nonOpComplete=form.forecast.monthly.map(r=>val(r,"otherManagementFee")!==null&&val(r,"insuranceGeneral")!==null);
-  const gop=goi.map((v,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:v!==null&&nonOpComplete[i]&&nonOp[i]!==null?v-nonOp[i]!:null);
+  // Excel source formula: GOP = Gross Operating Income - management fees - general insurance.
+  // Do not bypass management/non-operating deductions by subtracting only operating costs from revenue.
+  const gop=goi.map((v,i)=>v!==null&&nonOpComplete[i]&&nonOp[i]!==null?v-nonOp[i]!:null);
   const otherExpense= form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
   const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
   // Owner/operator share is a profit allocation, not an operating expense.

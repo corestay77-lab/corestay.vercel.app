@@ -1017,7 +1017,7 @@ export default function HotelBudgetPage() {
           smPayroll:payrollTotal("SM"),
           hrdPayroll:payrollTotal("HRD"),
           pomecPayroll:payrollTotal("POMEC"),
-          agDetails,modDetails:{...modDetails,...row.modDetails},fbDetails:{...fbDetails,...row.fbDetails},roomDivisionDetails:{...roomDivisionDetails,...row.roomDivisionDetails,roomRevenue:preserveManual(prior.roomDivisionDetails?.roomRevenue,previousAuto?.monthly[i]?.roomDivisionDetails?.roomRevenue,row.roomDivisionDetails?.roomRevenue)},hrdDetails,smDetails
+          agDetails,modDetails:{...row.modDetails,...modDetails},fbDetails:{...fbDetails,...row.fbDetails},roomDivisionDetails:{...roomDivisionDetails,...row.roomDivisionDetails,roomRevenue:preserveManual(prior.roomDivisionDetails?.roomRevenue,previousAuto?.monthly[i]?.roomDivisionDetails?.roomRevenue,row.roomDivisionDetails?.roomRevenue)},hrdDetails,smDetails
         };
       });
       const sameMonthly=JSON.stringify(prev.forecast.monthly)===JSON.stringify(monthlyWithDetails);

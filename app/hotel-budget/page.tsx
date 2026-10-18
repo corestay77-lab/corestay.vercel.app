@@ -954,7 +954,8 @@ export default function HotelBudgetPage() {
         // Keep unsupported Step 1 outlets untouched; they remain available for manual entry.
         // Empty assumptions are not zero: preserve any existing Budget cell until a real value is calculated.
         const isModRevenueCode=code.startsWith("413");
-        if(value===null&&!isModRevenueCode)continue;
+        const isStepOneFbRevenueCode=code==="41207"||code==="41208"||code==="41209";
+        if(value===null&&!isModRevenueCode&&!isStepOneFbRevenueCode)continue;
         const raw=value===null?"":String(Math.round(value));
         const current=accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
         if(current.budget!==raw){

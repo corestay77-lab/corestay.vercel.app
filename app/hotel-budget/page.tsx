@@ -861,6 +861,9 @@ export default function HotelBudgetPage() {
     const operatingCostMonthlyValues=allocateAnnual(baseCosts);
     const fbCostOfSalesMonthlyValues=allocateAnnual(forecastSource.fbCostOfSales);
     const modCostOfSalesMonthlyValues=allocateAnnual(forecastSource.modCostOfSales);
+    const roomDivisionDetailMonthlyValues=Object.fromEntries(
+      Object.entries(forecastSource.roomDivisionDetailBudget||{}).map(([key,value])=>[key,allocateAnnual(value)])
+    ) as Record<string,string[]>;
     const pomecDetailMonthlyValues=Object.fromEntries(
       Object.entries(forecastSource.pomecDetailBudget||{}).map(([key,value])=>[key,allocateAnnual(value)])
     ) as Record<string,string[]>;

@@ -500,8 +500,12 @@ export default function HotelBudgetPage() {
     const revenue=years.map((_,i)=>sumPresent([roomRevenue[i],fb[i],other[i]]));
     const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",allAccountLines);
     const annualCost=(group:AccountGroup)=>years.map((_,i)=>{const base=baseCost(group);return base===null?null:base*growth(i);});
-    const masterPayrollMonthly=(source.payrollEmployees||[]).length?(source.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0):null;
-    const payrollBase=masterPayrollMonthly!==null?masterPayrollMonthly*12:baseCost("payroll");
+    // Keep consolidated departmental payroll on the exact same source as the 1-year report.
+    // Master Payroll is shown in its own detail report; using its all-department total here
+    // incorrectly adds overhead/other departments to the departmental payroll subtotal.
+    const payrollBase=monthlyBase(row=>sumPresent([
+      optional(row.roomPayroll),optional(row.fbPayroll),optional(row.phonePayroll),optional(row.modPayroll)
+    ]));
     const payroll=years.map((_,i)=>payrollBase===null?null:payrollBase*growth(i));
     const detailRevenueKeys=new Set(["roomRevenue","foodRevenue","beverageRevenue","businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts","foodCost","beverageCost","laundryCost"]);
     // Match the 1-year report's departmental-expense buckets exactly.

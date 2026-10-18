@@ -1912,7 +1912,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-[11px] leading-5 text-slate-600">
                 Persentase setiap baris dihitung terhadap basis revenue atau basis departemen yang ditetapkan dalam rumus konsolidasi. TOTAL menjumlahkan nilai bulanan; baris persentase profit menampilkan rasio dan tidak menjumlahkan persentase bulanan. Data yang belum tersedia tetap ditandai —.
               </div>
-            </section>            </section>
+            </section>
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">

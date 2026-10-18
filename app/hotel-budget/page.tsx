@@ -309,7 +309,10 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
   const arrUsd=arr.map((v,i)=>v!==null&&exchange[i]!==null&&exchange[i]!>0?v/exchange[i]!:null);
   const avgGuests=months.map(()=>optional(stat.fbAverageGuestsPerRoom));
   const los=months.map(()=>optional(stat.fbLengthOfStay));
-  const guests=occupied.map((v,i)=>v!==null&&avgGuests[i]!==null?v*avgGuests[i]!:null);
+  // Guest counts include paid occupied rooms plus complimentary room nights when supplied.
+  // Preserve blank results when occupied-room data or average guests/room is missing.
+  const occupiedForGuests=occupied.map((v,i)=>v===null&&complimentary[i]===null?null:(v??0)+(complimentary[i]??0));
+  const guests=occupiedForGuests.map((v,i)=>v!==null&&avgGuests[i]!==null?v*avgGuests[i]!:null);
   const arrivals=guests.map((v,i)=>v!==null&&los[i]!==null&&los[i]!>0?v/los[i]!:null);
   const restaurantCover=months.map(()=>optional(stat.fbRestaurantCoverPercent));
   const restaurantCovers=arrivals.map((v,i)=>v!==null&&restaurantCover[i]!==null?v*restaurantCover[i]!/100:null);

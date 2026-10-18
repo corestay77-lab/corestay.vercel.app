@@ -758,7 +758,8 @@ export default function HotelBudgetPage() {
       pomecOther:budgetByLabel("overhead",label=>labelHas(label,"engineering","pomec","maintenance")),
       energy:budgetByLabel("overhead",label=>labelHas(label,"energy cost","electricity","water consumed","fuel / diesel")),
       smOther:budgetByLabel("overhead",label=>labelHas(label,"sales & marketing","sales and marketing")),
-      agOther:budgetByLabel("overhead",label=>labelHas(label,"administrative & general","administration & general","a&g"))
+      agOther:budgetByLabel("overhead",label=>labelHas(label,"administrative & general","administration & general","a&g")),
+      hrdOther:budgetByLabel("overhead",label=>labelHas(label,"human resources","hrd"))
     };
     const payrollByLabel=(predicate:(label:string)=>boolean)=>budgetByLabel("payroll",predicate);
     const payrollBudget={
@@ -858,6 +859,7 @@ export default function HotelBudgetPage() {
         energyCost:forecastSource.deptBudget.energy===null?"":String(Math.round(forecastSource.deptBudget.energy*share)),
         smOtherExpenses:forecastSource.deptBudget.smOther===null?"":String(Math.round(forecastSource.deptBudget.smOther*share)),
         agOtherExpenses:forecastSource.deptBudget.agOther===null?"":String(Math.round(forecastSource.deptBudget.agOther*share)),
+        hrdOtherExpenses:forecastSource.deptBudget.hrdOther===null?"":String(Math.round(forecastSource.deptBudget.hrdOther*share)),
         operatingCosts:operatingCostMonthlyValues[index]
       };
     });

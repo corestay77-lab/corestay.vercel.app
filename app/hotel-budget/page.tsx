@@ -108,7 +108,10 @@ const calculateFbStatisticsAnnualBreakdown = (statistics:Statistics, year:number
   const meetingParts=[sum("meetingRoomARevenue"),sum("meetingRoomBRevenue"),sum("ballroomRevenue"),sum("additionalMeetingRevenue")];
   const calculatedMeeting=meetingParts.some(v=>v!==null)?meetingParts.reduce<number>((total,v)=>total+(v??0),0):null;
   const meeting=calculatedMeeting;
-  return {restaurant:null,meeting,total:meeting};
+  const banquet=sum("meetingRoomARevenue");
+  const roomService=sum("meetingRoomBRevenue");
+  const otherFb=sum("additionalMeetingRevenue");
+  return {restaurant,meeting,total:meeting,banquet,roomService,otherFb};
 };
 const calculateFbStatisticsAnnual = (statistics:Statistics, year:number) => calculateFbStatisticsAnnualBreakdown(statistics,year).total;
 // Step 1 MOD assumptions mirror the revenue accounts shown in the MOD Budget P&L.
@@ -926,13 +929,14 @@ export default function HotelBudgetPage() {
   },[forecastSource,form.yearStart,form.statistics.rooms,form.payrollEmployees,form.budgetAllocations,annualGrowthPct]);
   // Step 1 revenue outlets are the source of truth for matching Budget P&L Budget cells.
   // Only derived Budget values are updated; Actual, Last Year and YTD remain untouched.
-  // F&B restaurant maps to 41201; meeting/event-space revenue maps to 41205 because Step 1
-  // collects one average meeting check and does not split it into food vs beverage.
+  // The three Step 1 F&B revenue categories each sync to their own Step 3 Budget P&L account.
+  // Budget is updated only; Actual, Last Year and YTD remain unchanged.
   useEffect(()=>{
     const fb=calculateFbStatisticsAnnualBreakdown(form.statistics,Number(form.yearStart));
     const sources:[string,number|null][]=[
-      ["41201",fb.restaurant],
-      ["41205",fb.meeting],
+      ["41207",fb.banquet],
+      ["41208",fb.roomService],
+      ["41209",fb.otherFb],
       ["41301",optional(form.statistics.modBusinessCenterRevenue)],
       ["41302",optional(form.statistics.modRentCarRevenue)],
       ["41303",optional(form.statistics.modLaundryRevenue)],

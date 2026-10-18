@@ -790,6 +790,24 @@ export default function HotelBudgetPage() {
       payrollBudget,
       // Map Step 3 account-level POMEC values to the matching detail rows.
       // Unmapped detail rows stay blank; do not copy one aggregate into multiple rows.
+      roomDivisionDetailBudget:{
+        foSalary:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("salary & wages")),
+        foIncomeTax:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("income tax")),
+        foJamsostek:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("jamsostek")),
+        foInsurance:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("insurance")),
+        foBonus:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("bonus")),
+        foMeal:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("meal allowance")),
+        foMedical:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("medical")),
+        foOtherPayroll:budgetByLabel("payroll",label=>label.toLowerCase().includes("front office")&&label.toLowerCase().includes("other payroll")),
+        hkSalary:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("salary & wages")),
+        hkIncomeTax:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("income tax")),
+        hkJamsostek:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("jamsostek")),
+        hkInsurance:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("insurance")),
+        hkThr:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("thr")),
+        hkMeal:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("meal allowance")),
+        hkMedical:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("medical")),
+        hkOtherPayroll:budgetByLabel("payroll",label=>label.toLowerCase().includes("housekeeping")&&label.toLowerCase().includes("other payroll"))
+      },
       pomecDetailBudget:{
         salaryWages:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"salary & wages")),
         incomeTax:budgetByLabel("payroll",label=>labelHas(label,"engineering")&&labelHas(label,"income tax")),

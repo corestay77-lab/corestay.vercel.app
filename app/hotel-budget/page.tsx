@@ -1882,7 +1882,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                       <th colSpan={2} className="w-[220px] min-w-[220px] max-w-[220px] border-l border-teal-200 bg-teal-100 px-3 py-2 text-center">TOTAL / AVERAGE</th>
                     </tr>
                     <tr className="bg-slate-50 text-slate-600">
-                      {form.forecast.monthly.map(row=><Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></React.Fragment>)}
+                      {form.forecast.monthly.map(row=><Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></Fragment>)}
                       <th className="border-l border-teal-200 bg-teal-50 px-2 py-1.5 text-right">VALUE</th><th className="bg-teal-50 px-2 py-1.5 text-right">%</th>
                     </tr>
                   </thead>

@@ -259,8 +259,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("HRD",monthly("hrdOtherExpenses"),"money","hrdOtherExpenses");
   add("POMEC / ENGINEERING",pomecMonthly("other"),"money","pomecOtherExpenses");
   add("ENERGY COST",pomecMonthly("energy"),"money","energyCost");
-  section("POMEC / ENGINEERING — DETAIL FORECAST");
-  POMEC_LINES.forEach(line=>add(line.label,form.forecast.monthly.map(row=>pomecValue(row,line.key)),"money",undefined,sumPresent(form.forecast.monthly.map(row=>pomecValue(row,line.key))),revenue));
+  // The source workbook’s “1 Year Consolidated” sheet shows only summarized Engineering and Energy Cost rows. Detailed POMEC accounts remain in their source/input area and are rolled into those summary totals; do not duplicate them in this consolidated statement.
   add("TOTAL OVERHEAD OTHER EXPENSES",costParts.map(c=>c.overheadOther),"sum",undefined,sumPresent(costParts.map(c=>c.overheadOther)),revenue);
   add("TOTAL OVERHEAD DEPARTMENT",overheadTotal,"sum",undefined,sumPresent(overheadTotal),revenue);
   add("HOUSE PROFIT",houseProfit,"sum",undefined,sumPresent(houseProfit),revenue);

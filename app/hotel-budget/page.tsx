@@ -1868,52 +1868,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             </section>
 
             <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Ubah satu kali; proyeksi seluruh tahun dan nilai terkait akan dihitung ulang otomatis. Contoh: 2 berarti naik 2% setiap tahun, 0 berarti tidak ada kenaikan.</p></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
-            <section className="overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-sm">
-              <div className="bg-gradient-to-r from-teal-900 via-emerald-800 to-cyan-800 px-4 py-4 text-white sm:px-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-200">STEP 4 · MONTHLY & ANNUAL FORECAST</p>
-                <h3 className="mt-1 text-lg font-extrabold">1 YEAR CONSOLIDATED — {form.yearStart}</h3>
-                <p className="mt-1 text-xs leading-5 text-teal-100">Laporan konsolidasi 12 bulan. Revenue, cost of sales, payroll, biaya departemen, overhead, dan profit menggunakan perhitungan dari sumber forecast yang sama dengan ekspor Excel.</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-max min-w-[2700px] table-fixed border-collapse text-[10px]">
-                  <thead>
-                    <tr className="bg-slate-100 text-slate-700">
-                      <th rowSpan={2} className="sticky left-0 z-20 w-[250px] min-w-[250px] max-w-[250px] bg-slate-100 px-3 py-2 text-left">ACCOUNT / DESCRIPTION</th>
-                      {form.forecast.monthly.map((row,i)=><th key={row.label} colSpan={2} className="w-[180px] min-w-[180px] max-w-[180px] border-l border-slate-200 px-2 py-2 text-center whitespace-nowrap">{monthNames[i].slice(0,3).toUpperCase()}</th>)}
-                      <th colSpan={2} className="w-[220px] min-w-[220px] max-w-[220px] border-l border-teal-200 bg-teal-100 px-3 py-2 text-center">TOTAL / AVERAGE</th>
-                    </tr>
-                    <tr className="bg-slate-50 text-slate-600">
-                      {form.forecast.monthly.map(row=><Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></Fragment>)}
-                      <th className="border-l border-teal-200 bg-teal-50 px-2 py-1.5 text-right">VALUE</th><th className="bg-teal-50 px-2 py-1.5 text-right">%</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {buildConsolidatedRows(form).map((line,i)=>{
-                      if(line.kind==="section") return <tr key={line.label}><th colSpan={27} className="border-t-2 border-slate-300 bg-slate-200 px-3 py-2 text-left text-[10px] font-black tracking-wider text-slate-800">{line.label}</th></tr>;
-                      const isPercent=line.kind==="percent";
-                      const displayValue=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":money(v);
-                      const displayPct=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":fmt(v,1)+"%";
-                      return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}>
-                        <th className="sticky left-0 z-[1] w-[250px] min-w-[250px] max-w-[250px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>
-                        {line.values.map((v,j)=>{
-                          const base=line.base?.[j]??null;
-                          const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
-                          return <Fragment key={j}>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(percentage)}</td>
-                          </Fragment>;
-                        })}
-                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-l border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{displayValue(line.total)}</td>
-                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums whitespace-nowrap">{displayPct(isPercent?null:line.totalPct)}</td>
-                      </tr>;
-                    })}
-                  </tbody>
-                </table>
-              </div>
-              <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-[11px] leading-5 text-slate-600">
-                Persentase setiap baris dihitung terhadap basis revenue atau basis departemen yang ditetapkan dalam rumus konsolidasi. TOTAL menjumlahkan nilai bulanan; baris persentase profit menampilkan rasio dan tidak menjumlahkan persentase bulanan. Data yang belum tersedia tetap ditandai —.
-              </div>
-            </section>
+            
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">

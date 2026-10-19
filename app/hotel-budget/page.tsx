@@ -1856,6 +1856,9 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   const found=statSource.find(row=>row.label.toUpperCase()===sourceLabel.toUpperCase());
                   return found?{...found,label}:null;
                 };
+                const averageSellingRateValues=form.forecast.monthly.map(row=>optional(row.adr)??optional(form.statistics.averageSellingRate));
+                const averageSellingRateValid=averageSellingRateValues.filter((value):value is number=>value!==null);
+                const averageSellingRateRow:ConsolidatedRow={label:"AVERAGE SELLING RATE (RP)",kind:"money",values:averageSellingRateValues,total:averageSellingRateValid.length?averageSellingRateValid.reduce((sum,value)=>sum+value,0)/averageSellingRateValid.length:null};
                 const stats=[
                   statPick("# OF DAYS","# OF DAYS"),
                   statPick("# OF ROOMS","# OF ROOMS"),
@@ -1864,9 +1867,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   statPick("OCCUPANCY (%)","OCCUPANCY (%)"),
                   statPick("AVERAGE ROOM RATE (ARR) - RP","AVERAGE ROOM RATE (RP)"),
                   statPick("REVPAR - RP","REVPAR"),
-                  statPick("EXCHANGE RATE US $ TO RP","EXCHANGE RATE US $ TO RP"),
-                  statPick("ADR","AVERAGE SELLING RATE (RP)")
-                ].filter((row):row is ConsolidatedRow=>row!==null);
+                  statPick("EXCHANGE RATE US $ TO RP","EXCHANGE RATE US $ TO RP")
+                ].filter((row):row is ConsolidatedRow=>row!==null).concat(averageSellingRateRow).map(row=>row.label==="# OF ROOMS"?{...row,total:row.values.some(value=>value!==null)?row.values.reduce<number>((sum,value)=>sum+(value??0),0):null}:row);
                 const rawRows=buildConsolidatedRows(form);
                 const plus=(a:number|null|undefined,b:number|null|undefined):number|null=>a==null&&b==null?null:(a??0)+(b??0);
                 const addArrays=(a:(number|null)[],b:(number|null)[])=>a.map((v,i)=>plus(v,b[i]));

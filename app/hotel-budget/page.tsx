@@ -655,12 +655,17 @@ export default function HotelBudgetPage() {
     const pomecOther=years.map((_,i)=>pomecOtherBase===null?null:pomecOtherBase*growth(i));
     const energy=years.map((_,i)=>energyBase===null?null:energyBase*growth(i));
     const sumRows=(...arrays:(number|null)[][])=>years.map((_,i)=>arrays.every(a=>a[i]!==null)?arrays.reduce((n,a)=>n+(a[i]??0),0):null);
+    const fbCostReport=years.map((_,i)=>fbCostBase===null?null:fbCostBase*growth(i));
+    const phoneCostBase=monthlyBase(row=>optional(row.phoneCostOfSales));
+    const phoneCostReport=years.map((_,i)=>phoneCostBase===null?null:phoneCostBase*growth(i));
+    const modCostReport=years.map((_,i)=>modCostBase===null?null:modCostBase*growth(i));
+    const totalCostOfSalesReport=sumRows(fbCostReport,phoneCostReport,modCostReport);
     const totalPayroll=sumRows(roomPayroll,fbPayroll,phonePayroll,modPayroll);
     const totalDeptOther=sumRows(roomOther,fbOther,phoneOther,modOther);
     const totalOverheadPayroll=sumRows(agPayroll,smPayroll,hrdPayroll,pomecPayroll);
     const totalOverheadOther=sumRows(agOther,smOther,hrdOther,pomecOther,energy);
     const totalOverhead=sumRows(totalOverheadPayroll,totalOverheadOther);
-    const deptOperatingCost=years.map((_,i)=>[costOfSales[i],totalPayroll[i],totalDeptOther[i]].every(v=>v!==null)?(costOfSales[i]??0)+(totalPayroll[i]??0)+(totalDeptOther[i]??0):null);
+    const deptOperatingCost=years.map((_,i)=>[totalCostOfSalesReport[i],totalPayroll[i],totalDeptOther[i]].every(v=>v!==null)?(totalCostOfSalesReport[i]??0)+(totalPayroll[i]??0)+(totalDeptOther[i]??0):null);
     const departmentIncome=years.map((_,i)=>revenue[i]!==null&&deptOperatingCost[i]!==null?revenue[i]!-deptOperatingCost[i]!:null);
     const goi=years.map((_,i)=>departmentIncome[i]!==null&&totalOverhead[i]!==null?departmentIncome[i]!-totalOverhead[i]!:null);
     const managementFees=years.map(()=>null as number|null);
@@ -676,17 +681,25 @@ export default function HotelBudgetPage() {
     const cumulative=netOwnerShare.map((_,i)=>sumKnown(netOwnerShare.slice(0,i+1)));
     const payrollRatio=years.map((_,i)=>totalPayroll[i]!==null&&totalOverheadPayroll[i]!==null&&revenue[i]!==null&&revenue[i]!>0?(totalPayroll[i]!+totalOverheadPayroll[i]!)/revenue[i]!*100:null);
     const phoneRevenueForReport=phoneRevenue;
-    const modRevenueForReport=years.map((_,i)=>other[i]!==null&&phoneRevenue[i]!==null?other[i]!-phoneRevenue[i]!:other[i]);
+    const modOnlyBase=monthlyBase(row=>{
+      const keys=["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"];
+      const detailValues=keys.map(key=>optional(row.modDetails?.[key]||""));
+      const detailSum=sumPresent(detailValues);
+      if(detailSum!==null)return detailSum;
+      const allMod=optional(row.otherRevenue);
+      const phone=optional(row.phoneRevenue);
+      return allMod!==null&&phone!==null?allMod-phone:allMod;
+    });
+    const modRevenueForReport=years.map((_,i)=>modOnlyBase===null?null:modOnlyBase*growth(i));
     const totalRevenueForReport=sumRows(roomRevenue,fb,phoneRevenueForReport,modRevenueForReport);
     const deptIncomeRoom=deptRow(roomRevenue,[roomPayroll,roomOther]);
-    const deptIncomeFb=deptRow(fb,[years.map((_,i)=>costOfSales[i]===null?null:costOfSales[i]),fbPayroll,fbOther]);
+    const deptIncomeFb=deptRow(fb,[fbCostReport,fbPayroll,fbOther]);
     const deptIncomePhone=deptRow(phoneRevenueForReport,[phonePayroll,phoneOther]);
-    const deptIncomeMod=deptRow(modRevenueForReport,[years.map((_,i)=>modCostBase===null?null:modCostBase*growth(i)),modPayroll,modOther]);
+    const deptIncomeMod=deptRow(modRevenueForReport,[modCostReport,modPayroll,modOther]);
     const totalDeptIncome=sumRows(deptIncomeRoom,deptIncomeFb,deptIncomePhone,deptIncomeMod);
     const pctBase=(values:(number|null)[],base:(number|null)[])=>values.map((v,i)=>pct(v,base[i]));
     const annualTotals=(values:(number|null)[])=>sumKnown(values);
     return [
-      section("STATISTIC"),
       make("# OF ROOMS",years.map(y=>y.rooms),"count",undefined,"rooms",avg(years.map(y=>y.rooms))),
       make("ROOM AVAILABLE",roomAvail,"count",undefined,undefined,totalAvailable),
       make("OCCUPIED ROOMS",occupied,"count",undefined,undefined,totalOccupied),
@@ -701,10 +714,10 @@ export default function HotelBudgetPage() {
       make("   MINOR OPERATING DEPT.",modRevenueForReport,"money",revenue,"otherRevenue"),
       make("TOTAL REVENUES",totalRevenueForReport,"money",totalRevenueForReport,undefined,annualTotals(totalRevenueForReport)),
       section("COST OF SALES"),
-      make("   FOOD & BEVERAGE",costOfSales,"money",revenue),
-      make("   TELEPHONE & FACSIMILE",years.map(()=>null),"money",revenue),
-      make("   MINOR OPERATING DEPARTMENT",years.map((_,i)=>modCostBase===null?null:modCostBase*growth(i)),"money",revenue),
-      make("TOTAL COST OF SALES",costOfSales,"money",revenue),
+      make("   FOOD & BEVERAGE",fbCostReport,"money",revenue),
+      make("   TELEPHONE & FACSIMILE",phoneCostReport,"money",revenue),
+      make("   MINOR OPERATING DEPARTMENT",modCostReport,"money",revenue),
+      make("TOTAL COST OF SALES",totalCostOfSalesReport,"money",revenue),
       section("PAYROLL & RELATED EXPENSES"),
       make("   ROOM",roomPayroll,"money",roomRevenue),
       make("   FOOD & BEVERAGE",fbPayroll,"money",fb),

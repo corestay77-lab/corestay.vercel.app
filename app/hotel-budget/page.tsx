@@ -1845,6 +1845,50 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 Persentase setiap baris dihitung terhadap basis revenue atau basis departemen yang ditetapkan dalam rumus konsolidasi. TOTAL menjumlahkan nilai bulanan; baris persentase profit menampilkan rasio dan tidak menjumlahkan persentase bulanan. Nilai yang belum diinput ditampilkan sebagai 0 agar setiap baris terlihat telah melewati perhitungan; verifikasi sumber input sebelum menggunakan laporan final.
               </div>
             </section>
+
+            <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+              <div className="bg-gradient-to-r from-indigo-900 via-blue-900 to-violet-900 px-4 py-4 text-white sm:px-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-indigo-200">STEP 4 · MONTHLY & ANNUAL FORECAST</p>
+                <h3 className="mt-1 text-lg font-extrabold">10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3>
+                <p className="mt-1 text-xs leading-5 text-indigo-100">Susunan item dan kelompok mengikuti 1 YEAR CONSOLIDATED. YEAR 1 menggunakan total laporan 1 tahun; YEAR 2–10 dihitung otomatis berdasarkan asumsi pertumbuhan tahunan di atas.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-max min-w-[2700px] table-fixed border-collapse text-[10px]">
+                  <thead>
+                    <tr className="bg-slate-100 text-slate-700">
+                      <th rowSpan={2} className="sticky left-0 z-20 w-[250px] min-w-[250px] max-w-[250px] bg-slate-100 px-3 py-2 text-left">ACCOUNT / DESCRIPTION</th>
+                      {form.forecast.annual.map((row,i)=><th key={row.label} colSpan={2} className="w-[180px] min-w-[180px] max-w-[180px] border-l border-slate-200 px-2 py-2 text-center whitespace-nowrap">YEAR {i+1}<span className="block text-[9px] font-normal">{row.label}</span></th>)}
+                      <th colSpan={2} className="w-[220px] min-w-[220px] max-w-[220px] border-l border-indigo-200 bg-indigo-100 px-3 py-2 text-center">TOTAL / AVERAGE</th>
+                    </tr>
+                    <tr className="bg-slate-50 text-slate-600">
+                      {form.forecast.annual.map(row=><Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></Fragment>)}
+                      <th className="border-l border-indigo-200 bg-indigo-50 px-2 py-1.5 text-right">VALUE</th><th className="bg-indigo-50 px-2 py-1.5 text-right">%</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {buildTenYearRows(consolidatedForm).map((line,i)=>{
+                      if(line.section) return <tr key={line.label}><th colSpan={23} className="border-t-2 border-slate-300 bg-slate-200 px-3 py-2 text-left text-[10px] font-black tracking-wider text-slate-800">{line.label}</th></tr>;
+                      const isPercent=line.kind==="percent";
+                      const displayValue=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":money(v);
+                      const displayPct=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":fmt(v,1)+"%";
+                      return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}>
+                        <th className="sticky left-0 z-[1] w-[250px] min-w-[250px] max-w-[250px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>
+                        {line.values.map((v,j)=>{
+                          const base=line.base?.[j]??null;
+                          const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
+                          return <Fragment key={j}>
+                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
+                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(isPercent?(v??null):percentage)}</td>
+                          </Fragment>;
+                        })}
+                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-l border-slate-200 bg-indigo-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{displayValue(line.total)}</td>
+                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-slate-200 bg-indigo-50 px-2 py-2 text-right font-bold tabular-nums whitespace-nowrap">{displayPct(line.totalPct)}</td>
+                      </tr>;
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            </section>
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">

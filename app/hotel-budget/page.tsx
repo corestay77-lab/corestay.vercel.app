@@ -210,21 +210,23 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const goi=houseProfit.map((v,i)=>v!==null?v-(basicFee[i]??0):null);
   const nonOp=form.forecast.monthly.map((r,i)=>goi[i]!==null?(val(r,"otherManagementFee")??0)+(val(r,"insuranceGeneral")??0):null);
   const gop=goi.map((v,i)=>v!==null?v-(nonOp[i]??0):null);
-  const otherExpense=form.forecast.monthly.map((r,i)=>gop[i]!==null?(val(r,"landLease")??0)+(val(r,"ownerInsurance")??0)+(val(r,"maintenanceFee")??0):null);
-  const osp=gop.map((v,i)=>v!==null?v-(otherExpense[i]??0):null);
-  // Missing owner expense inputs default to zero in the final consolidation, so NOSP calculates whenever OSP is available.
-  const totalOwnerExpenses=form.forecast.monthly.map((r,i)=>osp[i]!==null?(val(r,"ownerOtherExpenses")??0):null);
+  // Owner expense subtotals must reflect entered monthly values even when GOP/revenue is not yet available.
+  // OSP and NOSP remain unavailable until their profit basis can be calculated; never replace unknown profit with zero.
+  const otherExpense=form.forecast.monthly.map((r)=>sumPresent([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
+  const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
+  const totalOwnerExpenses=form.forecast.monthly.map((r)=>val(r,"ownerOtherExpenses"));
   const nosp=osp.map((v,i)=>v!==null?v-(totalOwnerExpenses[i]??0):null);
   const rows:ConsolidatedRow[]=[];
   const section=(label:string)=>rows.push({label,kind:"section",values:[]});
   const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[])=>{
-    const displayValues=values.map(v=>v??0);
-    const t=(total===undefined?(kind==="sum"||kind==="money"?sumPresent(displayValues):(kind==="avg"||kind==="percent"?avgPresent(displayValues):null)):total)??0;
-    // Cost and expense rows default to total revenue as their percentage base.
-    // Rows such as department income can supply a department-specific base.
+    // Preserve unknowns as null so reports show an em dash instead of a false zero.
+    const displayValues=values;
+    const t=total===undefined
+      ? (kind==="sum"||kind==="money"?sumPresent(displayValues):(kind==="avg"||kind==="percent"?avgPresent(displayValues):null))
+      : total;
+    // Cost and expense rows default to total hotel revenue; department income can use its own department revenue.
     const percentageBase=base??revenue;
-    const displayBase=percentageBase?.map(v=>v??0);
-    rows.push({label,values:displayValues,kind,inputKey,total:t,base:displayBase,totalPct:displayBase?pct(t,sumPresent(displayBase))??0:0,editable});
+    rows.push({label,values:displayValues,kind,inputKey,total:t,base:percentageBase,totalPct:percentageBase?pct(t,sumPresent(percentageBase)):null,editable});
   };
   section("REVENUES");
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
@@ -288,7 +290,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
   add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
-  add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),osp);
+  add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),revenue);
   add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumPresent(nosp),revenue);
   add("NET OWNER SHARE PROFIT / UNIT",nosp.map((v)=>v!==null&&roomCount!==null&&roomCount>0?v/roomCount:null),"money",undefined,roomCount!==null&&roomCount>0&&sumPresent(nosp)!==null?sumPresent(nosp)!/roomCount:null);
   return rows;

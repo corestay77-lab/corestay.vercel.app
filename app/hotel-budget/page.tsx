@@ -792,7 +792,7 @@ export default function HotelBudgetPage() {
       roomBudget,
       occupancy:occupancy!==null&&Number.isFinite(occupancy)?occupancy:null,
       adr:adr!==null&&Number.isFinite(adr)?adr:null,
-      fb:calculateFbStatisticsAnnual(form.statistics,year)??total(["fbRevenue"]),
+      fb:(()=>{const fb=calculateFbStatisticsAnnualBreakdown(form.statistics,year);const parts=[fb.restaurant,fb.meeting].filter((value):value is number=>value!==null);return parts.length?parts.reduce((sum,value)=>sum+value,0):total(["fbRevenue"]);})(),
       other:(()=>{
         const statByCode:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41302":optional(form.statistics.modRentCarRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41305":optional(form.statistics.modTelephoneRevenue),"41306":optional(form.statistics.modSportRecreationRevenue),"41307":optional(form.statistics.modRentedSpaceRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue),"41309":optional(form.statistics.modOtherRevenueDiscounts)};
         const values=allAccountLines.filter(line=>line.group==="otherRevenue").map(line=>statByCode[line.code]!==undefined?statByCode[line.code]:optional(form.accounts[line.code]?.budget||""));
@@ -1072,9 +1072,8 @@ export default function HotelBudgetPage() {
       for(const [code,value] of sources){
         // Keep unsupported Step 1 outlets untouched; they remain available for manual entry.
         // Empty assumptions are not zero: preserve any existing Budget cell until a real value is calculated.
-        const isModRevenueCode=code.startsWith("413");
-        const isStepOneFbRevenueCode=code==="41207"||code==="41208"||code==="41209";
-        if(value===null&&!isModRevenueCode&&!isStepOneFbRevenueCode)continue;
+        // A blank Step 1 assumption must not erase a Budget value already entered in Step 2/3.
+        if(value===null)continue;
         const raw=value===null?"":String(Math.round(value));
         const current=accounts[code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
         if(current.budget!==raw){

@@ -668,8 +668,10 @@ export default function HotelBudgetPage() {
     const deptOperatingCost=years.map((_,i)=>[totalCostOfSalesReport[i],totalPayroll[i],totalDeptOther[i]].every(v=>v!==null)?(totalCostOfSalesReport[i]??0)+(totalPayroll[i]??0)+(totalDeptOther[i]??0):null);
     const departmentIncome=years.map((_,i)=>revenue[i]!==null&&deptOperatingCost[i]!==null?revenue[i]!-deptOperatingCost[i]!:null);
     const goi=years.map((_,i)=>departmentIncome[i]!==null&&totalOverhead[i]!==null?departmentIncome[i]!-totalOverhead[i]!:null);
-    const managementFees=years.map(()=>null as number|null);
-    const insuranceGeneral=years.map(()=>null as number|null);
+    const managementFeesBase=monthlyBase(row=>optional(row.otherManagementFee));
+    const managementFees=years.map((_,i)=>managementFeesBase===null?null:managementFeesBase*growth(i));
+    const insuranceGeneralBase=monthlyBase(row=>optional(row.insuranceGeneral));
+    const insuranceGeneral=years.map((_,i)=>insuranceGeneralBase===null?null:insuranceGeneralBase*growth(i));
     const nonOperating=sumRows(managementFees,insuranceGeneral);
     const gopFinal=years.map((_,i)=>goi[i]!==null&&nonOperating[i]!==null?goi[i]!-nonOperating[i]!:null);
     const totalOwnerExpenses=sumRows(landLease,ownerInsurance,maintenanceFee);
@@ -770,8 +772,8 @@ export default function HotelBudgetPage() {
       section("OTHER OWNER EXPENSES"),
       make("TOTAL OWNERS EXPENSES",totalOwnersExpenses,"money",revenue),
       make("OWNER SHARE PROFIT",netOwnerShare,"money",revenue),
-      make("CUMMULATED OSP",cumulative,"money",revenue),
-      make("PAYROLL RATIO",payrollRatio.map(v=>v===null?null:v*100),"percent",undefined,undefined,avg(payrollRatio)===null?null:avg(payrollRatio)!*100)
+      make("CUMMULATED OSP",cumulative,"money"),
+      make("PAYROLL RATIO",payrollRatio.map(v=>v===null?null:v*100),"percent")
     ];
   };
 

@@ -1778,8 +1778,11 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const hotelRevenueTotal=revenueByMonth.some(v=>v!==null)?revenueByMonth.reduce<number>((sum,v)=>sum+(v??0),0):null;
                     const fmtMoney=(n:number|null)=>n===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
                     const pct=(n:number|null,base:number|null)=>n===null||base===null||base===0?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n/base*100)+"%";
-                    const payrollKeys=payrollRows.map(r=>r[0]),otherKeys=otherRows.map(r=>r[0]),energyKeys=energyRows.map(r=>r[0]);
-                    const allKeys=[...payrollKeys,...otherKeys,...energyKeys];
+                    const payrollKeys=payrollRows.map(r=>r[0]);
+                    // PPh 21 is employee withholding, not an additional employer expense.
+                    const payrollExpenseKeys=payrollKeys.filter(key=>key!=="incomeTax");
+                    const otherKeys=otherRows.map(r=>r[0]),energyKeys=energyRows.map(r=>r[0]);
+                    const allKeys=[...payrollExpenseKeys,...otherKeys,...energyKeys];
                     const totalRow=(label:string,keys:readonly string[],tone="bg-slate-100")=><tr className={tone+" font-bold"}><td className={"sticky left-0 z-10 min-w-56 "+tone+" px-3 py-2 text-xs"}>{label}</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(total(i,keys))}</td>)}<td className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(annual(keys))}</td><td className="px-2 py-2 text-right text-xs">{pct(annual(keys),hotelRevenueTotal)}</td></tr>;
                     const inputRow=(key:string,label:string)=><tr key={key} className="border-t border-slate-100"><td className="sticky left-0 z-10 min-w-56 bg-white px-2 py-2 text-xs">{itemLabel("pomec",key,label)} {editLabelButton("pomec",key,label)} {costFillButton(key,itemLabel("pomec",key,label),updatePomecDetail)}</td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={label+" "+form.forecast.monthly[i].label} inputMode="numeric" className="w-28 rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right text-xs tabular-nums focus:border-cyan-500 focus:outline-none" placeholder="—" value={formatWholeRupiah(payrollInputKey(key)?payrollValueFor("POMEC",key):form.forecast.monthly[i]?.pomecDetails?.[key]||"")} readOnly={payrollInputKey(key)} disabled={payrollInputKey(key)} title={payrollInputKey(key)?"Dikunci: nilai otomatis dari Master Payroll. Ubah hanya di Master Payroll.":"Input manual"} onChange={e=>{if(!payrollInputKey(key))updatePomecDetail(i,key,e.target.value.replace(/[^0-9]/g,""));}}/></td>)}<td className="px-2 py-2 text-right text-xs font-bold tabular-nums">{fmtMoney(annual([key]))}</td><td className="px-2 py-2 text-right text-xs">{pct(annual([key]),hotelRevenueTotal)}</td></tr>;
                     const groupRows=(title:string,rows:readonly (readonly [string,string])[],keys:readonly string[],subtotal:string)=><Fragment><tr className="bg-cyan-50"><td colSpan={15} className="px-3 py-2 text-xs font-black text-cyan-950">{title}</td></tr>{rows.map(([key,label])=>inputRow(key,label))}{totalRow(subtotal,keys)}</Fragment>;
@@ -1788,7 +1791,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                         <tr className="bg-slate-50"><td className="sticky left-0 z-10 bg-slate-50 px-3 py-2 text-xs font-bold">OPERATING DAYS</td>{order.map((i,j)=><td key={i} className="px-2 py-1.5 text-right text-xs">{form.forecast.monthly[i]?.pomecDetails?.operatingDays??operatingDays[j]}</td>)}<td className="px-2 py-2 text-right text-xs">—</td><td className="px-2 py-2 text-right text-xs">—</td></tr>
                         <tr className="bg-cyan-50"><td colSpan={15} className="px-3 py-2 text-xs font-black text-cyan-950">PAYROLL &amp; RELATED</td></tr>
                         {payrollRows.map(([key,label])=>inputRow(key,label))}
-                        {totalRow("TOTAL PAYROLL & RELATED",payrollKeys)}
+                        {totalRow("TOTAL PAYROLL & RELATED",payrollExpenseKeys)}
                         {groupRows("OTHER EXPENSES",otherRows,otherKeys,"TOTAL OTHER EXPENSES")}
                         {groupRows("ENERGY COST",energyRows,energyKeys,"TOTAL ENERGY COST")}
                         {totalRow("TOTAL DEPT. COST & EXPENSES",allKeys,"bg-cyan-100")}

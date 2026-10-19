@@ -795,7 +795,7 @@ export default function HotelBudgetPage() {
       fb:(()=>{const fb=calculateFbStatisticsAnnualBreakdown(form.statistics,year);const parts=[fb.restaurant,fb.meeting].filter((value):value is number=>value!==null);return parts.length?parts.reduce((sum,value)=>sum+value,0):total(["fbRevenue"]);})(),
       other:(()=>{
         const statByCode:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41302":optional(form.statistics.modRentCarRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41305":optional(form.statistics.modTelephoneRevenue),"41306":optional(form.statistics.modSportRecreationRevenue),"41307":optional(form.statistics.modRentedSpaceRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue),"41309":optional(form.statistics.modOtherRevenueDiscounts)};
-        const values=allAccountLines.filter(line=>line.group==="otherRevenue").map(line=>statByCode[line.code]!==undefined?statByCode[line.code]:optional(form.accounts[line.code]?.budget||""));
+        const values=allAccountLines.filter(line=>line.group==="otherRevenue").map(line=>statByCode[line.code]??optional(form.accounts[line.code]?.budget||""));
         return values.some(value=>value!==null)?values.reduce<number>((sum,value)=>sum+(value??0),0):null;
       })(),
       costOfSales:total(["costOfSales"]),

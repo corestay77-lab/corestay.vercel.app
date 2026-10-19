@@ -656,8 +656,8 @@ export default function HotelBudgetPage() {
     const energy=years.map((_,i)=>energyBase===null?null:energyBase*growth(i));
     const sumRows=(...arrays:(number|null)[][])=>years.map((_,i)=>arrays.every(a=>a[i]!==null)?arrays.reduce((n,a)=>n+(a[i]??0),0):null);
     const fbCostReport=years.map((_,i)=>fbCostBase===null?null:fbCostBase*growth(i));
-    const phoneCostBase=monthlyBase(row=>optional(row.phoneCostOfSales));
-    const phoneCostReport=years.map((_,i)=>phoneCostBase===null?null:phoneCostBase*growth(i));
+    const phoneCostReportBase=monthlyBase(row=>optional(row.phoneCostOfSales));
+    const phoneCostReport=years.map((_,i)=>phoneCostReportBase===null?null:phoneCostReportBase*growth(i));
     const modCostReport=years.map((_,i)=>modCostBase===null?null:modCostBase*growth(i));
     const totalCostOfSalesReport=sumRows(fbCostReport,phoneCostReport,modCostReport);
     const totalPayroll=sumRows(roomPayroll,fbPayroll,phonePayroll,modPayroll);

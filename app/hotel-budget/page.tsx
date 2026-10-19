@@ -208,8 +208,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null?revenue[i]!-(totalOperatingCosts[i]??0):null);
   const basicFee=monthly("basicManagementFee");
   const goi=houseProfit.map((v,i)=>v!==null?v-(basicFee[i]??0):null);
-  const nonOp=form.forecast.monthly.map((r,i)=>goi[i]!==null?(val(r,"otherManagementFee")??0)+(val(r,"insuranceGeneral")??0):null);
-  const gop=goi.map((v,i)=>v!==null?v-(nonOp[i]??0):null);
+  const nonOp=form.forecast.monthly.map((r)=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
+  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:null);
   // Owner expense subtotals must reflect entered monthly values even when GOP/revenue is not yet available.
   // OSP and NOSP remain unavailable until their profit basis can be calculated; never replace unknown profit with zero.
   const otherExpense=form.forecast.monthly.map((r)=>sumPresent([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
@@ -1853,7 +1853,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                         <th className="sticky left-0 z-[1] w-[250px] min-w-[250px] max-w-[250px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>
                         {line.values.map((v,j)=>{
                           const base=line.base?.[j]??null;
-                          const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:0;
+                          const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
                           return <Fragment key={j}>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(percentage)}</td>

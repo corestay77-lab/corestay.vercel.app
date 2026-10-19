@@ -1881,20 +1881,16 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 const phoneRevenue=findInSection("REVENUES","TELEPHONE & FACSIMILE");
                 const modRevenue=findInSection("REVENUES","MINOR OPERATING DEPARTMENT");
                 const phoneCos=findInSection("COST OF SALES","TELEPHONE & FACSIMILE");
-                const modCos=findInSection("COST OF SALES","MINOR OPERATING DEPARTMENT");
                 const phonePayroll=findInSection("PAYROLL & RELATED EXPENSES","TELEPHONE");
-                const modPayroll=findInSection("PAYROLL & RELATED EXPENSES","MINOR OPERATING DEPARTMENT");
                 const phoneOther=findInSection("OTHER DEPARTMENT EXPENSES","TELEPHONE & FACSIMILE");
-                const modOther=findInSection("OTHER DEPARTMENT EXPENSES","MINOR OPERATING DEPARTMENT");
                 const phoneIncome=findInSection("DEPARTMENT INCOME","TELEPHONE");
-                const modIncome=findInSection("DEPARTMENT INCOME","MINOR OPERATING DEPARTMENT");
                 const rows=rawRows.flatMap((row,index)=>{
                   if(row.kind==="section"){
-                    const sectionName=row.label.toUpperCase();
-                    if(sectionName==="OVERHEAD DEPARTMENT — PAYROLL & RELATED") return [{...row,label:"OVERHEAD DEPARTMENT"},{...row,label:"PAYROLL & RELATED"}];
-                    if(sectionName==="OVERHEAD DEPARTMENT — OTHER EXPENSES") return [{...row,label:"OTHER EXPENSES"}];
-                    if(sectionName==="OTHER NON-OPERATING EXPENSES / GOP") return [{...row,label:"OTHER NON OPERATING EXPENSES"}];
-                    if(sectionName==="OTHER EXPENSES / OWNER SHARE PROFIT") return [{...row,label:"OTHER EXPENSES"}];
+                    const name=row.label.toUpperCase();
+                    if(name==="OVERHEAD DEPARTMENT — PAYROLL & RELATED") return [{...row,label:"OVERHEAD DEPARTMENT"},{...row,label:"PAYROLL & RELATED"}];
+                    if(name==="OVERHEAD DEPARTMENT — OTHER EXPENSES") return [{...row,label:"OTHER EXPENSES"}];
+                    if(name==="OTHER NON-OPERATING EXPENSES / GOP") return [{...row,label:"OTHER NON OPERATING EXPENSES"}];
+                    if(name==="OTHER EXPENSES / OWNER SHARE PROFIT") return [{...row,label:"OTHER EXPENSES"}];
                     return [row];
                   }
                   const label=row.label.toUpperCase();

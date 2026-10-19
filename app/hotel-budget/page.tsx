@@ -823,7 +823,7 @@ export default function HotelBudgetPage() {
         const payrollTotal=(dept:string)=>{
           const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],MOD:["MOD","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","ENG","ENGINEERING"]};
           const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());
-          if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase()))?String(payrollDepartmentMonthly(dept).total):"";
+          if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase())&&payrollHasInputs(e))?String(payrollDepartmentMonthly(dept).total):"";
           const fallback:Record<string,number|null>={FO:forecastSource.payrollBudget.fo,HK:forecastSource.payrollBudget.hk,FB:forecastSource.payrollBudget.fb,MOD:forecastSource.payrollBudget.mod,AG:forecastSource.payrollBudget.ag,SM:forecastSource.payrollBudget.sm,HRD:forecastSource.payrollBudget.hrd,POMEC:forecastSource.payrollBudget.pomec};
           const value=fallback[dept];
           return value===null||value===undefined?"":String(Math.round(value*monthShare));
@@ -991,11 +991,11 @@ export default function HotelBudgetPage() {
         const modCosDetails=sumDetails(row.modDetails,["laundryCost"]);
         const modOtherDetails=sumDetails(row.modDetails,["guestSupplies","paperSupplies","laundryValetSupplies","laundrySupplies","casual","cleaningSupplies","printingStationery","decoration","telephoneFax","laundryExpense","casualOther","laundryValetOther","cleaningOther","provisionUniform","pteb","uniform","otherExpenses"]);
         const payrollFor=(department:string,fallback:string|undefined)=>{
-          if(payrollDepartmentHasInputs(department))return String(payrollDepartmentMonthly(department).total);
+          if((form.payrollEmployees||[]).length>0)return payrollDepartmentHasInputs(department)?String(payrollDepartmentMonthly(department).total):"";
           return fallback??"";
         };        const roomPayrollFallback=sumDetails(roomDetails,Object.keys(roomDetails).filter(key=>payrollInputKey(key)));
-        const roomPayroll=payrollDepartmentHasInputs("ROOM")
-          ?String(payrollDepartmentMonthly("ROOM").total)
+        const roomPayroll=(form.payrollEmployees||[]).length>0
+          ?payrollDepartmentHasInputs("ROOM")?String(payrollDepartmentMonthly("ROOM").total):""
           :roomPayrollFallback!==null?String(roomPayrollFallback):row.roomPayroll;
         const fbPayroll=payrollFor("FB",row.fbPayroll);
         const modPayroll=payrollFor("MOD",row.modPayroll);

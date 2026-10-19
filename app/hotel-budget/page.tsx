@@ -1182,6 +1182,22 @@ export default function HotelBudgetPage() {
   async function saveFinal(){
     setMessage("");setIssues([]);setWarnings([]);setSummary("");setOrchestrator("checking");
     if(!form.hotelName.trim()||!form.period.trim()){setOrchestrator("failed");setIssues(["Nama hotel dan periode wajib diisi."]);setMessage("Lengkapi identitas laporan terlebih dahulu.");return;}
+    const activePayroll=(form.payrollEmployees||[]).map((employee,index)=>({employee,index})).filter(({employee})=>Number(employee.headcount)>0&&String(employee.basicSalary??"").trim()!=="");
+    const payrollGroups=new Map<string,typeof activePayroll>();
+    for(const row of activePayroll){
+      const employee=row.employee;
+      const fingerprint=[employee.headcount,employee.basicSalary,employee.medical,employee.meal,employee.insuranceMonthly,employee.otherMonthly].map(value=>String(value??"").trim().replace(/\\s/g,"")).join("|");
+      const group=payrollGroups.get(fingerprint)||[];
+      group.push(row);
+      payrollGroups.set(fingerprint,group);
+    }
+    const duplicatePayroll=Array.from(payrollGroups.values()).find(group=>group.length>1&&new Set(group.map(row=>String(row.employee.department||"").trim().toUpperCase())).size>1);
+    if(duplicatePayroll){
+      setOrchestrator("failed");
+      setIssues(["Kemungkinan payroll ganda: baris Master Payroll "+duplicatePayroll.map(row=>row.index+1).join(", ")+" memiliki headcount dan komponen biaya identik tetapi departemen berbeda. Pastikan setiap karyawan hanya dialokasikan ke satu departemen sebelum laporan profit disahkan."]);
+      setMessage("Validasi dihentikan untuk mencegah kemungkinan biaya payroll dihitung dua kali.");
+      return;
+    }
     setSaving(true);
     try{
       const headers:Record<string,string>={"Content-Type":"application/json"};if(accessToken)headers.Authorization="Bearer "+accessToken;

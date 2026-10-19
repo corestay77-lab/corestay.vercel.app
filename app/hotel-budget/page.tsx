@@ -1762,7 +1762,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const hotelRevenueTotal=revenueByMonth.some(v=>v!==null)?revenueByMonth.reduce<number>((sum,v)=>sum+(v??0),0):null;
                     const fmtMoney=(n:number|null)=>n===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
                     const pct=(n:number|null,base:number|null)=>n===null||base===null||base===0?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n/base*100)+"%";
-                    const payrollKeys=payrollRows.map(r=>r[0]);
+                    const payrollKeys=payrollRows.map(r=>r[0]).filter(key=>key!=="incomeTax");
                     const otherKeys=otherRows.map(r=>r[0]);
                     const businessKeys=businessRows.map(r=>r[0]);
                     const publicRelationsKeys=publicRelationsRows.map(r=>r[0]);

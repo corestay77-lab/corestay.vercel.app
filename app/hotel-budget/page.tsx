@@ -508,7 +508,7 @@ export default function HotelBudgetPage() {
     const otherBase=monthlyBase(row=>sumPresent(otherRevenueKeys.map(key=>optional(row.modDetails?.[key]||"")))??optional(row.otherRevenue));
     const roomRevenue=years.map((_,i)=>roomBase===null?null:roomBase*growth(i));
     // Use the Annual Forecast F&B value so the 10-year report follows the same yearly figures.
-    const fb=years.map((y,i)=>optional(y.row.fbRevenue)??(fbBase===null?null:fbBase*growth(i)));
+    const fb=years.map((_,i)=>fbBase===null?null:fbBase*growth(i));
     const other=years.map((_,i)=>otherBase===null?null:otherBase*growth(i));
     const revenue=years.map((_,i)=>sumPresent([roomRevenue[i],fb[i],other[i]]));
     const baseCost=(group:AccountGroup)=>sumGroup(source.accounts,group,"budget",allAccountLines);
@@ -567,7 +567,7 @@ export default function HotelBudgetPage() {
     );
     const fbPayrollBase=deptBase(row=>optional(row.fbPayroll));
     const fbOtherBase=deptBase(row=>optional(row.fbOtherExpenses));
-    const phoneRevenueBase=monthlyBase(row=>optional(row.phoneRevenue));
+    const phoneRevenueBase=monthlyBase(row=>optional(row.phoneRevenue)??optional(row.modDetails?.telephoneRevenue||""));
     const phoneCostBase=monthlyBase(row=>optional(row.phoneCostOfSales));
     const phonePayrollBase=monthlyBase(row=>optional(row.phonePayroll));
     const phoneOtherBase=monthlyBase(row=>optional(row.phoneOtherExpenses));
@@ -703,7 +703,7 @@ export default function HotelBudgetPage() {
       make("# OF ROOMS",years.map(y=>y.rooms),"count",undefined,"rooms",avg(years.map(y=>y.rooms))),
       make("ROOM AVAILABLE",roomAvail,"count",undefined,undefined,totalAvailable),
       make("OCCUPIED ROOMS",occupied,"count",undefined,undefined,totalOccupied),
-      make("OCCUPANCY ( % )",years.map((y,i)=>i===0&&firstYearOccupancy!==null?firstYearOccupancy:pct(occupied[i],roomAvail[i])===null?null:pct(occupied[i],roomAvail[i])!*100),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)===null?null:pct(totalOccupied,totalAvailable)!*100),
+      make("OCCUPANCY ( % )",years.map((y,i)=>i===0&&firstYearOccupancy!==null?firstYearOccupancy:pct(occupied[i],roomAvail[i])),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),
       make("AVERAGE ROOM RATE ( RP )",years.map((y,i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(y.row.adr)??optional(source.statistics.averageSellingRate)),"money",undefined,undefined,totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
       make("REVPAR  ( RP )",years.map((y,i)=>roomRevenue[i]!==null&&roomAvail[i]!==null&&roomAvail[i]!>0?roomRevenue[i]!/roomAvail[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalAvailable!==null&&totalAvailable>0?totalRoomRev/totalAvailable:null),
       make("AVERAGE SELLING RATE ( RP )",years.map(y=>optional(y.row.adr)??optional(source.statistics.averageSellingRate)),"money",undefined,undefined,avg(years.map(y=>optional(y.row.adr)??optional(source.statistics.averageSellingRate)))),
@@ -758,7 +758,7 @@ export default function HotelBudgetPage() {
       make("INSURANCE GENERAL",insuranceGeneral,"money",revenue),
       make("TOTAL OTHER EXPENSES",nonOperating,"money",revenue),
       make("GROSS OPERATING PROFIT (GOP)",gopFinal,"money",revenue),
-      make("% G O P",pctBase(gopFinal,revenue).map(v=>v===null?null:v*100),"percent",undefined,undefined,pct(annualTotals(gopFinal),annualTotals(revenue))===null?null:pct(annualTotals(gopFinal),annualTotals(revenue))!*100),
+      make("% G O P",pctBase(gopFinal,revenue),"percent",undefined,undefined,pct(annualTotals(gopFinal),annualTotals(revenue))),
       section("OTHER EXPENSES"),
       make("LAND LEASE HOLD",landLease,"money",revenue),
       make("INSURANCE",ownerInsurance,"money",revenue),

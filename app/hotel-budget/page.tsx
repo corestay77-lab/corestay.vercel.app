@@ -1844,31 +1844,119 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           </div>}
 
           {activeTab==="forecast"&&<div className="space-y-7">
-            <section className="overflow-hidden rounded-2xl border border-sky-200 bg-white shadow-sm">
-              <div className="bg-gradient-to-r from-sky-900 via-blue-800 to-indigo-800 px-4 py-4 text-white sm:px-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-200">STEP 4 · STATISTICS</p>
-                <h3 className="mt-1 text-lg font-extrabold">LAPORAN STATISTIK — {form.yearStart}</h3>
-                <p className="mt-1 text-xs leading-5 text-sky-100">Mengikuti item dan formula statistik hotel. Nilai bulanan, total tahunan, dan laporan 10 tahun memakai basis perhitungan yang sama; data yang belum tersedia tetap ditampilkan sebagai —.</p>
+            <section className="overflow-hidden rounded-2xl border border-slate-300 bg-white shadow-sm">
+              <div className="border-b border-slate-300 bg-slate-100 px-4 py-4 text-slate-900 sm:px-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">STEP 4 · MONTHLY &amp; ANNUAL FORECAST</p>
+                <h3 className="mt-1 text-lg font-extrabold">1 YEAR CONSOLIDATED — {form.yearStart}</h3>
+                <p className="mt-1 text-xs leading-5 text-slate-600">CONSOLIDATED · Nilai bulanan, persentase, total tahunan, dan statistik menggunakan data forecast yang sama. Data kosong tetap —.</p>
               </div>
-              <div className="overflow-x-auto">
-                <table className="w-max min-w-[1956px] table-fixed border-collapse text-[11px]">
-                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[240px] min-w-[240px] max-w-[240px] bg-slate-100 px-3 py-2 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="w-[128px] min-w-[128px] max-w-[128px] px-3 py-2 text-right whitespace-nowrap">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="w-[180px] min-w-[180px] max-w-[180px] bg-sky-100 px-3 py-2 text-right whitespace-nowrap">YEAR TOTAL / AVG</th></tr></thead>
-                  <tbody>{buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels}).map((line,i)=>{
-                    if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
-                    const isPercent=line.kind==="percent";
-                    const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
-                    const isRate=/EXCHANGE RATE/i.test(line.label);
-                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
-                    const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());
-                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
-                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{line.values.map((v,j)=><td key={j} className="w-[128px] min-w-[128px] max-w-[128px] border-t border-slate-200 px-3 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[180px] min-w-[180px] max-w-[180px] border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
-                  })}</tbody>
-                </table>
-              </div>
+              {(() => {
+                const statSource=buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels});
+                const statPick=(sourceLabel:string,label:string)=>{
+                  const found=statSource.find(row=>row.label.toUpperCase()===sourceLabel.toUpperCase());
+                  return found?{...found,label}:null;
+                };
+                const stats=[
+                  statPick("# OF DAYS","# OF DAYS"),
+                  statPick("# OF ROOMS","# OF ROOMS"),
+                  statPick("ROOMS AVAILABLE","ROOM AVAILABLE"),
+                  statPick("OCCUPIED ROOMS (PAID + COMPLIMENTARY)","OCCUPIED ROOMS"),
+                  statPick("OCCUPANCY (%)","OCCUPANCY (%)"),
+                  statPick("AVERAGE ROOM RATE (ARR) - RP","AVERAGE ROOM RATE (RP)"),
+                  statPick("REVPAR - RP","REVPAR"),
+                  statPick("EXCHANGE RATE US $ TO RP","EXCHANGE RATE US $ TO RP"),
+                  statPick("ADR","AVERAGE SELLING RATE (RP)")
+                ].filter((row):row is ConsolidatedRow=>row!==null);
+                const rawRows=buildConsolidatedRows(form);
+                const plus=(a:number|null|undefined,b:number|null|undefined):number|null=>a==null&&b==null?null:(a??0)+(b??0);
+                const addArrays=(a:(number|null)[],b:(number|null)[])=>a.map((v,i)=>plus(v,b[i]));
+                const findInSection=(sectionLabel:string,rowLabel:string)=>{
+                  let currentSection="";
+                  for(const row of rawRows){
+                    if(row.kind==="section"){currentSection=row.label.toUpperCase();continue;}
+                    if(currentSection===sectionLabel.toUpperCase()&&row.label.toUpperCase()===rowLabel.toUpperCase()) return row;
+                  }
+                  return undefined;
+                };
+                const phoneRevenue=findInSection("REVENUES","TELEPHONE & FACSIMILE");
+                const modRevenue=findInSection("REVENUES","MINOR OPERATING DEPARTMENT");
+                const phoneCos=findInSection("COST OF SALES","TELEPHONE & FACSIMILE");
+                const modCos=findInSection("COST OF SALES","MINOR OPERATING DEPARTMENT");
+                const phonePayroll=findInSection("PAYROLL & RELATED EXPENSES","TELEPHONE");
+                const modPayroll=findInSection("PAYROLL & RELATED EXPENSES","MINOR OPERATING DEPARTMENT");
+                const phoneOther=findInSection("OTHER DEPARTMENT EXPENSES","TELEPHONE & FACSIMILE");
+                const modOther=findInSection("OTHER DEPARTMENT EXPENSES","MINOR OPERATING DEPARTMENT");
+                const phoneIncome=findInSection("DEPARTMENT INCOME","TELEPHONE");
+                const modIncome=findInSection("DEPARTMENT INCOME","MINOR OPERATING DEPARTMENT");
+                const rows=rawRows.flatMap((row,index)=>{
+                  if(row.kind==="section"){
+                    const sectionName=row.label.toUpperCase();
+                    if(sectionName==="OVERHEAD DEPARTMENT — PAYROLL & RELATED") return [{...row,label:"OVERHEAD DEPARTMENT"},{...row,label:"PAYROLL & RELATED"}];
+                    if(sectionName==="OVERHEAD DEPARTMENT — OTHER EXPENSES") return [{...row,label:"OTHER EXPENSES"}];
+                    if(sectionName==="OTHER NON-OPERATING EXPENSES / GOP") return [{...row,label:"OTHER NON OPERATING EXPENSES"}];
+                    if(sectionName==="OTHER EXPENSES / OWNER SHARE PROFIT") return [{...row,label:"OTHER EXPENSES"}];
+                    return [row];
+                  }
+                  const label=row.label.toUpperCase();
+                  if(label==="TELEPHONE & FACSIMILE"||label==="TELEPHONE") return [];
+                  if(label==="BASIC MANAGEMENT FEE") return [{...row,label:"LESS DEDUCTION : BASIC MANAGEMENT FEE"}];
+                  if(label==="MINOR OPERATING DEPARTMENT"){
+                    const section=rawRows.slice(0,index).reverse().find(r=>r.kind==="section")?.label.toUpperCase()??"";
+                    if(section==="REVENUES") return [{...row,values:addArrays(row.values,phoneRevenue?.values??Array(12).fill(null)),total:plus(row.total,phoneRevenue?.total)}];
+                    if(section==="COST OF SALES") return [{...row,values:addArrays(row.values,phoneCos?.values??Array(12).fill(null)),total:plus(row.total,phoneCos?.total)}];
+                    if(section==="PAYROLL & RELATED EXPENSES") return [{...row,values:addArrays(row.values,phonePayroll?.values??Array(12).fill(null)),total:plus(row.total,phonePayroll?.total)}];
+                    if(section==="OTHER DEPARTMENT EXPENSES") return [{...row,values:addArrays(row.values,phoneOther?.values??Array(12).fill(null)),total:plus(row.total,phoneOther?.total)}];
+                    if(section==="DEPARTMENT INCOME") return [{...row,values:addArrays(row.values,phoneIncome?.values??Array(12).fill(null)),total:plus(row.total,phoneIncome?.total)}];
+                  }
+                  return [row];
+                });
+                const revenueRow=rows.find(row=>row.label.toUpperCase()==="TOTAL REVENUES (EXCL. TAX)");
+                const revenueValues=revenueRow?.values??Array(12).fill(null);
+                const sectionBefore=(row:ConsolidatedRow)=>rows.slice(0,rows.indexOf(row)).reverse().find(r=>r.kind==="section")?.label.toUpperCase()??"";
+                const baseFor=(row:ConsolidatedRow,monthIndex:number):number|null=>{
+                  if(row.kind==="percent"||row.kind==="section") return null;
+                  const label=row.label.toUpperCase(), section=sectionBefore(row);
+                  if(label==="MINOR OPERATING DEPARTMENT"&&section==="DEPARTMENT INCOME") return plus(modRevenue?.values[monthIndex],phoneRevenue?.values[monthIndex]);
+                  if(row.base) return row.base[monthIndex]??null;
+                  if(["COST OF SALES","PAYROLL & RELATED EXPENSES","OTHER DEPARTMENT EXPENSES"].includes(section)){
+                    if(label==="ROOM") return findInSection("REVENUES","ROOMS")?.values[monthIndex]??null;
+                    if(label==="FOOD & BEVERAGE") return findInSection("REVENUES","FOOD & BEVERAGE")?.values[monthIndex]??null;
+                    if(label==="MINOR OPERATING DEPARTMENT") return plus(modRevenue?.values[monthIndex],phoneRevenue?.values[monthIndex]);
+                  }
+                  return revenueValues[monthIndex]??null;
+                };
+                const fmtCell=(value:number|null|undefined,kind:ConsolidatedRow["kind"],label:string)=>{
+                  if(value===null||value===undefined||!Number.isFinite(value)) return "—";
+                  if(kind==="percent"||label.toUpperCase()==="OCCUPANCY (%)") return fmt(value,2)+"%";
+                  if(/EXCHANGE RATE/i.test(label)) return fmt(value,2);
+                  if(/# OF DAYS|# OF ROOMS|ROOM AVAILABLE|OCCUPIED ROOMS/i.test(label)) return fmt(value,0);
+                  return fmt(value,0);
+                };
+                const percentage=(value:number|null|undefined,base:number|null|undefined)=>{
+                  if(value==null||base==null||!Number.isFinite(value)||!Number.isFinite(base)||base===0) return "—";
+                  return fmt(value/base*100,2)+"%";
+                };
+                const sectionRow=(label:string,key:string)=><tr key={key}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-2 text-left text-[10px] font-black tracking-wide text-slate-900">{label}</th></tr>;
+                const header=<tr className="bg-slate-800 text-white"><th rowSpan={2} className="sticky left-0 z-20 min-w-[205px] bg-slate-800 px-2 py-2 text-left">CONSOLIDATED</th>{form.forecast.monthly.map((month,i)=><th key={month.label} colSpan={2} className="min-w-[104px] border-l border-slate-600 px-1 py-2 text-center">{monthNames[i].slice(0,3)}</th>)}<th colSpan={2} className="border-l border-slate-600 bg-slate-700 px-2 py-2 text-center">TOTAL</th></tr>;
+                return <div className="overflow-x-auto"><table className="w-max min-w-full border-collapse text-[10px] tabular-nums">
+                  <thead>{header}<tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 bg-slate-100 px-2 py-1 text-left">ACCOUNT / DESCRIPTION</th>{form.forecast.monthly.map(month=><Fragment key={month.label}><th className="min-w-[76px] border-l border-slate-200 px-1 py-1 text-right">Value</th><th className="min-w-[48px] px-1 py-1 text-right">%</th></Fragment>)}<th className="min-w-[105px] border-l border-slate-200 bg-sky-100 px-2 py-1 text-right">Total</th><th className="min-w-[58px] bg-sky-100 px-1 py-1 text-right">%</th></tr></thead>
+                  <tbody>
+                    {sectionRow("CONSOLIDATED","section-consolidated")}
+                    {stats.map((row,index)=><tr key={"stat-"+row.label} className={index%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left font-semibold">{row.label}</th>{row.values.map((value,i)=><Fragment key={i}><td className="border-t border-slate-200 px-1 py-1.5 text-right">{fmtCell(value,row.kind,row.label)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right"> </td></Fragment>)}<td className="border-t border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold">{fmtCell(row.total,row.kind,row.label)}</td><td className="border-t border-slate-200 bg-sky-50 px-1 py-1.5 text-right"> </td></tr>)}
+                    {rows.map((row,index)=>{
+                      if(row.kind==="section") return sectionRow(row.label,"financial-section-"+index);
+                      const rowIsPercent=row.kind==="percent", baseValues=row.values.map((_,i)=>baseFor(row,i));
+                      const annualBase=baseValues.some(v=>v!==null)?baseValues.reduce<number>((sum,v)=>sum+(v??0),0):null;
+                      const totalValue=row.total??null, totalPct=rowIsPercent?null:percentage(totalValue,annualBase);
+                      const noPct=rowIsPercent||/NET OWNER SHARE PROFIT \/ UNIT/i.test(row.label);
+                      const rowStyle=/^TOTAL |^DEPARTMENT OPERATING COST|^DEPARTMENT INCOME|^HOUSE PROFIT|^GROSS OPERATING INCOME|^GROSS OPERATING PROFIT|^OWNER SHARE PROFIT|^NET OWNER SHARE PROFIT/i.test(row.label)?"bg-slate-100 font-bold":index%2?"bg-slate-50":"bg-white";
+                      return <tr key={"pnl-"+index} className={rowStyle}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-2 py-1.5 text-left font-semibold whitespace-nowrap">{row.label}</th>{row.values.map((value,i)=><Fragment key={i}><td className="border-t border-slate-200 px-1 py-1.5 text-right whitespace-nowrap">{fmtCell(value,row.kind,row.label)}</td><td className="border-t border-slate-200 px-1 py-1.5 text-right whitespace-nowrap">{rowIsPercent?"—":noPct?"—":percentage(value,baseValues[i])}</td></Fragment>)}<td className="border-t border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold whitespace-nowrap">{fmtCell(totalValue,row.kind,row.label)}</td><td className="border-t border-slate-200 bg-sky-50 px-1 py-1.5 text-right whitespace-nowrap">{noPct?"—":totalPct}</td></tr>;
+                    })}
+                  </tbody>
+                </table></div>;
+              })()}
             </section>
-
             <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Ubah satu kali; proyeksi seluruh tahun dan nilai terkait akan dihitung ulang otomatis. Contoh: 2 berarti naik 2% setiap tahun, 0 berarti tidak ada kenaikan.</p></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
-            
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">

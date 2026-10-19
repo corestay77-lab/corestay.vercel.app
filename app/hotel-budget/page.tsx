@@ -203,18 +203,18 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.phone,d.mod]));
   // Keep blank account rows blank, but allow available entered values to flow through all calculated subtotals.
   // For derived profit calculations only, unentered cost/fee rows contribute 0 until a value is entered.
-  const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
-  const houseProfit=deptIncomeTotal.map((v,i)=>v!==null?v-(overheadTotal[i]??0):null);
+  // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
+  const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
+  const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
   const basicFee=monthly("basicManagementFee");
-  const goi=houseProfit.map((v,i)=>v!==null?v-(basicFee[i]??0):null);
-  const nonOp= form.forecast.monthly.map(r=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
-  const gop=goi.map((v,i)=>v!==null?v-(nonOp[i]??0):null);
-  const otherExpense= form.forecast.monthly.map(r=>sumPresent([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
-  const osp=gop.map((v,i)=>v!==null?v-(otherExpense[i]??0):null);
-  // Owner/operator share is a profit allocation, not an operating expense.
-  // Deduct entered other owner expenses; blank owner-expense input contributes 0 to this derived result.
+  const goi=houseProfit.map((v,i)=>v!==null&&basicFee[i]!==null?v-basicFee[i]!:null);
+  const nonOp=form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
+  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:null);
+  const otherExpense=form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
+  const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
+  // Blank owner expenses remain unknown until entered; do not treat them as zero.
   const totalOwnerExpenses=form.forecast.monthly.map(r=>val(r,"ownerOtherExpenses"));
-  const nosp=osp.map((v,i)=>v!==null?v-(totalOwnerExpenses[i]??0):null);
+  const nosp=osp.map((v,i)=>v!==null&&totalOwnerExpenses[i]!==null?v-totalOwnerExpenses[i]!:null);
   const rows:ConsolidatedRow[]=[];
   const section=(label:string)=>rows.push({label,kind:"section",values:[]});
   const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[])=>{

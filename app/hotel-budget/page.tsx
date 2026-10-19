@@ -1684,7 +1684,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   })()}
                 </div>}
                 {selectedDepartment==="mod"&&<div className="space-y-3">
-                  <div><h4 className="font-extrabold text-slate-800">MINOR OPERATED DEPARTMENT</h4><p className="mt-1 text-xs text-slate-500">{form.forecast.monthly[0]?.modDetails?.rentCarLabel||"Rent Car"}, {form.forecast.monthly[0]?.modDetails?.laundryLabel||"Laundry"}, Cost of Sales, Payroll &amp; Related, dan Other Expenses. Kolom mengikuti Dec–Nov, TOTAL, %.</p></div>
+                  <div><h4 className="font-extrabold text-slate-800">MINOR OPERATED DEPARTMENT</h4><p className="mt-1 text-xs text-slate-500">{form.forecast.monthly[0]?.modDetails?.rentCarLabel||"Rent Car"}, {form.forecast.monthly[0]?.modDetails?.laundryLabel||"Laundry"}, Cost of Sales, Payroll &amp; Related, dan Other Expenses. Kolom mengikuti Dec–Nov, TOTAL, %. Payroll MOD hanya untuk staf yang khusus menangani unit usaha minor (mis. petugas laundry, spa, business center, sopir rent car, atau staf rekreasi); jika tidak ada staf yang dialokasikan ke MOD, biarkan payroll kosong dan total tetap —.</p></div>
                   {(() => {
                     const rentCarName=(form.forecast.monthly[0]?.modDetails?.rentCarLabel||"RENT CAR").trim()||"RENT CAR";
                      const laundryName=(form.forecast.monthly[0]?.modDetails?.laundryLabel||"LAUNDRY").trim()||"LAUNDRY";

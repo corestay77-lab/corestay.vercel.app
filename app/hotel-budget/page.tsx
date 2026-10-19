@@ -1313,6 +1313,32 @@ export default function HotelBudgetPage() {
     const departmentExpenseRows:any[][]=[["DEPARTMENT","ACCOUNT / ITEM",...form.forecast.monthly.map(row=>row.label),"TOTAL"]];
     detailSources.forEach(dept=>{const keys=Array.from(new Set(form.forecast.monthly.flatMap(row=>Object.keys(((row as any)[dept.key]||{}) as Record<string,string>))));keys.forEach(key=>{const vals=form.forecast.monthly.map(row=>optional((((row as any)[dept.key]||{}) as Record<string,string>)[key]||""));const total=vals.some(v=>v!==null)?vals.reduce<number>((sum,v)=>sum+(v??0),0):null;const readable=key.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()).replace(/\bthr\b/i,"THR");departmentExpenseRows.push([dept.name,readable,...vals,total]);});});
     add("Department Expenses",departmentExpenseRows,[28,38,...Array(12).fill(15),18],"wide");
+    const ownerExpenseRows:any[][]=[
+      ["OTHER EXPENSES / OWNER SHARE PROFIT"],
+      ["ACCOUNT / DESCRIPTION","Dec",...monthNames.slice(0,11),"TOTAL"]
+    ];
+    const ownerOrder=[11,0,1,2,3,4,5,6,7,8,9,10];
+    const ownerItems=[
+      {key:"otherManagementFee",label:"MANAGEMENT & MARKETING FEES",group:"OTHER EXPENSES"},
+      {key:"insuranceGeneral",label:"GENERAL INSURANCE",group:"OTHER EXPENSES"},
+      {key:"landLease",label:"LAND LEASE / HOLD",group:"OWNER EXPENSES"},
+      {key:"ownerInsurance",label:"OWNER INSURANCE",group:"OWNER EXPENSES"},
+      {key:"maintenanceFee",label:"SERVICE CHARGE / MAINTENANCE FEE",group:"OWNER EXPENSES"},
+      {key:"ownerOtherExpenses",label:"OTHER OWNER EXPENSES",group:"OWNER EXPENSES"}
+    ] as const;
+    const ownerValue=(i:number,key:string)=>optional(String(form.forecast.monthly[i]?.[key as keyof ForecastMonth]??""));
+    const ownerGroupItems=(group:"OTHER EXPENSES"|"OWNER EXPENSES")=>ownerItems.filter(item=>item.group===group);
+    const ownerGroupValue=(group:"OTHER EXPENSES"|"OWNER EXPENSES",i:number)=>{const vals=ownerGroupItems(group).map(item=>ownerValue(i,item.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
+    const ownerCombinedValue=(i:number)=>{const vals=ownerItems.map(item=>ownerValue(i,item.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
+    const ownerAnnual=(fn:(i:number)=>number|null)=>ownerOrder.some(i=>fn(i)!==null)?ownerOrder.reduce<number>((n,i)=>n+(fn(i)??0),0):null;
+    ownerExpenseRows.push(["OTHER EXPENSES",...Array(13).fill(null)]);
+    ownerGroupItems("OTHER EXPENSES").forEach(item=>ownerExpenseRows.push([itemLabel("owner",item.key,item.label),...ownerOrder.map(i=>ownerValue(i,item.key)),ownerAnnual(i=>ownerValue(i,item.key))]));
+    ownerExpenseRows.push(["SUBTOTAL OTHER EXPENSES",...ownerOrder.map(i=>ownerGroupValue("OTHER EXPENSES",i)),ownerAnnual(i=>ownerGroupValue("OTHER EXPENSES",i))]);
+    ownerExpenseRows.push(["OWNER EXPENSES",...Array(13).fill(null)]);
+    ownerGroupItems("OWNER EXPENSES").forEach(item=>ownerExpenseRows.push([itemLabel("owner",item.key,item.label),...ownerOrder.map(i=>ownerValue(i,item.key)),ownerAnnual(i=>ownerValue(i,item.key))]));
+    ownerExpenseRows.push(["SUBTOTAL OWNER EXPENSES",...ownerOrder.map(i=>ownerGroupValue("OWNER EXPENSES",i)),ownerAnnual(i=>ownerGroupValue("OWNER EXPENSES",i))]);
+    ownerExpenseRows.push(["TOTAL OTHER EXPENSES + OWNER EXPENSES",...ownerOrder.map(i=>ownerCombinedValue(i)),ownerAnnual(i=>ownerCombinedValue(i))]);
+    add("Owner Expenses",ownerExpenseRows,[38,...Array(12).fill(16),18],"wide");
     const payrollRows:any[][]=[["MASTER PAYROLL — DETAIL KARYAWAN & BIAYA"],["Department","Position","Headcount","Basic Salary / Month","Medical / Month","Meal / Month","THR / Month","BPJS Company / Month","PPh / Month","Insurance / Month","Other / Month","Monthly Total","Annual Total"]];
     (form.payrollEmployees||[]).forEach(emp=>{const c=payrollCalc(emp);payrollRows.push([emp.department||"—",emp.position||"—",c.count,c.basic,c.medical,c.meal,c.thr,c.bpjsCompany,c.taxMonth,c.insurance,c.other,c.total,c.total*12]);});
     const payrollTotal=(form.payrollEmployees||[]).reduce((sum,emp)=>sum+payrollCalc(emp).total,0);
@@ -2031,8 +2057,44 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           </div>)}
         </div>)}
       </section>
+      <section className="mt-7 break-before-page print-owner-expenses">
+        <h3 className="mb-1 text-sm font-extrabold">5. OTHER EXPENSES / OWNER SHARE PROFIT</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Rincian biaya owner mengikuti input bulanan. Urutan periode mengikuti form input: Dec, Jan–Nov. Kolom kosong ditampilkan sebagai —.</p>
+        {(() => {
+          const order=[11,0,1,2,3,4,5,6,7,8,9,10];
+          const rows=[
+            {key:"otherManagementFee",label:"MANAGEMENT & MARKETING FEES",group:"OTHER EXPENSES"},
+            {key:"insuranceGeneral",label:"GENERAL INSURANCE",group:"OTHER EXPENSES"},
+            {key:"landLease",label:"LAND LEASE / HOLD",group:"OWNER EXPENSES"},
+            {key:"ownerInsurance",label:"OWNER INSURANCE",group:"OWNER EXPENSES"},
+            {key:"maintenanceFee",label:"SERVICE CHARGE / MAINTENANCE FEE",group:"OWNER EXPENSES"},
+            {key:"ownerOtherExpenses",label:"OTHER OWNER EXPENSES",group:"OWNER EXPENSES"}
+          ] as const;
+          const value=(i:number,key:string)=>optional(String(form.forecast.monthly[i]?.[key as keyof ForecastMonth]??""));
+          const sum=(key:string)=>order.some(i=>value(i,key)!==null)?order.reduce<number>((n,i)=>n+(value(i,key)??0),0):null;
+          const groupRows=(group:"OTHER EXPENSES"|"OWNER EXPENSES")=>rows.filter(row=>row.group===group);
+          const groupSum=(group:"OTHER EXPENSES"|"OWNER EXPENSES",i:number)=>{const vals=groupRows(group).map(row=>value(i,row.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
+          const combinedSum=(i:number)=>{const vals=rows.map(row=>value(i,row.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
+          const annual=(fn:(i:number)=>number|null)=>order.some(i=>fn(i)!==null)?order.reduce<number>((n,i)=>n+(fn(i)??0),0):null;
+          const display=(v:number|null)=>v===null?"—":fmt(v,0);
+          const subtotal=(label:string,group:"OTHER EXPENSES"|"OWNER EXPENSES"|null)=><tr className="bg-rose-100 font-black"><td className="border-b border-rose-200 px-2 py-1.5">{label}</td>{order.map(i=><td key={i} className="border-b border-rose-200 px-1 py-1.5 text-right tabular-nums">{display(group===null?combinedSum(i):groupSum(group,i))}</td>)}<td className="border-b border-rose-200 px-2 py-1.5 text-right tabular-nums">{display(annual(i=>group===null?combinedSum(i):groupSum(group,i)))}</td></tr>;
+          return <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">
+            <thead><tr className="bg-rose-900 text-white"><th className="px-2 py-1.5 text-left">Account / Description</th>{order.map(i=><th key={i} className="px-1 py-1.5 text-right">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="px-2 py-1.5 text-right">TOTAL</th></tr></thead>
+            <tbody>
+              <tr><td colSpan={14} className="bg-slate-200 px-2 py-1 font-black">OTHER EXPENSES</td></tr>
+              {groupRows("OTHER EXPENSES").map(row=><tr key={row.key}><td className="border-b border-slate-200 px-2 py-1">{itemLabel("owner",row.key,row.label)}</td>{order.map(i=><td key={i} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(value(i,row.key))}</td>)}<td className="border-b border-slate-200 px-2 py-1 text-right font-bold tabular-nums">{display(sum(row.key))}</td></tr>)}
+              {subtotal("SUBTOTAL OTHER EXPENSES","OTHER EXPENSES")}
+              <tr><td colSpan={14} className="h-2"></td></tr>
+              <tr><td colSpan={14} className="bg-slate-200 px-2 py-1 font-black">OWNER EXPENSES</td></tr>
+              {groupRows("OWNER EXPENSES").map(row=><tr key={row.key}><td className="border-b border-slate-200 px-2 py-1">{itemLabel("owner",row.key,row.label)}</td>{order.map(i=><td key={i} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(value(i,row.key))}</td>)}<td className="border-b border-slate-200 px-2 py-1 text-right font-bold tabular-nums">{display(sum(row.key))}</td></tr>)}
+              {subtotal("SUBTOTAL OWNER EXPENSES","OWNER EXPENSES")}
+              {subtotal("TOTAL OTHER EXPENSES + OWNER EXPENSES",null)}
+            </tbody>
+          </table></div>;
+        })()}
+      </section>
       <section className="mt-7 break-before-page print-payroll-master">
-        <h3 className="mb-1 text-sm font-extrabold">5. DETAIL PAYROLL &amp; EXPENSES — MASTER PAYROLL</h3>
+        <h3 className="mb-1 text-sm font-extrabold">6. DETAIL PAYROLL &amp; EXPENSES — MASTER PAYROLL</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan ini bersumber langsung dari Master Payroll. Nilai bulanan mengikuti perhitungan payroll pada form, sedangkan nilai tahunan merupakan estimasi 12 bulan. Perubahan data karyawan hanya dilakukan melalui Master Payroll.</p>
         <h4 className="mb-2 text-[11px] font-black">A. RINCIAN KARYAWAN &amp; BIAYA PAYROLL</h4>
         <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">

@@ -139,7 +139,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
   const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
   const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
-  const pomecMonthly=(group:"payroll"|"other"|"energy")=>form.forecast.monthly.map(r=>pomecTotal(r,group)??(group==="payroll"?val(r,"pomecPayroll"):group==="other"?val(r,"pomecOtherExpenses"):val(r,"energyCost")));
+  const pomecMonthly=(group:"payroll"|"other"|"energy")=>form.forecast.monthly.map(r=>group==="payroll"?(val(r,"pomecPayroll")??pomecTotal(r,group)):pomecTotal(r,group)??(group==="other"?val(r,"pomecOtherExpenses"):val(r,"energyCost")));
   const roomRevenue=months.map(m=>m.roomRevenue), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
   const revenue=months.map(m=>m.revenue), revenueTotal=sumPresent(revenue);
   const unavailableRooms=[form.statistics.outInventory,form.statistics.houseUse,form.statistics.outOfOrder].map(optional);
@@ -160,7 +160,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const payroll=sumEntered(["roomPayroll","fbPayroll","phonePayroll","modPayroll"]);
     const deptOther=sumEntered(["roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses"]);
     const pomecPayrollDetail=pomecTotal(row,"payroll"),pomecOtherDetail=pomecTotal(row,"other"),pomecEnergyDetail=pomecTotal(row,"energy");
-    const pomecPayrollValue=pomecPayrollDetail??val(row,"pomecPayroll");
+    const pomecPayrollValue=val(row,"pomecPayroll")??pomecPayrollDetail;
     const pomecOtherValue=pomecOtherDetail??val(row,"pomecOtherExpenses");
     const pomecEnergyValue=pomecEnergyDetail??val(row,"energyCost");
     const agPayrollTotal=sumEntered(["agPayroll","smPayroll","hrdPayroll"]);

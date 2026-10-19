@@ -897,7 +897,7 @@ export default function HotelBudgetPage() {
     const roomMonthlyValues=allocateAnnual(forecastSource.roomBudget);
     const modAnnualValues:Record<string,number|null>=Object.fromEntries(modRevenueCodes.map(([key,code])=>{
       const statValue:Record<string,number|null>={"41301":optional(form.statistics.modBusinessCenterRevenue),"41302":optional(form.statistics.modRentCarRevenue),"41303":optional(form.statistics.modLaundryRevenue),"41304":optional(form.statistics.modMassageRevenue),"41305":optional(form.statistics.modTelephoneRevenue),"41306":optional(form.statistics.modSportRecreationRevenue),"41307":optional(form.statistics.modRentedSpaceRevenue),"41308":optional(form.statistics.modOtherIncomeRevenue),"41309":optional(form.statistics.modOtherRevenueDiscounts)};
-      const sourceValue=statValue[code]!==undefined?statValue[code]:budgetForCode(code);
+      const sourceValue=statValue[code]??budgetForCode(code);
       return [key,sourceValue];
     }));
     const modMonthlyValues:Record<string,string[]>=Object.fromEntries(modRevenueCodes.map(([key])=>[key,allocateAnnual(modAnnualValues[key])]));

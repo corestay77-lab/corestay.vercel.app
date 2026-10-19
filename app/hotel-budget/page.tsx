@@ -1769,6 +1769,29 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   })()}
                 </div>}
                 {!["room","fb","mod","ag","hrd"].includes(selectedDepartment)&&<div className="rounded-xl border border-dashed border-slate-300 bg-white p-5"><h4 className="font-extrabold text-slate-800">{({sm:"SALES & MARKETING",pomec:"POMEC & UTILITIES"} as Record<string,string>)[selectedDepartment]}</h4><p className="mt-2 text-sm leading-6 text-slate-600">Menu departemen sudah disiapkan. Rincian akun bagian ini akan disusun setelah modul departemen sebelumnya selesai.</p></div>}
+                <section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
+                  <div className="bg-rose-900 px-4 py-3 text-white">
+                    <h4 className="text-sm font-extrabold">OTHER EXPENSES / OWNER SHARE PROFIT</h4>
+                    <p className="mt-1 text-xs text-rose-100">Input biaya owner per bulan. Nama item dapat diedit; nilai tersambung ke konsolidasi Step 4 serta ekspor PDF dan Excel.</p>
+                  </div>
+                  {(() => {
+                    const order=[11,0,1,2,3,4,5,6,7,8,9,10];
+                    const rows=[
+                      {key:"otherManagementFee",label:"MANAGEMENT & MARKETING FEES",group:"OTHER EXPENSES"},
+                      {key:"insuranceGeneral",label:"GENERAL INSURANCE",group:"OTHER EXPENSES"},
+                      {key:"landLease",label:"LAND LEASE / HOLD",group:"OWNER EXPENSES"},
+                      {key:"ownerInsurance",label:"OWNER INSURANCE",group:"OWNER EXPENSES"},
+                      {key:"maintenanceFee",label:"SERVICE CHARGE / MAINTENANCE FEE",group:"OWNER EXPENSES"},
+                      {key:"ownerOtherExpenses",label:"OTHER OWNER EXPENSES",group:"OWNER EXPENSES"}
+                    ] as const;
+                    const value=(i:number,key:string)=>optional(String(form.forecast.monthly[i]?.[key as keyof ForecastMonth]??""));
+                    const sum=(key:string)=>order.some(i=>value(i,key)!==null)?order.reduce<number>((n,i)=>n+(value(i,key)??0),0):null;
+                    const setValue=(i:number,key:string,v:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,monthly:prev.forecast.monthly.map((row,j)=>j===i?({...row,[key]:v}):row)}}));
+                    return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-64 bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
+                    {rows.map((row,index)=><Fragment key={row.key}>{index===0||rows[index-1].group!==row.group?<tr><td colSpan={14} className="bg-slate-100 px-3 py-2 text-xs font-black">{row.group}</td></tr>:null}<tr className="border-t border-slate-100"><td className="sticky left-0 z-[1] min-w-64 bg-white px-3 py-2 text-xs">{itemLabel("owner",row.key,row.label)} {editLabelButton("owner",row.key,row.label)} {costFillButton(row.key,itemLabel("owner",row.key,row.label),(monthIndex,key,v)=>setValue(monthIndex,key,v))}</td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={itemLabel("owner",row.key,row.label)+" "+form.forecast.monthly[i].label} inputMode="numeric" placeholder="—" className="w-28 rounded-md border border-slate-200 px-2 py-1.5 text-right text-xs tabular-nums focus:border-rose-400 focus:outline-none" value={formatWholeRupiah(String(form.forecast.monthly[i]?.[row.key as keyof ForecastMonth]??""))} onChange={e=>setValue(i,row.key,e.target.value.replace(/[^0-9]/g,""))}/></td>)}<td className="px-3 py-2 text-right text-xs font-extrabold tabular-nums">{sum(row.key)===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(sum(row.key)!)}</td></tr></Fragment>)}
+                    </tbody></table></div>;
+                  })()}
+                </section>
                 <p className="text-xs leading-5 text-slate-500">Subtotal, total biaya, departmental profit, dan persentase dihitung otomatis. Nilai yang belum diisi tetap ditampilkan sebagai —. Angka contoh dari sumber tidak dimasukkan otomatis.</p>
 </div>
             </section>

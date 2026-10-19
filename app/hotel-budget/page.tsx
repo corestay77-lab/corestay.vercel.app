@@ -496,6 +496,7 @@ export default function HotelBudgetPage() {
     const monthlyStatRows=buildConsolidatedRows(source);
     const firstYearPaid=monthlyStatRows.find(row=>row.label==="ROOM PAID")?.total??null;
     const firstYearAvailable=monthlyStatRows.find(row=>row.label==="ROOM AVAILABLE")?.total??null;
+    if(firstYearAvailable!==null)roomAvail[0]=firstYearAvailable;
     const firstYearOccupancy=firstYearPaid!==null&&firstYearAvailable!==null&&firstYearAvailable>0?firstYearPaid/firstYearAvailable*100:null;
     const occupied=years.map((y,i)=>i===0&&firstYearPaid!==null?firstYearPaid:roomAvail[i]!==null&&y.occ!==null?roomAvail[i]!*y.occ/100:null);
     const growth=(i:number)=>Math.pow(1+annualGrowthPct/100,i);
@@ -702,7 +703,7 @@ export default function HotelBudgetPage() {
     const pctBase=(values:(number|null)[],base:(number|null)[])=>values.map((v,i)=>pct(v,base[i]));
     const annualTotals=(values:(number|null)[])=>sumKnown(values);
     return [
-      make("# OF ROOMS",years.map(y=>y.rooms),"count",undefined,"rooms",avg(years.map(y=>y.rooms))),
+      make("# OF ROOMS",years.map((y,i)=>i===0?(optional(source.statistics.rooms)??y.rooms):y.rooms),"count",undefined,"rooms",avg(years.map((y,i)=>i===0?(optional(source.statistics.rooms)??y.rooms):y.rooms))),
       make("ROOM AVAILABLE",roomAvail,"count",undefined,undefined,totalAvailable),
       make("OCCUPIED ROOMS",occupied,"count",undefined,undefined,totalOccupied),
       make("OCCUPANCY ( % )",years.map((y,i)=>i===0&&firstYearOccupancy!==null?firstYearOccupancy:pct(occupied[i],roomAvail[i])),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),

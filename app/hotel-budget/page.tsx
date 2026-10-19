@@ -628,53 +628,137 @@ export default function HotelBudgetPage() {
       return {label,values,kind,base,inputKey,total,totalPct:base?pct(total,sum(base)):null};
     };
     const section=(label:string):R=>({label,section:true,values:[],total:null,totalPct:null});
+    const roomPayroll=years.map((_,i)=>roomPayrollBase===null?null:roomPayrollBase*growth(i));
+    const fbPayroll=years.map((_,i)=>fbPayrollBase===null?null:fbPayrollBase*growth(i));
+    const phonePayroll=years.map((_,i)=>phonePayrollBase===null?null:phonePayrollBase*growth(i));
+    const modPayroll=years.map((_,i)=>modPayrollBase===null?null:modPayrollBase*growth(i));
+    const roomOther=years.map((_,i)=>roomOtherBase===null?null:roomOtherBase*growth(i));
+    const fbOther=years.map((_,i)=>fbOtherBase===null?null:fbOtherBase*growth(i));
+    const phoneOther=years.map((_,i)=>phoneOtherBase===null?null:phoneOtherBase*growth(i));
+    const modOther=years.map((_,i)=>modOtherBase===null?null:modOtherBase*growth(i));
+    const agPayrollBase=monthlyBase(row=>optional(row.agPayroll));
+    const smPayrollBase=monthlyBase(row=>optional(row.smPayroll));
+    const hrdPayrollBase=monthlyBase(row=>optional(row.hrdPayroll));
+    const pomecPayrollBase=monthlyBase(row=>optional(row.pomecPayroll)??pomecTotal(row,"payroll"));
+    const agOtherBase=monthlyBase(row=>optional(row.agOtherExpenses));
+    const smOtherBase=monthlyBase(row=>optional(row.smOtherExpenses));
+    const hrdOtherBase=monthlyBase(row=>optional(row.hrdOtherExpenses));
+    const pomecOtherBase=monthlyBase(row=>pomecTotal(row,"other")??optional(row.pomecOtherExpenses));
+    const energyBase=monthlyBase(row=>pomecTotal(row,"energy")??optional(row.energyCost));
+    const agPayroll=years.map((_,i)=>agPayrollBase===null?null:agPayrollBase*growth(i));
+    const smPayroll=years.map((_,i)=>smPayrollBase===null?null:smPayrollBase*growth(i));
+    const hrdPayroll=years.map((_,i)=>hrdPayrollBase===null?null:hrdPayrollBase*growth(i));
+    const pomecPayroll=years.map((_,i)=>pomecPayrollBase===null?null:pomecPayrollBase*growth(i));
+    const agOther=years.map((_,i)=>agOtherBase===null?null:agOtherBase*growth(i));
+    const smOther=years.map((_,i)=>smOtherBase===null?null:smOtherBase*growth(i));
+    const hrdOther=years.map((_,i)=>hrdOtherBase===null?null:hrdOtherBase*growth(i));
+    const pomecOther=years.map((_,i)=>pomecOtherBase===null?null:pomecOtherBase*growth(i));
+    const energy=years.map((_,i)=>energyBase===null?null:energyBase*growth(i));
+    const sumRows=(...arrays:(number|null)[][])=>years.map((_,i)=>arrays.every(a=>a[i]!==null)?arrays.reduce((n,a)=>n+(a[i]??0),0):null);
+    const totalPayroll=sumRows(roomPayroll,fbPayroll,phonePayroll,modPayroll);
+    const totalDeptOther=sumRows(roomOther,fbOther,phoneOther,modOther);
+    const totalOverheadPayroll=sumRows(agPayroll,smPayroll,hrdPayroll,pomecPayroll);
+    const totalOverheadOther=sumRows(agOther,smOther,hrdOther,pomecOther,energy);
+    const totalOverhead=sumRows(totalOverheadPayroll,totalOverheadOther);
+    const deptOperatingCost=years.map((_,i)=>[costOfSales[i],totalPayroll[i],totalDeptOther[i]].every(v=>v!==null)?(costOfSales[i]??0)+(totalPayroll[i]??0)+(totalDeptOther[i]??0):null);
+    const departmentIncome=years.map((_,i)=>revenue[i]!==null&&deptOperatingCost[i]!==null?revenue[i]!-deptOperatingCost[i]!:null);
+    const goi=years.map((_,i)=>departmentIncome[i]!==null&&totalOverhead[i]!==null?departmentIncome[i]!-totalOverhead[i]!:null);
+    const managementFees=years.map(()=>null as number|null);
+    const insuranceGeneral=years.map(()=>null as number|null);
+    const nonOperating=sumRows(managementFees,insuranceGeneral);
+    const gopFinal=years.map((_,i)=>goi[i]!==null&&nonOperating[i]!==null?goi[i]!-nonOperating[i]!:null);
+    const totalOwnerExpenses=sumRows(landLease,ownerInsurance,maintenanceFee);
+    const ownerShare=years.map((_,i)=>gopFinal[i]!==null&&totalOwnerExpenses[i]!==null?gopFinal[i]!-totalOwnerExpenses[i]!:null);
+    const companyShare=ownerShare.map(v=>v===null?null:v*.30);
+    const hotelShare=ownerShare.map(v=>v===null?null:v*.70);
+    const totalOwnersExpenses=sumRows(companyShare,hotelShare,ownerOtherExpenses);
+    const netOwnerShare=years.map((_,i)=>ownerShare[i]!==null&&companyShare[i]!==null?ownerShare[i]!-companyShare[i]!:null);
+    const cumulative=netOwnerShare.map((_,i)=>sumKnown(netOwnerShare.slice(0,i+1)));
+    const payrollRatio=years.map((_,i)=>totalPayroll[i]!==null&&totalOverheadPayroll[i]!==null&&revenue[i]!==null&&revenue[i]!>0?(totalPayroll[i]!+totalOverheadPayroll[i]!)/revenue[i]!*100:null);
+    const phoneRevenueForReport=phoneRevenue;
+    const modRevenueForReport=years.map((_,i)=>other[i]!==null&&phoneRevenue[i]!==null?other[i]!-phoneRevenue[i]!:other[i]);
+    const totalRevenueForReport=sumRows(roomRevenue,fb,phoneRevenueForReport,modRevenueForReport);
+    const deptIncomeRoom=deptRow(roomRevenue,[roomPayroll,roomOther]);
+    const deptIncomeFb=deptRow(fb,[years.map((_,i)=>costOfSales[i]===null?null:costOfSales[i]),fbPayroll,fbOther]);
+    const deptIncomePhone=deptRow(phoneRevenueForReport,[phonePayroll,phoneOther]);
+    const deptIncomeMod=deptRow(modRevenueForReport,[years.map((_,i)=>modCostBase===null?null:modCostBase*growth(i)),modPayroll,modOther]);
+    const totalDeptIncome=sumRows(deptIncomeRoom,deptIncomeFb,deptIncomePhone,deptIncomeMod);
+    const pctBase=(values:(number|null)[],base:(number|null)[])=>values.map((v,i)=>pct(v,base[i]));
+    const annualTotals=(values:(number|null)[])=>sumKnown(values);
     return [
-      section("STATISTICS"),
-      make("Days",years.map(y=>y.days),"count",undefined,"days",sum(years.map(y=>y.days))),
+      section("STATISTIC"),
       make("# OF ROOMS",years.map(y=>y.rooms),"count",undefined,"rooms",avg(years.map(y=>y.rooms))),
       make("ROOM AVAILABLE",roomAvail,"count",undefined,undefined,totalAvailable),
-      make("ROOM PAID",occupied,"count",undefined,undefined,totalOccupied),
-      make("OCCUPIED ROOMS (PAID + COMPLIMENTARY)",years.map((y,i)=>occupied[i]===null?null:occupied[i]!+(i===0?(optional(source.statistics.complimentary)??0):0)),"count",undefined,undefined,null),
-      make("OCCUPANCY (%)",years.map((y,i)=>i===0&&firstYearOccupancy!==null?firstYearOccupancy:pct(occupied[i],roomAvail[i])),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)),
-      make("AVERAGE ROOM RATE (ARR) (RP)",years.map((y,i)=>i===0&&roomRevenue[i]!==null&&firstYearPaid!==null&&firstYearPaid>0?roomRevenue[i]!/firstYearPaid:roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(y.row.adr)??optional(source.statistics.averageSellingRate)),"money",undefined,undefined,totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
-      make("REVPAR (RP)",years.map((y,i)=>roomRevenue[i]!==null&&roomAvail[i]!==null&&roomAvail[i]!>0?roomRevenue[i]!/roomAvail[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalAvailable!==null&&totalAvailable>0?totalRoomRev/totalAvailable:null),
-      make("COMPLIMENTARY ROOM NIGHTS",years.map((y,i)=>i===0?optional(source.statistics.complimentary):null),"count",undefined,undefined,optional(source.statistics.complimentary)),
+      make("OCCUPIED ROOMS",occupied,"count",undefined,undefined,totalOccupied),
+      make("OCCUPANCY ( % )",years.map((y,i)=>i===0&&firstYearOccupancy!==null?firstYearOccupancy:pct(occupied[i],roomAvail[i])===null?null:pct(occupied[i],roomAvail[i])!*100),"percent",undefined,"occupancy",pct(totalOccupied,totalAvailable)===null?null:pct(totalOccupied,totalAvailable)!*100),
+      make("AVERAGE ROOM RATE ( RP )",years.map((y,i)=>roomRevenue[i]!==null&&occupied[i]!==null&&occupied[i]!>0?roomRevenue[i]!/occupied[i]!:optional(y.row.adr)??optional(source.statistics.averageSellingRate)),"money",undefined,undefined,totalRoomRev!==null&&totalOccupied!==null&&totalOccupied>0?totalRoomRev/totalOccupied:null),
+      make("REVPAR  ( RP )",years.map((y,i)=>roomRevenue[i]!==null&&roomAvail[i]!==null&&roomAvail[i]!>0?roomRevenue[i]!/roomAvail[i]!:null),"money",undefined,undefined,totalRoomRev!==null&&totalAvailable!==null&&totalAvailable>0?totalRoomRev/totalAvailable:null),
+      make("AVERAGE SELLING RATE ( RP )",years.map(y=>optional(y.row.adr)??optional(source.statistics.averageSellingRate)),"money",undefined,undefined,avg(years.map(y=>optional(y.row.adr)??optional(source.statistics.averageSellingRate)))),
       section("REVENUES"),
-      make("ROOMS",roomRevenue,"money",revenue),
-      make("FOOD & BEVERAGE",fb,"money",revenue,"fbRevenue"),
-      make("MINOR OPERATING DEPARTMENT",other,"money",revenue,"otherRevenue"),
-      make("TOTAL REVENUES (EXCL. TAX)",revenue,"money",revenue,undefined,totalRevenue),
+      make("   ROOMS",roomRevenue,"money",revenue),
+      make("   FOOD & BEVERAGE REVENUE",fb,"money",revenue,"fbRevenue"),
+      make("   TELEPHONE & FACSIMILE",phoneRevenueForReport,"money",revenue),
+      make("   MINOR OPERATING DEPT.",modRevenueForReport,"money",revenue,"otherRevenue"),
+      make("TOTAL REVENUES",totalRevenueForReport,"money",totalRevenueForReport,undefined,annualTotals(totalRevenueForReport)),
       section("COST OF SALES"),
+      make("   FOOD & BEVERAGE",costOfSales,"money",revenue),
+      make("   TELEPHONE & FACSIMILE",years.map(()=>null),"money",revenue),
+      make("   MINOR OPERATING DEPARTMENT",years.map((_,i)=>modCostBase===null?null:modCostBase*growth(i)),"money",revenue),
       make("TOTAL COST OF SALES",costOfSales,"money",revenue),
       section("PAYROLL & RELATED EXPENSES"),
-      make("TOTAL PAYROLL & RELATED EXPENSES",payroll,"money",revenue),
-      section("OTHER DEPARTMENT EXPENSES"),
-      make("TOTAL OTHER DEPARTMENT EXPENSES",deptExpenses,"money",revenue),
-      make("TOTAL OVERHEAD / UNDISTRIBUTED EXPENSES",overhead,"money",revenue),
-      make("TOTAL OPERATING COSTS",costs,"money",revenue,"operatingCosts"),
+      make("   ROOM",roomPayroll,"money",roomRevenue),
+      make("   FOOD & BEVERAGE",fbPayroll,"money",fb),
+      make("   TELEPHONE",phonePayroll,"money",phoneRevenueForReport),
+      make("   MINOR OPERATING DEPART",modPayroll,"money",modRevenueForReport),
+      make("TOTAL PAYROLL & RELATED EXP.",totalPayroll,"money",revenue),
+      section("OTHER EXPENSES"),
+      make("   ROOM",roomOther,"money",roomRevenue),
+      make("   FOOD & BEVERAGE",fbOther,"money",fb),
+      make("   TELEPHONE & FACSIMILE",phoneOther,"money",phoneRevenueForReport),
+      make("   MINOR OPERATING DEPARTMENT",modOther,"money",modRevenueForReport),
+      make("TOTAL OTHER EXPENSES",totalDeptOther,"money",revenue),
+      make("DEPART. OPERATING COST & EXP.",deptOperatingCost,"money",revenue),
       section("DEPARTMENT INCOME"),
-      make("ROOM",deptRoomIncome,"money",roomRevenue),
-      make("FOOD & BEVERAGE",deptFbIncome,"money",fb),
-      make("TELEPHONE & FACSIMILE",deptPhoneIncome,"money",phoneRevenue),
-      make("MINOR OPERATING DEPARTMENT",deptModIncome,"money",other),
-      make("TOTAL DEPARTMENT INCOME",deptIncomeTotal,"money",revenue),
+      make("   ROOM",deptIncomeRoom,"money",roomRevenue),
+      make("   FOOD & BEVERAGE",deptIncomeFb,"money",fb),
+      make("   TELEPHONE & FACSIMILE",deptIncomePhone,"money",phoneRevenueForReport),
+      make("   MINOR OPERATING DEPT",deptIncomeMod,"money",modRevenueForReport),
+      make("TOTAL DEPTMENT INCOME",totalDeptIncome,"money",revenue),
       section("OVERHEAD DEPARTMENT"),
-      make("PAYROLL & RELATED",overheadPayroll,"money",revenue),
-      make("OTHER EXPENSES",overheadOther,"money",revenue),
-      make("TOTAL OVERHEAD DEPARTMENT",years.map((_,i)=>overheadPayroll[i]!==null&&overheadOther[i]!==null?overheadPayroll[i]!+overheadOther[i]!:null),"money",revenue),
-      section("POMEC / ENGINEERING — DETAIL FORECAST"),
-      ...POMEC_LINES.map(line=>{const base=source.forecast.monthly.reduce((n,row)=>n+(pomecValue(row,line.key)??0),0);const values=years.map((_,i)=>base===0&&source.forecast.monthly.every(row=>pomecValue(row,line.key)===null)?null:base*Math.pow(1+annualGrowthPct/100,i));return make(line.label,values,"money",revenue);}),
-      make("GROSS OPERATING PROFIT (GOP / CONTRIBUTION)",gop,"money",revenue),
-      make("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,undefined,pct(sum(gop),totalRevenue)),
-      section("OTHER NON-OPERATING / OWNER EXPENSES"),
-      make("MANAGEMENT FEES",years.map(()=>null),"money",revenue),
-      make("PROPERTY INSURANCE",years.map(()=>null),"money",revenue),
-      make("LAND LEASE / HOLD",landLease,"money",revenue),
+      section("PAYROLL & RELATED"),
+      make("   ADM. & GENERAL",agPayroll,"money",revenue),
+      make("   SALES & MARKETING",smPayroll,"money",revenue),
+      make("   HUMAN RESOURCES",hrdPayroll,"money",revenue),
+      make("   ENGINEERING",pomecPayroll,"money",revenue),
+      make("TOTAL PAYROLL & RELATED",totalOverheadPayroll,"money",revenue),
+      section("OTHER EXPENSES"),
+      make("   ADM. & GENERAL",agOther,"money",revenue),
+      make("   SALES & MARKETING",smOther,"money",revenue),
+      make("   HUMAN RESOURCES",hrdOther,"money",revenue),
+      make("   ENGINEERING",pomecOther,"money",revenue),
+      make("   ENERGY COST",energy,"money",revenue),
+      make("TOTAL OTHER EXPENSES",totalOverheadOther,"money",revenue),
+      make("TOTAL OVERHEAD DEPARTMENT",totalOverhead,"money",revenue),
+      make("GROSS OPERATING INCOME",goi,"money",revenue),
+      section("OTHER NON OPERATING EXP"),
+      make("MANAGEMENT FEES",managementFees,"money",revenue),
+      make("INSURANCE GENERAL",insuranceGeneral,"money",revenue),
+      make("TOTAL OTHER EXPENSES",nonOperating,"money",revenue),
+      make("GROSS OPERATING PROFIT (GOP)",gopFinal,"money",revenue),
+      make("% G O P",pctBase(gopFinal,revenue).map(v=>v===null?null:v*100),"percent",undefined,undefined,pct(annualTotals(gopFinal),annualTotals(revenue))===null?null:pct(annualTotals(gopFinal),annualTotals(revenue))!*100),
+      section("OTHER EXPENSES"),
+      make("LAND LEASE HOLD",landLease,"money",revenue),
       make("INSURANCE",ownerInsurance,"money",revenue),
-      make("MAINTENANCE FEE (SERVICE CHARGE)",maintenanceFee,"money",revenue),
-      make("TOTAL OTHER EXPENSES",ownerExpenses,"money",revenue),
-      make("OWNER SHARE PROFIT (OSP)",osp,"money",revenue),
-      make("OTHER OWNER EXPENSES",ownerOtherExpenses,"money",revenue),
+      make("MAINTENANCE FEE (SERVICE CHG)",maintenanceFee,"money",revenue),
+      make("TOTAL OTHER EXPENSES",totalOwnerExpenses,"money",revenue),
+      make("OWNER SHARE PROFIT",ownerShare,"money",revenue),
+      make("PT.ARYS HOSIPITALITY",companyShare,"money",ownerShare),
+      make("HOTEL UNHAS HOLDING",hotelShare,"money",ownerShare),
+      section("OTHER OWNER EXPENSES"),
+      make("TOTAL OWNERS EXPENSES",totalOwnersExpenses,"money",revenue),
+      make("OWNER SHARE PROFIT",netOwnerShare,"money",revenue),
+      make("CUMMULATED OSP",cumulative,"money",revenue),
+      make("PAYROLL RATIO",payrollRatio.map(v=>v===null?null:v*100),"percent",undefined,undefined,avg(payrollRatio)===null?null:avg(payrollRatio)!*100)
     ];
   };
 

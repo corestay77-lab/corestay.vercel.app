@@ -682,7 +682,7 @@ export default function HotelBudgetPage() {
     const totalOwnersExpenses=sumRows(companyShare,hotelShare,ownerOtherExpenses);
     const netOwnerShare=years.map((_,i)=>ownerShare[i]!==null&&companyShare[i]!==null?ownerShare[i]!-companyShare[i]!:null);
     const cumulative=netOwnerShare.map((_,i)=>sumKnown(netOwnerShare.slice(0,i+1)));
-    const payrollRatio=years.map((_,i)=>totalPayroll[i]!==null&&totalOverheadPayroll[i]!==null&&revenue[i]!==null&&revenue[i]!>0?(totalPayroll[i]!+totalOverheadPayroll[i]!)/revenue[i]!*100:null);
+    const payrollRatio=years.map((_,i)=>totalPayroll[i]!==null&&totalOverheadPayroll[i]!==null&&totalRevenueForReport?.[i]!==null&&totalRevenueForReport?.[i]!==undefined&&totalRevenueForReport[i]!>0?(totalPayroll[i]!+totalOverheadPayroll[i]!)/totalRevenueForReport[i]!*100:null);
     const phoneRevenueForReport=phoneRevenue;
     const modOnlyBase=monthlyBase(row=>{
       const keys=["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"];
@@ -774,7 +774,7 @@ export default function HotelBudgetPage() {
       make("TOTAL OWNERS EXPENSES",totalOwnersExpenses,"money",revenue),
       make("OWNER SHARE PROFIT",netOwnerShare,"money",revenue),
       make("CUMMULATED OSP",cumulative,"money"),
-      make("PAYROLL RATIO",payrollRatio.map(v=>v===null?null:v*100),"percent")
+      make("PAYROLL RATIO",payrollRatio,"percent",undefined,undefined,pct(sumKnown(totalPayroll.map((v,i)=>v===null||totalOverheadPayroll[i]===null?null:v+totalOverheadPayroll[i]!)),sumKnown(totalRevenueForReport)))
     ];
   };
 

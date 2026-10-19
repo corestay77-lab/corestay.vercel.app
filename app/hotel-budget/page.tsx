@@ -1822,7 +1822,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   {(() => {
                     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
                     const operatingDays=order.map(i=>new Date(Number(form.yearStart),i+1,0).getDate());
-                    const payrollRows=[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["bonusProvision","PROV. FOR BONUS"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]] as const;
+                    const payrollRows=[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX (PPh 21 employee withholding)"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["bonusProvision","PROV. FOR BONUS"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]] as const;
                     const otherRows=[["employeeRelation","EMPLOYEE RELATION"],["casual","CASUAL"],["laundryUniforms","LAUNDRY - UNIFORMS"],["postageCourier","POSTAGE & COURIER"],["paperSupplies","PAPER SUPPLIES"],["cleaningSupplies","CLEANING SUPPLIES"],["printingStationery","PRINTING & STATIONERY"],["socialSportActivity","SOCIAL SPORT & ACTIVITY"],["transportation","TRANSPORTATION"],["telephone","TELEPHONE"],["medicalExpenses","MEDICAL EXPENSES"],["trainingEducation","TRAINING & EDUCATION"],["recruitingAdvertisement","RECRUITING & ADVERTISEMENT"],["housePublication","HOUSE PUBLICATION"],["provisionUniform","PROV. UNIFORM"],["others","OTHERS"]] as const;
                     const value=(i:number,key:string)=>optional(payrollInputKey(key)?payrollValueFor("HRD",key):form.forecast.monthly[i]?.hrdDetails?.[key]||"");
                     const total=(i:number,keys:readonly string[])=>{const vals=keys.map(key=>value(i,key));return vals.some(v=>v!==null)?vals.reduce<number>((sum,v)=>sum+(v??0),0):null;};
@@ -1831,7 +1831,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                     const hotelRevenueTotal=revenueByMonth.some(v=>v!==null)?revenueByMonth.reduce<number>((sum,v)=>sum+(v??0),0):null;
                     const fmtMoney=(n:number|null)=>n===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
                     const pct=(n:number|null,base:number|null)=>n===null||base===null||base===0?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n/base*100)+"%";
-                    const payrollKeys=payrollRows.map(r=>r[0]);
+                    const payrollKeys=payrollRows.map(r=>r[0]).filter(key=>key!=="incomeTax");
                     const otherKeys=otherRows.map(r=>r[0]);
                     const allExpenseKeys=[...payrollKeys,...otherKeys];
                     const totalRow=(label:string,keys:readonly string[])=> <tr className="bg-slate-100 font-bold"><td className="sticky left-0 z-10 min-w-52 bg-slate-100 px-3 py-2 text-xs">{label}</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(total(i,keys))}</td>)}<td className="px-2 py-2 text-right text-xs tabular-nums">{fmtMoney(annual(keys))}</td><td className="px-2 py-2 text-right text-xs">{pct(annual(keys),hotelRevenueTotal)}</td></tr>;

@@ -135,8 +135,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const year=Number(form.yearStart), months=form.forecast.monthly.map((r,i)=>calcMonthly(r,year,i,form.statistics.rooms));
   const roomCount=optional(form.statistics.rooms);
   const sumPresent=(a:(number|null)[])=>a.some(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
-  const sumComplete=(a:(number|null)[])=>a.length&&a.every(v=>v!==null)?a.reduce<number>((s,v)=>s+(v??0),0):null;
-  const avgPresent=(a:(number|null)[])=>{const valid=a.filter((v):v is number=>v!==null);return valid.length?valid.reduce((x,y)=>x+y,0)/valid.length:null;};
+    const avgPresent=(a:(number|null)[])=>{const valid=a.filter((v):v is number=>v!==null);return valid.length?valid.reduce((x,y)=>x+y,0)/valid.length:null;};
   const pct=(v:number|null,b:number|null)=>v===null||b===null||b===0?null:v/b*100;
   const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
   const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
@@ -171,13 +170,13 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
     const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
     const hasDetail=detailKeys.some(k=>val(row,k)!==null);
-    const detailTotal=detailed.every(v=>v!==null)?sumPresent(detailed):null;
+    const detailTotal=sumPresent(detailed);
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
   const costParts=form.forecast.monthly.map(monthlyCost);
   // A total operating-cost figure is valid only when every required cost bucket is present,
   // or when the user supplied an explicit total. Never turn missing cost buckets into zero.
-  const totalOperatingCosts=costParts.map(c=>c.detailTotal??c.fallback);
+  const totalOperatingCosts=costParts.map((c,i)=>c.detailTotal??c.fallback??(revenue[i]!==null?0:null));
   const deptIncome=form.forecast.monthly.map((r,i)=>{
     const room=roomRevenue[i], rp=val(r,"roomPayroll"), ro=val(r,"roomOtherExpenses");
     const f=fb[i], fc=val(r,"fbCostOfSales"), fp=val(r,"fbPayroll"), fo=val(r,"fbOtherExpenses");
@@ -205,21 +204,23 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // For derived profit calculations only, unentered cost/fee rows contribute 0 until a value is entered.
   // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
   const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
-  const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
+  const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null?revenue[i]!-(totalOperatingCosts[i]??0):null);
   const basicFee=monthly("basicManagementFee");
-  const goi=houseProfit.map((v,i)=>v!==null&&basicFee[i]!==null?v-basicFee[i]!:null);
-  const nonOp=form.forecast.monthly.map(r=>sumComplete([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
-  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:null);
-  const otherExpense=form.forecast.monthly.map(r=>sumComplete([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
-  const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
-  // Blank owner expenses remain unknown until entered; do not treat them as zero.
-  const totalOwnerExpenses=form.forecast.monthly.map(r=>val(r,"ownerOtherExpenses"));
-  const nosp=osp.map((v,i)=>v!==null&&totalOwnerExpenses[i]!==null?v-totalOwnerExpenses[i]!:null);
+  const goi=houseProfit.map((v,i)=>v!==null?v-(basicFee[i]??0):null);
+  const nonOp=form.forecast.monthly.map((r,i)=>goi[i]!==null?(val(r,"otherManagementFee")??0)+(val(r,"insuranceGeneral")??0):null);
+  const gop=goi.map((v,i)=>v!==null?v-(nonOp[i]??0):null);
+  const otherExpense=form.forecast.monthly.map((r,i)=>gop[i]!==null?(val(r,"landLease")??0)+(val(r,"ownerInsurance")??0)+(val(r,"maintenanceFee")??0):null);
+  const osp=gop.map((v,i)=>v!==null?v-(otherExpense[i]??0):null);
+  // Missing owner expense inputs default to zero in the final consolidation, so NOSP calculates whenever OSP is available.
+  const totalOwnerExpenses=form.forecast.monthly.map((r,i)=>osp[i]!==null?(val(r,"ownerOtherExpenses")??0):null);
+  const nosp=osp.map((v,i)=>v!==null?v-(totalOwnerExpenses[i]??0):null);
   const rows:ConsolidatedRow[]=[];
   const section=(label:string)=>rows.push({label,kind:"section",values:[]});
   const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[])=>{
-    const t=total===undefined?(kind==="sum"||kind==="money"?sumPresent(values):(kind==="avg"||kind==="percent"?avgPresent(values):null)):total;
-    rows.push({label,values,kind,inputKey,total:t,base,totalPct:base?pct(t,sumPresent(base)):undefined,editable});
+    const displayValues=values.map(v=>v??0);
+    const t=(total===undefined?(kind==="sum"||kind==="money"?sumPresent(displayValues):(kind==="avg"||kind==="percent"?avgPresent(displayValues):null)):total)??0;
+    const displayBase=base?.map(v=>v??0);
+    rows.push({label,values:displayValues,kind,inputKey,total:t,base:displayBase,totalPct:displayBase?pct(t,sumPresent(displayBase))??0:0,editable});
   };
   section("REVENUES");
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
@@ -1384,8 +1385,8 @@ export default function HotelBudgetPage() {
     buildConsolidatedRows(form).forEach(line=>{
       if(line.kind==="section"){consolidatedMonthly.push([line.label,...Array(26).fill("")]);return;}
       const vals:any[]=[line.label];
-      line.values.forEach((v,i)=>{const base=line.base?.[i]??null;vals.push(v,base!==null&&base!==0&&v!==null?v/base*100:null);});
-      vals.push(line.total??null,line.totalPct??null);
+      line.values.forEach((v,i)=>{const base=line.base?.[i]??null;vals.push(v??0,base!==null&&base!==0&&v!==null?v/base*100:0);});
+      vals.push(line.total??0,line.totalPct??0);
       consolidatedMonthly.push(vals);
     });
     const consolidatedAnnual:any[][]=[["CORESTAY ADVISORY — 10 YEARS CONSOLIDATED",...Array(22).fill("")],["Hotel",form.hotelName,"Period",form.yearStart+"–"+(Number(form.yearStart)+9),"Currency",currency],["Account / Description",...form.forecast.annual.flatMap((row,i)=>["YEAR "+(i+1)+" VALUE","YEAR "+(i+1)+" %"]),"TOTAL / AVERAGE VALUE","TOTAL / AVERAGE %"]];
@@ -1908,21 +1909,21 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                         <th className="sticky left-0 z-[1] w-[250px] min-w-[250px] max-w-[250px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>
                         {line.values.map((v,j)=>{
                           const base=line.base?.[j]??null;
-                          const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
+                          const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:0;
                           return <Fragment key={j}>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(percentage)}</td>
                           </Fragment>;
                         })}
                         <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-l border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{displayValue(line.total)}</td>
-                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums whitespace-nowrap">{displayPct(isPercent?null:line.totalPct)}</td>
+                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums whitespace-nowrap">{displayPct(isPercent?0:line.totalPct)}</td>
                       </tr>;
                     })}
                   </tbody>
                 </table>
               </div>
               <div className="border-t border-slate-200 bg-slate-50 px-4 py-3 text-[11px] leading-5 text-slate-600">
-                Persentase setiap baris dihitung terhadap basis revenue atau basis departemen yang ditetapkan dalam rumus konsolidasi. TOTAL menjumlahkan nilai bulanan; baris persentase profit menampilkan rasio dan tidak menjumlahkan persentase bulanan. Data yang belum tersedia tetap ditandai —.
+                Persentase setiap baris dihitung terhadap basis revenue atau basis departemen yang ditetapkan dalam rumus konsolidasi. TOTAL menjumlahkan nilai bulanan; baris persentase profit menampilkan rasio dan tidak menjumlahkan persentase bulanan. Nilai yang belum diinput ditampilkan sebagai 0 agar setiap baris terlihat telah melewati perhitungan; verifikasi sumber input sebelum menggunakan laporan final.
               </div>
             </section>
           </div>}

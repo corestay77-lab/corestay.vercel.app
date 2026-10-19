@@ -161,8 +161,13 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const payroll=sumEntered(["roomPayroll","fbPayroll","phonePayroll","modPayroll"]);
     const deptOther=sumEntered(["roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses"]);
     const pomecPayrollDetail=pomecTotal(row,"payroll"),pomecOtherDetail=pomecTotal(row,"other"),pomecEnergyDetail=pomecTotal(row,"energy");
-    const overheadPayroll=sumEntered(["agPayroll","smPayroll","hrdPayroll"])===null&&pomecPayrollDetail===null?null:(sumEntered(["agPayroll","smPayroll","hrdPayroll"])??0)+(pomecPayrollDetail??val(row,"pomecPayroll")??0);
-    const overheadOther=sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses"])===null&&pomecOtherDetail===null&&pomecEnergyDetail===null?null:(sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses"])??0)+(pomecOtherDetail??val(row,"pomecOtherExpenses")??0)+(pomecEnergyDetail??val(row,"energyCost")??0);
+    const pomecPayrollValue=pomecPayrollDetail??val(row,"pomecPayroll");
+    const pomecOtherValue=pomecOtherDetail??val(row,"pomecOtherExpenses");
+    const pomecEnergyValue=pomecEnergyDetail??val(row,"energyCost");
+    const agPayrollTotal=sumEntered(["agPayroll","smPayroll","hrdPayroll"]);
+    const agOtherTotal=sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses"]);
+    const overheadPayroll=agPayrollTotal===null&&pomecPayrollValue===null?null:(agPayrollTotal??0)+(pomecPayrollValue??0);
+    const overheadOther=agOtherTotal===null&&pomecOtherValue===null&&pomecEnergyValue===null?null:(agOtherTotal??0)+(pomecOtherValue??0)+(pomecEnergyValue??0);
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
     const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
     const hasDetail=detailKeys.some(k=>val(row,k)!==null);

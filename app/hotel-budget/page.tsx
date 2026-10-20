@@ -1250,7 +1250,7 @@ export default function HotelBudgetPage() {
   const numberInput=(value:string,onChange:(v:string)=>void,placeholder="—",allowNegative=false)=><input type="text" inputMode="decimal" min={allowNegative?undefined:"0"} className="w-28 rounded-lg border border-slate-200 bg-white px-2 py-2 text-right text-xs tabular-nums outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 sm:w-32" value={displayAmountInput(value)} onChange={e=>onChange(parseAmountInput(e.target.value))} placeholder={placeholder} />;
 
   async function sendFinalReportEmail(){
-    if(!reportEmail.trim()||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(reportEmail.trim())){setEmailStatus("error");setMessage("Masukkan alamat email penerima yang valid.");return;}
+    if(!reportEmail.trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reportEmail.trim())){setEmailStatus("error");setMessage("Masukkan alamat email penerima yang valid.");return;}
     if(!reportPdf||!(reportPdf.type==="application/pdf"||reportPdf.name.toLowerCase().endsWith(".pdf"))){setEmailStatus("error");setMessage("Pilih file PDF laporan final yang disimpan dari Preview / Print PDF.");return;}
     if(reportPdf.size>25*1024*1024){setEmailStatus("error");setMessage("Ukuran PDF maksimal 25 MB.");return;}
     if(!accessToken){setEmailStatus("error");setMessage("Sesi login tidak tersedia. Silakan login kembali.");return;}

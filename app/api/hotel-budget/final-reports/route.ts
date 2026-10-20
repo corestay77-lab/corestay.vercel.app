@@ -89,11 +89,13 @@ export async function POST(request: NextRequest) {
     const totalRoomBuild = days * rooms;
     const issues: string[] = [];
     const warnings: string[] = [];
+    // Lima statistik room-night tidak lagi memiliki kolom input di Step 1.
+    // Karena itu nilainya opsional; jika nilai lama/tersimpan tersedia, tetap validasi.
     const statKeys = ["outInventory","houseUse","outOfOrder","complimentary","roomPaid"] as const;
     for (const key of statKeys) {
       const raw = stats[key];
-      if (raw === "" || raw === null || raw === undefined) issues.push("Statistik "+key+" wajib diisi. Masukkan 0 jika telah dipastikan tidak ada nilai.");
-      else if (numeric(raw) === null) issues.push("Statistik "+key+" harus berupa angka yang valid.");
+      if (raw === "" || raw === null || raw === undefined) continue;
+      if (numeric(raw) === null) issues.push("Statistik "+key+" harus berupa angka yang valid.");
       else if (!Number.isInteger(numeric(raw))) issues.push("Statistik "+key+" harus berupa bilangan bulat room-night.");
     }
     const fnbNumericKeys = ["occupancy","exchangeRate","averageSellingRate","modBusinessCenterRevenue","modMassageRevenue","modLaundryRevenue","modOtherIncomeRevenue","fbAverageGuestsPerRoom","fbLengthOfStay","fbRestaurantCoverPercent","fbAverageBreakfastCheck","fbMeetingRoomAUnits","fbMeetingRoomAPax","fbMeetingRoomACoverPercent","fbMeetingRoomBUnits","fbMeetingRoomBPax","fbMeetingRoomBCoverPercent","fbMeetingRoomOperatingDays","fbBallroomCapacity","fbBallroomCoverPercent","fbBallroomEventsPerYear","fbAverageMeetingCheck"];

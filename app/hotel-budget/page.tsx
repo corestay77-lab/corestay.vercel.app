@@ -26,6 +26,7 @@ type BudgetForm = {
 };
 type SavedReport = { id: string; hotel_name: string; period_label: string; created_at: string; form_data: BudgetForm; calculated_data: any; validation_data: any };
 const LOCAL_REPORTS_KEY = "corestay-hotel-budget-local-reports-v1";
+const DRAFT_STORAGE_KEY = "corestay-hotel-budget-draft-v1";
 const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const FB_BUDGET_GROUPS = [{title:"REVENUES",total:"TOTAL F & B REVENUE",rows:[["foodRevenue","FOOD"],["beverageRevenue","BEVERAGE"]]},{title:"COST OF SALES",total:"TOTAL COST OF SALES",rows:[["foodCost","FOOD"],["beverageCost","BEVERAGE"]]},{title:"PAYROLL & RELATED",total:"TOTAL PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["thr","THR"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"PROV. OP. EQUIPMENT",total:"TOTAL PROV. OP. EQUIPT.",rows:[["glassware","GLASSWARE"],["chinaware","CHINAWARE"],["silverware","SILVERWARE"],["linen","LINEN"]]},{title:"OTHER EXPENSES",total:"TOTAL OTHER EXPENSES",rows:[["decoration","DECORATION"],["duesSubscription","DUES & SUBSCRIPTION"],["extermDisinfectant","EXTERM / DESINFECTANT"],["kitchenFuel","KITCHEN FUEL"],["laundry","LAUNDRY"],["miscellaneous","MISCELLANEOUS"],["spoilage","SPOILAGE"],["cleaningSupplies","CLEANING SUPPLIES"],["guestSupplies","GUEST SUPPLIES"],["printingStationery","PRINTING & STATIONERY"],["telephone","TELEPHONE"],["uniform","UNIFORM"],["utensil","UTENSIL"],["contractCleaning","CONTRACT CLEANING"]]}] as const;
 const POMEC_LINES = [{key:"salaryWages",label:"SALARY & WAGES",group:"payroll"},{key:"incomeTax",label:"INCOME TAX",group:"payroll"},{key:"jamsostek",label:"JAMSOSTEK",group:"payroll"},{key:"insurance",label:"INSURANCE",group:"payroll"},{key:"thr",label:"THR (1 YEAR)",group:"payroll"},{key:"mealAllowances",label:"MEAL ALLOWANCES",group:"payroll"},{key:"medical",label:"MEDICAL / ASKES",group:"payroll"},{key:"otherPayroll",label:"OTHER PAYROLL COST",group:"payroll"},{key:"paintingDecoration",label:"PAINTING & DECORATION",group:"other"},{key:"engineeringSupplies",label:"ENGINEERING SUPPLIES & EQUIPMENT",group:"other"},{key:"bulbsLamp",label:"BULBS & LAMP",group:"other"},{key:"printingStationery",label:"PRINTING & STATIONERY",group:"other"},{key:"laundryUniform",label:"LAUNDRY UNIFORM",group:"other"},{key:"provisionUniform",label:"PROV. FOR UNIFORM",group:"other"},{key:"acMaintenance",label:"AC MAINTENANCE",group:"other"},{key:"buildingMaintenance",label:"BUILDING MAINTENANCE",group:"other"},{key:"electricityMaintenance",label:"ELECTRICITY MAINTENANCE",group:"other"},{key:"floorCovering",label:"FLOOR COVERING",group:"other"},{key:"furnitureFixtureRepair",label:"FURNITURE & FIXTURE REPAIRMENT",group:"other"},{key:"mechanicalElectricalMaintenance",label:"MECHANICAL & ELECTRICAL MAINT",group:"other"},{key:"kitchenEquipmentMaintenance",label:"KITCHEN EQUIPMENT MAINTENANCE",group:"other"},{key:"refrigeratorMaintenance",label:"REFRIGERATOR MAINTENANCE",group:"other"},{key:"automobileRepair",label:"AUTO MOBILE REPAIR & SERVICES",group:"other"},{key:"plumbingHeatingMaintenance",label:"PLUMBING/HEATING MAINTENANCE",group:"other"},{key:"removalWaste",label:"REMOVAL WASTE",group:"other"},{key:"others",label:"OTHERS",group:"other"},{key:"electricityConsumed",label:"ELECTRICITY CONSUMED",group:"energy"},{key:"waterConsumed",label:"WATER CONSUMED",group:"energy"},{key:"fuelDieselConsumed",label:"FUEL / DIESEL CONSUMED",group:"energy"}] as const;
@@ -463,6 +464,8 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
 
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
+  const [draftSavedAt,setDraftSavedAt]=useState("");
+  const draftReadyRef=useRef(false);
   const [activeTab,setActiveTab]=useState("statistics");
   const [selectedDepartment,setSelectedDepartment]=useState("room");
   const [authStatus,setAuthStatus]=useState<"checking"|"authenticated"|"unauthenticated">("checking");
@@ -547,6 +550,58 @@ export default function HotelBudgetPage() {
     });
     return()=>{alive=false;subscription.unsubscribe();};
   },[loadReports]);
+
+  // Restore the most recent unsaved draft once, then autosave every form change locally.
+  useEffect(()=>{
+    try{
+      const raw=window.localStorage.getItem(DRAFT_STORAGE_KEY);
+      if(raw){
+        const draft=JSON.parse(raw) as {form?:BudgetForm;savedAt?:string};
+        if(draft?.form && typeof draft.form==="object"){
+          const blank=makeBlank();
+          const saved=draft.form;
+          const year=Number(saved.yearStart||blank.yearStart);
+          setForm({
+            ...blank,...saved,
+            statistics:{...blank.statistics,...(saved.statistics||{})},
+            accounts:{...emptyAccounts(),...(saved.accounts||{})},
+            forecast:{
+              monthly:makeMonthly(Number.isFinite(year)?year:2027).map((row,i)=>({...row,...(saved.forecast?.monthly?.[i]||{}),label:monthNames[i]+" "+(Number.isFinite(year)?year:2027)})),
+              annual:makeAnnual(Number.isFinite(year)?year:2027).map((row,i)=>({...row,...(saved.forecast?.annual?.[i]||{}),label:String((Number.isFinite(year)?year:2027)+i)}))
+            },
+            accountLines:saved.accountLines||[...ACCOUNT_LINES],
+            customAccounts:saved.customAccounts||[],
+            payrollEmployees:saved.payrollEmployees||[]
+          });
+          setDraftSavedAt(draft.savedAt||"");
+          setMessage("Draft input terakhir dipulihkan dari penyimpanan sementara browser.");
+        }
+      }
+    }catch{setMessage("Draft sementara tidak dapat dibaca. Input baru tetap dapat digunakan.");}
+    finally{draftReadyRef.current=true;}
+  },[]);
+
+  useEffect(()=>{
+    if(!draftReadyRef.current)return;
+    const savedAt=new Date().toISOString();
+    try{
+      window.localStorage.setItem(DRAFT_STORAGE_KEY,JSON.stringify({form,savedAt}));
+      setDraftSavedAt(savedAt);
+    }catch{
+      setMessage("Draft otomatis gagal disimpan. Ruang penyimpanan browser mungkin penuh; unduh Excel sebagai cadangan.");
+    }
+  },[form]);
+
+  const saveDraftNow=()=>{
+    try{
+      const savedAt=new Date().toISOString();
+      window.localStorage.setItem(DRAFT_STORAGE_KEY,JSON.stringify({form,savedAt}));
+      setDraftSavedAt(savedAt);
+      setMessage("Draft sementara berhasil disimpan di browser/perangkat ini. Laporan belum disahkan sebagai laporan final.");
+    }catch{
+      setMessage("Draft tidak dapat disimpan. Unduh Excel sebagai cadangan.");
+    }
+  };
 
   useEffect(()=>{
     const start=Number(form.yearStart);
@@ -1970,7 +2025,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
             <button type="button" onClick={goPreviousStep} disabled={sectionIndex===0} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">← Tahap Sebelumnya</button>
-            {activeTab!=="export"?<button type="button" onClick={goNextStep} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5">Tahap Berikutnya →</button>:<div className="flex flex-wrap gap-3"><button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button><button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final Corestay & Simpan"}</button><button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button></div>}
+            {activeTab!=="export"?<button type="button" onClick={goNextStep} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5">Tahap Berikutnya →</button>:<div className="flex flex-wrap gap-3"><button type="button" onClick={saveDraftNow} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 hover:bg-amber-100">Simpan Draft Sementara</button><button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button><button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final Corestay & Simpan"}</button><button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button>{draftSavedAt&&<span className="self-center text-xs text-slate-500">Draft otomatis tersimpan: {new Date(draftSavedAt).toLocaleString("id-ID")}</span>}</div>}
           </div>
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
           {(issues.length>0||warnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{warnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{warnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}

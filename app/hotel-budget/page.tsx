@@ -2,6 +2,7 @@
 
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as XLSX from "xlsx";
+import { upload } from "@vercel/blob/client";
 import { supabase } from "@/lib/supabase";
 import { ACCOUNT_LINES, ACCOUNT_SECTIONS, GROUP_LABELS, GROUP_ORDER, calculateBudget, emptyAccounts, numeric, sumGroup, type AccountValue, type AccountLine, type AccountGroup } from "@/lib/hotel-budget-final";
 
@@ -1249,26 +1250,38 @@ export default function HotelBudgetPage() {
   const numberInput=(value:string,onChange:(v:string)=>void,placeholder="—",allowNegative=false)=><input type="text" inputMode="decimal" min={allowNegative?undefined:"0"} className="w-28 rounded-lg border border-slate-200 bg-white px-2 py-2 text-right text-xs tabular-nums outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 sm:w-32" value={displayAmountInput(value)} onChange={e=>onChange(parseAmountInput(e.target.value))} placeholder={placeholder} />;
 
   async function sendFinalReportEmail(){
-    if(!reportEmail.trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reportEmail.trim())){setEmailStatus("error");setMessage("Masukkan alamat email penerima yang valid.");return;}
+    if(!reportEmail.trim()||!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(reportEmail.trim())){setEmailStatus("error");setMessage("Masukkan alamat email penerima yang valid.");return;}
     if(!reportPdf||!(reportPdf.type==="application/pdf"||reportPdf.name.toLowerCase().endsWith(".pdf"))){setEmailStatus("error");setMessage("Pilih file PDF laporan final yang disimpan dari Preview / Print PDF.");return;}
     if(reportPdf.size>25*1024*1024){setEmailStatus("error");setMessage("Ukuran PDF maksimal 25 MB.");return;}
-    setEmailSending(true);setEmailStatus("sending");setMessage("Sedang mengirim laporan PDF. Mohon tunggu sebentar…");
+    if(!accessToken){setEmailStatus("error");setMessage("Sesi login tidak tersedia. Silakan login kembali.");return;}
+    setEmailSending(true);setEmailStatus("sending");setMessage("Mengunggah PDF secara aman, lalu mengirim email…");
+    let uploadedPathname="";
     try{
-      const base64=await new Promise<string>((resolve,reject)=>{const reader=new FileReader();reader.onload=()=>{const result=String(reader.result||"");resolve(result.includes(",")?result.slice(result.indexOf(",")+1):result);};reader.onerror=()=>reject(new Error("File PDF tidak dapat dibaca."));reader.readAsDataURL(reportPdf);});
+      const uploaded=await upload("hotel-budget-email-reports/"+reportPdf.name.replace(/[^a-zA-Z0-9._-]/g,"_"),reportPdf,{
+        access:"private",
+        handleUploadUrl:"/api/hotel-budget/upload-report",
+        headers:{Authorization:"Bearer "+accessToken},
+        clientPayload:JSON.stringify({fileName:reportPdf.name}),
+        onUploadProgress:(progress)=>{setMessage("Mengunggah PDF… "+Math.round(progress.percentage)+"%");}
+      });
+      uploadedPathname=uploaded.pathname;
+      setMessage("PDF terunggah. Sedang mengirim email…");
       const controller=new AbortController();
-      const timeoutId=window.setTimeout(()=>controller.abort(),25000);
+      const timeoutId=window.setTimeout(()=>controller.abort(),55000);
       let response:Response;
       try{
-        response=await fetch("/api/hotel-budget/email-report",{method:"POST",headers:{"Content-Type":"application/json",...(accessToken?{Authorization:"Bearer "+accessToken}:{})},body:JSON.stringify({to:reportEmail.trim(),hotelName:form.hotelName,period:form.period,yearStart:form.yearStart,pdfBase64:base64,fileName:reportPdf.name}),signal:controller.signal});
+        response=await fetch("/api/hotel-budget/email-report",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+accessToken},body:JSON.stringify({to:reportEmail.trim(),hotelName:form.hotelName,period:form.period,yearStart:form.yearStart,blobPathname:uploadedPathname,fileName:reportPdf.name}),signal:controller.signal});
       }finally{window.clearTimeout(timeoutId);}
       const result=await response.json().catch(()=>({}));
-      if(!response.ok||!result.success)throw new Error(result.error||(response.status===413?"Permintaan terlalu besar untuk server. Gunakan PDF yang lebih kecil.":"Email laporan gagal dikirim."));
+      if(!response.ok||!result.success)throw new Error(result.error||(response.status===413?"PDF terlalu besar untuk diproses server. Maksimal 25 MB.":"Email laporan gagal dikirim."));
       setEmailStatus("success");setMessage("Email berhasil dikirim ke "+reportEmail.trim()+".");
       setReportPdf(null);
     }catch(error){
-      const text=error instanceof DOMException&&error.name==="AbortError"?"Pengiriman melewati batas waktu 25 detik. Status email belum dapat dipastikan; periksa kotak masuk sebelum mencoba lagi.":error instanceof Error?error.message:"Email laporan gagal dikirim.";
+      const text=error instanceof DOMException&&error.name==="AbortError"?"Pengiriman melewati batas waktu 55 detik. Status email belum dapat dipastikan; periksa kotak masuk sebelum mencoba lagi.":error instanceof Error?error.message:"Email laporan gagal dikirim.";
       setEmailStatus("error");setMessage(text);
-    }finally{setEmailSending(false);}
+    }finally{
+      setEmailSending(false);
+    }
   }
 
   function saveDraft(){

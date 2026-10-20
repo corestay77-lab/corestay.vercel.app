@@ -494,28 +494,57 @@ export default function HotelBudgetPage() {
   const money=(value:number|null|undefined)=>value===null||value===undefined||!Number.isFinite(value)?"—":new Intl.NumberFormat(currency==="IDR"?"id-ID":"en-US",{style:"currency",currency,maximumFractionDigits:currency==="IDR"?0:2}).format(value);
 
   const buildTenYearRows=(source:BudgetForm)=>{
-    type R={label:string;section?:boolean;values:(number|null)[];total:number|null;base?:(number|null)[];totalPct:number|null;kind?:"section"|"sum"|"avg"|"percent"|"money";inputKey?:keyof Omit<ForecastYear,"label">};
+    type R={label:string;section?:boolean;values:(number|null)[];total:number|null;base?:(number|null)[];totalPct:number|null;kind?:"section"|"sum"|"avg"|"percent"|"money";inputKey?:keyof Omit<ForecastMonth,"label">};
     const oneYearRows=buildConsolidatedRows(source);
     const growth=(yearIndex:number)=>Math.pow(1+annualGrowthPct/100,yearIndex);
     const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((sum,v)=>sum+(v??0),0):null;
     const averagePresent=(items:(number|null)[])=>{const valid=items.filter((v):v is number=>v!==null);return valid.length?valid.reduce((sum,v)=>sum+v,0)/valid.length:null;};
     const pct=(value:number|null,base:number|null)=>value===null||base===null||base===0?null:value/base*100;
     const yearCount=Math.max(10,source.forecast.annual.length);
-    return oneYearRows.map((line):R=>{
+    const rows:R[]=oneYearRows.map((line,index)=>{
       if(line.kind==="section")return {label:line.label,section:true,values:[],total:null,totalPct:null,kind:"section"};
-      // Year 1 is taken directly from the exact TOTAL / AVG cell in 1 YEAR CONSOLIDATED.
       const firstYear=line.total===undefined?null:line.total;
-      const values=Array.from({length:yearCount},(_,yearIndex)=>{
-        if(firstYear===null)return null;
-        // Percentage rows are ratios, not currency amounts; applying growth to both
-        // numerator and denominator leaves the ratio unchanged.
-        return line.kind==="percent"?firstYear:firstYear*growth(yearIndex);
-      });
+      const values=Array.from({length:yearCount},(_,yearIndex)=>firstYear===null?null:(line.kind==="percent"?firstYear:firstYear*growth(yearIndex)));
       const baseYear1=line.base?sumPresent(line.base):null;
       const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>baseYear1*growth(yearIndex));
-      const total=line.kind==="percent"?averagePresent(values):sumPresent(values);
-      const totalPct=base?pct(total,sumPresent(base)):null;
-      return {label:line.label,values,total,base,totalPct,kind:line.kind};
+      return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
+    });
+    const find=(label:string,occurrence=0)=>{let seen=0;for(let i=0;i<rows.length;i++){if(rows[i].label===label&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
+    const get=(label:string,year:number,occurrence=0):number|null=>{const i=find(label,occurrence);return i<0?null:rows[i].values[year]??null;};
+    const put=(label:string,year:number,value:number|null,occurrence=0)=>{const i=find(label,occurrence);if(i>=0)rows[i].values[year]=value;};
+    if(tenYearMode==="manual") rows.forEach((line,index)=>{
+      if(!line.inputKey||line.label==="TOTAL OPERATING COSTS"||line.section)return;
+      for(let year=1;year<yearCount;year++){
+        const raw=tenYearOverrides[`${index}:${year}`];
+        if(raw===undefined||raw.trim()==="")continue;
+        const parsed=Number(raw);if(Number.isFinite(parsed))line.values[year]=parsed;
+      }
+    });
+    for(let year=0;year<yearCount;year++){
+      const revenueParts=[get("ROOMS",year),get("FOOD & BEVERAGE",year,0),get("TELEPHONE & FACSIMILE",year,0),get("MINOR OPERATING DEPARTMENT",year,0)];
+      const revenue=sumPresent(revenueParts);put("TOTAL REVENUES (EXCL. TAX)",year,revenue);
+      const cos=sumPresent([get("Food & Beverage",year,0),get("Telephone & Facsimile",year,0),get("Minor Operating Department",year,0)]);put("TOTAL COST OF SALES",year,cos);
+      const payroll=sumPresent([get("ROOM DIVISION",year,0),get("FOOD & BEVERAGE",year,1),get("TELEPHONE",year,0),get("MINOR OPERATING DEPT.",year,0)]);put("TOTAL PAYROLL & RELATED EXPENSES",year,payroll);
+      const deptOther=sumPresent([get("ROOM DIVISION",year,1),get("FOOD & BEVERAGE",year,2),get("TELEPHONE & FACSIMILE",year,1),get("MINOR OPERATING DEPT.",year,1)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
+      const deptOperating=sumPresent([cos,payroll,deptOther]);put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
+      const overheadPayroll=sumPresent([get("ADMINISTRATION & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("POMEC & UTILITIES",year,0)]);put("TOTAL OVERHEAD PAYROLL",year,overheadPayroll);
+      const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("SALES & MARKETING",year,1),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
+      const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
+      const operatingCosts=sumPresent([deptOperating,overhead]);put("TOTAL OPERATING COSTS",year,operatingCosts);
+      const houseProfit=revenue!==null&&operatingCosts!==null?revenue-operatingCosts:null;put("HOUSE PROFIT",year,houseProfit);
+      const goi=houseProfit!==null?houseProfit-(get("BASIC MANAGEMENT FEE",year)??0):null;put("GROSS OPERATING INCOME",year,goi);
+      const nonOp=sumPresent([get("MANAGEMENT FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER NON-OPERATING EXPENSES",year,nonOp);
+      const gop=goi!==null&&nonOp!==null?goi-nonOp:null;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% GOP",year,pct(gop,revenue));
+      const ownerCost=sumPresent([get("LAND LEASE / HOLD",year),get("INSURANCE",year),get("MAINTENANCE FEE (SERVICE CHARGE)",year)]);put("TOTAL OTHER EXPENSES",year,ownerCost);
+      const osp=gop!==null&&ownerCost!==null?gop-ownerCost:null;put("OWNER SHARE PROFIT (OSP)",year,osp);
+      const otherOwner=get("OTHER OWNER EXPENSES",year);put("TOTAL OWNER EXPENSES",year,otherOwner);put("NET OWNER SHARE PROFIT (NOSP)",year,osp!==null?osp-(otherOwner??0):null);
+      const rooms=optional(source.statistics.rooms),nosp=get("NET OWNER SHARE PROFIT (NOSP)",year);put("NET OWNER SHARE PROFIT / UNIT",year,nosp!==null&&rooms!==null&&rooms>0?nosp/rooms:null);
+    }
+    return rows.map(line=>{
+      if(line.section)return {...line,total:null,totalPct:null};
+      const total=line.kind==="percent"?averagePresent(line.values):sumPresent(line.values);
+      const base=line.base?sumPresent(line.base):null;
+      return {...line,total,totalPct:pct(total,base)};
     });
   };
 

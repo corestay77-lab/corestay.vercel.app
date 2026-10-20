@@ -237,7 +237,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL REVENUES (EXCL. TAX)",revenue,"sum",undefined,revenueTotal,revenue);
   section("COST OF SALES");
   add("Food & Beverage",monthly("fbCostOfSales"),"money","fbCostOfSales",undefined,fb);
-  add("Telephone & Facsimile",monthly("phoneCostOfSales"),"money","phoneCostOfSales");
+  add("Telephone & Facsimile",monthly("phoneCostOfSales"),"money","phoneCostOfSales",undefined,phone);
   add("Minor Operating Department",monthly("modCostOfSales"),"money","modCostOfSales",undefined,other);
   add("TOTAL COST OF SALES",costParts.map(c=>c.cos),"sum",undefined,sumPresent(costParts.map(c=>c.cos)),revenue);
   section("PAYROLL & RELATED EXPENSES");

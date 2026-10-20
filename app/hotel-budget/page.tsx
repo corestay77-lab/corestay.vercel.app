@@ -143,7 +143,18 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
   const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
   const pomecMonthly=(group:"payroll"|"other"|"energy")=>form.forecast.monthly.map(r=>group==="payroll"?(val(r,"pomecPayroll")??pomecTotal(r,group)):pomecTotal(r,group));
-  const roomRevenue=months.map(m=>m.roomRevenue), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
+  // Room revenue in Step 4 must follow Step 3 Budget P&L account 41101 even
+  // when the optional occupancy/ARR assumptions are blank or an older saved
+  // forecast still contains an empty roomDivisionDetails.roomRevenue.
+  const roomBudgetAnnual=optional(form.accounts?.["41101"]?.budget||"");
+  const yearDays=months.reduce((sum,m)=>sum+m.days,0);
+  const roomRevenue=months.map((m,i)=>{
+    if(m.roomRevenue!==null)return m.roomRevenue;
+    if(roomBudgetAnnual!==null&&yearDays>0)return i===11
+      ?roomBudgetAnnual-months.slice(0,11).reduce((sum,prior,j)=>sum+(prior.roomRevenue??Math.round(roomBudgetAnnual*prior.days/yearDays)),0)
+      :Math.round(roomBudgetAnnual*m.days/yearDays);
+    return null;
+  }), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
   const revenue=months.map(m=>m.revenue), revenueTotal=sumPresent(revenue);
   const unavailableRooms=[form.statistics.outInventory,form.statistics.houseUse,form.statistics.outOfOrder].map(optional);
   const unavailableTotal=unavailableRooms.some(v=>v!==null)?unavailableRooms.reduce<number>((sum,v)=>sum+(v??0),0):0;

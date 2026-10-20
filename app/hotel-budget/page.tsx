@@ -1997,8 +1997,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
       </div>
     </div>
 
-    {previewOpen&&<div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
-      <div className="mb-5 flex items-start justify-between gap-3 border-b border-slate-200 pb-4"><div><p className="text-xs font-bold uppercase tracking-widest text-sky-700">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">Hotel Budget &amp; Forecasting</h2><p className="mt-1 text-sm text-slate-500">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"}</p></div><button type="button" onClick={()=>setPreviewOpen(false)} className="rounded-full bg-slate-100 px-3 py-2 font-bold text-slate-600 print:hidden" aria-label="Tutup preview">✕</button></div>
+    {previewOpen&&<div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
+      <div className="report-brand-header mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#17365D] via-[#245B8C] to-[#6554B7] px-5 py-5 text-white print:rounded-none"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-2xl">🏨</div><div><p className="text-[10px] font-extrabold uppercase tracking-[.22em] text-sky-100">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">HOTEL BUDGET &amp; FINANCIAL REPORT</h2><p className="mt-1 text-xs text-blue-100">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"} · {form.yearStart}</p></div></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">Confidential</p><p className="mt-1 text-xs text-white/90">Management Report</p><button type="button" onClick={()=>setPreviewOpen(false)} className="mt-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white print:hidden" aria-label="Tutup preview">Tutup ✕</button></div></div>
       
       <section className="mt-7 break-before-page print-statistics">
         <h3 className="mb-1 text-sm font-extrabold">1A. LAPORAN STATISTIK BULANAN — {form.yearStart}</h3>
@@ -2040,7 +2040,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <tbody>{buildTenYearRows(consolidatedForm).map((line,i)=>line.section?<tr key={line.label}><th colSpan={12} className="border-t border-slate-300 bg-indigo-100 px-2 py-1.5 text-left font-black">{line.label}</th></tr>:<tr key={line.label} className={i%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-2 py-1 font-semibold">{line.label}</td>{line.values.map((v,j)=>{const base=line.base?.[j]??null;const pct=base!==null&&base!==0&&v!==null?v/base*100:null;return <td key={j} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums whitespace-nowrap">{v===null||v===undefined?"—":fmt(v,0)}<span className="block text-slate-500">{pct===null?"—":fmt(pct,1)+"%"}</span></td>;})}<td className="border-b border-slate-200 bg-teal-50 px-2 py-1 text-right font-bold tabular-nums">{line.total===null||line.total===undefined?"—":fmt(line.total,0)}<span className="block text-slate-500">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</span></td></tr>)}</tbody></table></div>
       </section>
       <section className="mt-7 break-before-page print-department-details">
-        <h3 className="mb-1 text-sm font-extrabold">4. DETAIL DEPARTMENT EXPENSES</h3>
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-cyan-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">4A. DETAIL DEPARTMENT EXPENSES</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Seluruh rincian mengikuti bagian DEPARTMENT EXPENSES pada tahap input: Room Division, Food & Beverage, Minor Operating Department, Administration & General, Sales & Marketing, Human Resources, serta POMEC & Utilities. PAYROLL & RELATED mengambil nilai dari Master Payroll dan tidak diedit dari laporan ini. Kolom kosong ditampilkan sebagai —.</p>
         {([
           {id:"room",title:"ROOM DIVISION — ROOM DEPT / FRONT OFFICE / HOUSE KEEPING",source:"roomDivisionDetails",groups:[
@@ -2078,7 +2078,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         </div>)}
       </section>
       <section className="mt-7 break-before-page print-owner-expenses">
-        <h3 className="mb-1 text-sm font-extrabold">5. OTHER EXPENSES / OWNER SHARE PROFIT</h3>
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-rose-900 to-violet-800 px-3 py-2 text-sm font-extrabold text-white">4B. DETAIL OTHER EXPENSES / OWNER SHARE PROFIT</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Rincian biaya owner mengikuti input bulanan. Urutan periode mengikuti form input: Dec, Jan–Nov. Kolom kosong ditampilkan sebagai —.</p>
         {(() => {
           const order=[11,0,1,2,3,4,5,6,7,8,9,10];
@@ -2114,7 +2114,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         })()}
       </section>
       <section className="mt-7 break-before-page print-payroll-master">
-        <h3 className="mb-1 text-sm font-extrabold">6. DETAIL PAYROLL &amp; EXPENSES — MASTER PAYROLL</h3>
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-indigo-950 to-sky-800 px-3 py-2 text-sm font-extrabold text-white">5. DETAIL PAYROLL &amp; EXPENSES — MASTER PAYROLL</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan ini bersumber langsung dari Master Payroll. Nilai bulanan mengikuti perhitungan payroll pada form, sedangkan nilai tahunan merupakan estimasi 12 bulan. Perubahan data karyawan hanya dilakukan melalui Master Payroll.</p>
         <h4 className="mb-2 text-[11px] font-black">A. RINCIAN KARYAWAN &amp; BIAYA PAYROLL</h4>
         <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">
@@ -2131,13 +2131,13 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         {!(form.payrollEmployees||[]).length?<p className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-[9px]">Data Master Payroll belum diisi. Silakan lengkapi Master Payroll agar rincian biaya payroll muncul di laporan.</p>:null}
       </section>
       {orchestrator==="passed"&&<p className="mt-5 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs font-semibold text-emerald-900 print:border-slate-300 print:bg-white">CORESTAY HOTEL BUDGET ORCHESTRATOR — final validation passed · {summary||"Pemeriksaan matematis dan AI selesai."}</p>}
-      <div className="mt-6 flex flex-wrap justify-end gap-3 print:hidden"><button type="button" onClick={()=>setPreviewOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold">Kembali ke form</button><button type="button" onClick={downloadExcel} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">Download Excel (.xlsx)</button><button type="button" onClick={()=>window.print()} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Print / Save PDF</button></div>
+      <div className="report-brand-footer mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-sky-800 pt-3 text-[9px] text-slate-500 print:mt-4"><span className="font-bold tracking-wide text-slate-600">CORESTAY ADVISORY · HOTEL BUDGET &amp; P&amp;L</span><span>CONFIDENTIAL · {form.hotelName||"Hotel"} · {form.yearStart}</span></div><div className="mt-6 flex flex-wrap justify-end gap-3 print:hidden"><button type="button" onClick={()=>setPreviewOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold">Kembali ke form</button><button type="button" onClick={downloadExcel} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">Download Excel (.xlsx)</button><button type="button" onClick={()=>window.print()} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Print / Save PDF</button></div>
     </article></div>}
 
     <style jsx global>{`
       @media print {
-        @page { size: A3 landscape; margin: 5mm; }
-        body { background: #fff !important; color: #111827 !important; font-size: 7pt !important; }
+        @page { size: A3 landscape; margin: 8mm 7mm 10mm; }
+        body { background: #fff !important; color: #111827 !important; font-size: 7pt !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
         .print-one-year, .print-ten-year { break-before: page !important; page-break-before: always !important; width: 100% !important; }
         .print-one-year table, .print-ten-year table { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; }
@@ -2148,7 +2148,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         .print-one-year tr, .print-ten-year tr { break-inside: avoid !important; page-break-inside: avoid !important; }
         body * { visibility: hidden !important; }
         .print-report, .print-report * { visibility: visible !important; }
-        .print-report { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; }
+        .print-report { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; } .report-brand-header { background: linear-gradient(110deg,#17365D,#245B8C,#6554B7) !important; color: #fff !important; border-bottom: 3px solid #D5A94D !important; } .report-brand-footer { border-top: 2px solid #245B8C !important; color: #475569 !important; } .print-statistics th, .print-one-year th, .print-ten-year th, .print-department-details th, .print-payroll-master th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         .print-report button { display: none !important; }
         table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
         th, td { overflow-wrap: anywhere !important; word-break: normal !important; padding: 4px 5px !important; }

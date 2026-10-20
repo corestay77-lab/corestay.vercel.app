@@ -1,34 +1,14 @@
 import { del, get } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
 export const runtime = "nodejs";
 export const maxDuration = 60;
-const SUPABASE_URL = "https://vkejwklhijophavlosze.supabase.co";
 const MAX_PDF_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
   let uploadedPathname = "";
   try {
-    const authorization = request.headers.get("authorization") || "";
-    if (!authorization.startsWith("Bearer ")) {
-      return NextResponse.json({ success: false, error: "Silakan login sebelum mengirim laporan melalui email." }, { status: 401 });
-    }
-    const token = authorization.slice(7).trim();
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if (!token || !supabaseKey) {
-      return NextResponse.json({ success: false, error: "Sesi atau konfigurasi autentikasi tidak tersedia." }, { status: 401 });
-    }
-    const supabase = createClient(SUPABASE_URL, supabaseKey, {
-      auth: { persistSession: false, autoRefreshToken: false },
-      global: { headers: { Authorization: "Bearer " + token } }
-    });
-    const { data: userData, error: userError } = await supabase.auth.getUser(token);
-    if (userError || !userData.user) {
-      return NextResponse.json({ success: false, error: "Sesi login tidak valid atau kedaluwarsa. Silakan login kembali." }, { status: 401 });
-    }
-
     const apiKey = process.env.RESEND_API_KEY;
     const from = process.env.HOTEL_BUDGET_EMAIL_FROM;
     if (!apiKey || !from) {

@@ -2139,20 +2139,27 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         @page { size: A3 landscape; margin: 8mm 7mm 10mm; }
         body { background: #fff !important; color: #111827 !important; font-size: 7pt !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-        .print-one-year, .print-ten-year { break-before: page !important; page-break-before: always !important; width: 100% !important; }
-        .print-one-year table, .print-ten-year table { width: 100% !important; min-width: 0 !important; table-layout: fixed !important; }
-        .print-one-year th:first-child, .print-one-year td:first-child { width: 27mm !important; min-width: 27mm !important; max-width: 27mm !important; }
-        .print-ten-year th:first-child, .print-ten-year td:first-child { width: 34mm !important; min-width: 34mm !important; max-width: 34mm !important; }
-        .print-one-year th, .print-one-year td { font-size: 5pt !important; padding: 1.2px !important; }
-        .print-ten-year th, .print-ten-year td { font-size: 5.2pt !important; padding: 1.5px !important; }
-        .print-one-year tr, .print-ten-year tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+        /* Keep the report in normal print flow so the browser paginates every section. */
         body * { visibility: hidden !important; }
         .print-report, .print-report * { visibility: visible !important; }
-        .print-report { position: absolute !important; inset: 0 auto auto 0 !important; width: 100% !important; max-width: none !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; } .report-brand-header { background: linear-gradient(110deg,#17365D,#245B8C,#6554B7) !important; color: #fff !important; border-bottom: 3px solid #D5A94D !important; } .report-brand-footer { border-top: 2px solid #245B8C !important; color: #475569 !important; } .print-statistics th, .print-one-year th, .print-ten-year th, .print-department-details th, .print-payroll-master th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+        .print-report { position: static !important; inset: auto !important; display: block !important; width: 100% !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; }
+        .print-report section { display: block !important; width: 100% !important; max-width: none !important; overflow: visible !important; }
+        .print-report .overflow-x-auto, .print-report .overflow-hidden { overflow: visible !important; }
+        .print-statistics, .print-ten-year-statistics, .print-one-year, .print-ten-year, .print-department-details, .print-owner-expenses, .print-payroll-master { break-inside: auto !important; page-break-inside: auto !important; }
+        .print-ten-year-statistics, .print-one-year, .print-ten-year, .print-department-details, .print-owner-expenses, .print-payroll-master { break-before: page !important; page-break-before: always !important; }
+        .print-statistics table, .print-ten-year-statistics table, .print-one-year table, .print-ten-year table, .print-department-details table, .print-owner-expenses table, .print-payroll-master table { width: 100% !important; min-width: 0 !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
+        .print-statistics th:first-child, .print-statistics td:first-child { width: 30mm !important; min-width: 30mm !important; max-width: 30mm !important; }
+        .print-one-year th:first-child, .print-one-year td:first-child { width: 27mm !important; min-width: 27mm !important; max-width: 27mm !important; }
+        .print-ten-year th:first-child, .print-ten-year td:first-child { width: 34mm !important; min-width: 34mm !important; max-width: 34mm !important; }
+        .print-statistics th, .print-statistics td, .print-ten-year-statistics th, .print-ten-year-statistics td { font-size: 5pt !important; padding: 1.2px !important; white-space: normal !important; }
+        .print-one-year th, .print-one-year td { font-size: 5pt !important; padding: 1.2px !important; }
+        .print-ten-year th, .print-ten-year td { font-size: 5.2pt !important; padding: 1.5px !important; }
+        .print-report th, .print-report td { overflow-wrap: anywhere !important; word-break: normal !important; }
+        .print-report tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+        .report-brand-header { background: linear-gradient(110deg,#17365D,#245B8C,#6554B7) !important; color: #fff !important; border-bottom: 3px solid #D5A94D !important; }
+        .report-brand-footer { border-top: 2px solid #245B8C !important; color: #475569 !important; }
+        .print-statistics th, .print-ten-year-statistics th, .print-one-year th, .print-ten-year th, .print-department-details th, .print-payroll-master th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         .print-report button { display: none !important; }
-        table { width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
-        th, td { overflow-wrap: anywhere !important; word-break: normal !important; padding: 4px 5px !important; }
-        tr { break-inside: avoid !important; }
         * { box-shadow: none !important; }
       }
     `}</style>

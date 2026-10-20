@@ -485,6 +485,7 @@ export default function HotelBudgetPage() {
   const [message,setMessage]=useState("");
   const [issues,setIssues]=useState<string[]>([]);
   const [warnings,setWarnings]=useState<string[]>([]);
+  const displayWarnings=warnings.filter(item=>!((/actual/i.test(item)&&/ytd/i.test(item)&&/dilewati|tidak disiapkan/i.test(item))||/nilai kosong.*tidak dianggap nol/i.test(item)));
   const [orchestrator,setOrchestrator]=useState<"idle"|"checking"|"passed"|"failed">("idle");
   const [summary,setSummary]=useState("");
   const [currency,setCurrency]=useState<"IDR"|"USD">("IDR");
@@ -2089,7 +2090,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             <button type="button" onClick={goNextStep} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5">Tahap Berikutnya →</button>
           </div>}
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
-          {(issues.length>0||warnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{warnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{warnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}
+          {(issues.length>0||displayWarnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{displayWarnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{displayWarnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}
         </section>
 
         <aside className="space-y-4">

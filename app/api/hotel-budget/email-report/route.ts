@@ -42,12 +42,12 @@ export async function POST(request: NextRequest) {
     if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to)) {
       return NextResponse.json({ success: false, error: "Alamat email penerima tidak valid." }, { status: 400 });
     }
-    if (!pdfBase64 || pdfBase64.length > 14_000_000) {
-      return NextResponse.json({ success: false, error: "File PDF kosong atau melebihi batas 10 MB." }, { status: 413 });
+    if (!pdfBase64 || pdfBase64.length > 36_000_000) {
+      return NextResponse.json({ success: false, error: "File PDF kosong atau melebihi batas 25 MB." }, { status: 413 });
     }
     const pdf = Buffer.from(pdfBase64, "base64");
-    if (pdf.length > 10 * 1024 * 1024 || pdf.length < 5 || pdf.subarray(0, 5).toString("ascii") !== "%PDF-") {
-      return NextResponse.json({ success: false, error: "Lampiran bukan file PDF yang valid atau ukurannya melebihi 10 MB." }, { status: 400 });
+    if (pdf.length > 25 * 1024 * 1024 || pdf.length < 5 || pdf.subarray(0, 5).toString("ascii") !== "%PDF-") {
+      return NextResponse.json({ success: false, error: "Lampiran bukan file PDF yang valid atau ukurannya melebihi 25 MB." }, { status: 400 });
     }
 
     const resend = new Resend(apiKey);

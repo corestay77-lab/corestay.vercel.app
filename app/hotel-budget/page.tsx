@@ -465,7 +465,7 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
   const [draftSavedAt,setDraftSavedAt]=useState("");
-  const draftReadyRef=useRef(false);
+  const [draftInitialized,setDraftInitialized]=useState(false);
   const [activeTab,setActiveTab]=useState("statistics");
   const [selectedDepartment,setSelectedDepartment]=useState("room");
   const [authStatus,setAuthStatus]=useState<"checking"|"authenticated"|"unauthenticated">("checking");
@@ -578,11 +578,11 @@ export default function HotelBudgetPage() {
         }
       }
     }catch{setMessage("Draft sementara tidak dapat dibaca. Input baru tetap dapat digunakan.");}
-    finally{draftReadyRef.current=true;}
+    finally{setDraftInitialized(true);}
   },[]);
 
   useEffect(()=>{
-    if(!draftReadyRef.current)return;
+    if(!draftInitialized)return;
     const savedAt=new Date().toISOString();
     try{
       window.localStorage.setItem(DRAFT_STORAGE_KEY,JSON.stringify({form,savedAt}));
@@ -590,7 +590,7 @@ export default function HotelBudgetPage() {
     }catch{
       setMessage("Draft otomatis gagal disimpan. Ruang penyimpanan browser mungkin penuh; unduh Excel sebagai cadangan.");
     }
-  },[form]);
+  },[form,draftInitialized]);
 
   const saveDraftNow=()=>{
     try{

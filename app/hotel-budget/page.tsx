@@ -1616,6 +1616,19 @@ export default function HotelBudgetPage() {
           </div>}
 
           {activeTab==="pnl"&&<div className="space-y-5">
+            <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
+              <div className="bg-gradient-to-r from-indigo-950 via-blue-900 to-sky-800 p-4 text-white sm:p-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-200">STEP 3 · ACCOUNT INPUT</p>
+                <h3 className="mt-1 text-lg font-black sm:text-xl">Budget P&amp;L — Account Detail &amp; Actual Input</h3>
+                <p className="mt-1 max-w-4xl text-xs leading-5 text-blue-100">Isi nilai Actual, Budget, Last Year, dan YTD langsung pada akun yang sesuai. Nilai kosong tetap kosong; masukkan 0 hanya jika telah dipastikan tidak ada nilai. Budget yang bersumber dari Step 1 akan tetap disinkronkan oleh perhitungan otomatis.</p>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="min-w-[1100px] w-full border-collapse">
+                  <thead><tr className="bg-indigo-50 text-indigo-950"><th className="sticky left-0 z-10 min-w-[330px] bg-indigo-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th><th className="min-w-36 px-3 py-3 text-right text-xs">ACTUAL</th><th className="min-w-36 px-3 py-3 text-right text-xs">BUDGET</th><th className="min-w-36 px-3 py-3 text-right text-xs">LAST YEAR</th><th className="min-w-36 px-3 py-3 text-right text-xs">YTD ACTUAL</th><th className="min-w-36 px-3 py-3 text-right text-xs">YTD BUDGET</th><th className="min-w-36 px-3 py-3 text-right text-xs">LAST YEAR YTD</th></tr></thead>
+                  <tbody>{GROUP_ORDER.map(group=><Fragment key={group}><tr className="bg-slate-100"><td colSpan={7} className="px-3 py-2 text-xs font-black">{GROUP_LABELS[group]}</td></tr>{allAccountLines.filter(line=>line.group===group).map(line=>{const row=form.accounts[line.code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};return <tr key={line.code} className="border-t border-slate-100 hover:bg-sky-50/40"><td className="sticky left-0 z-[1] bg-white px-3 py-2 text-xs"><span className="mr-2 font-mono text-slate-500">{line.code}</span><span className="font-semibold text-slate-800">{line.label}</span></td>{(["actual","budget","lastYear","ytdActual","ytdBudget","lastYearYtd"] as const).map(column=><td key={column} className="px-2 py-1.5">{numberInput(row[column],value=>updateAccount(line.code,column,value),"—",Boolean(line.allowNegative))}</td>)}</tr>;})}</Fragment>)}</tbody>
+                </table>
+              </div>
+            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
 <div className="space-y-4">

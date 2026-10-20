@@ -1997,7 +1997,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
       </div>
     </div>
 
-    {previewOpen&&<div className="fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
+    {previewOpen&&<div className="print-preview-overlay fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
       <div className="report-brand-header mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#17365D] via-[#245B8C] to-[#6554B7] px-5 py-5 text-white print:rounded-none"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-2xl">🏨</div><div><p className="text-[10px] font-extrabold uppercase tracking-[.22em] text-sky-100">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">HOTEL BUDGET &amp; FINANCIAL REPORT</h2><p className="mt-1 text-xs text-blue-100">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"} · {form.yearStart}</p></div></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">Confidential</p><p className="mt-1 text-xs text-white/90">Management Report</p><button type="button" onClick={()=>setPreviewOpen(false)} className="mt-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white print:hidden" aria-label="Tutup preview">Tutup ✕</button></div></div>
       
       <section className="mt-7 break-before-page print-statistics">
@@ -2139,7 +2139,9 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         @page { size: A3 landscape; margin: 8mm 7mm 10mm; }
         body { background: #fff !important; color: #111827 !important; font-size: 7pt !important; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
         html, body { width: 100% !important; margin: 0 !important; padding: 0 !important; }
-        /* Keep the report in normal print flow so the browser paginates every section. */
+        /* Remove the fixed, scrollable preview overlay from print layout; otherwise browsers clip the report to the modal/viewport. */
+        .print-preview-overlay { position: static !important; inset: auto !important; display: block !important; width: 100% !important; height: auto !important; min-height: 0 !important; max-height: none !important; overflow: visible !important; padding: 0 !important; margin: 0 !important; background: transparent !important; }
+        /* Keep only the report visible and let the browser paginate the complete document. */
         body * { visibility: hidden !important; }
         .print-report, .print-report * { visibility: visible !important; }
         .print-report { position: static !important; inset: auto !important; display: block !important; width: 100% !important; max-width: none !important; height: auto !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border-radius: 0 !important; box-shadow: none !important; overflow: visible !important; }

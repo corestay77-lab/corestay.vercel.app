@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     const comp=numeric(stats.complimentary)??0, paid=numeric(stats.roomPaid)??0;
     if (comp<0||paid<0) issues.push("Complimentary dan Room Paid tidak boleh negatif.");
     if (comp+paid>roomAvailable) issues.push("Complimentary + Room Paid melebihi Room Available. Periksa room nights dan statistik inventori.");
-    if (!form.confirmAccountReview) issues.push("Centang konfirmasi bahwa seluruh akun yang relevan sudah ditinjau dan akun kosong memang tidak berlaku atau tidak memiliki nilai.");
+    if (!form.confirmAccountReview) warnings.push("Konfirmasi tinjauan akun belum dicentang; validasi tetap berfokus pada data aktual yang tersedia dan konsistensi hasil akhir.");
     const accounts = form.accounts as Record<string, any>;
     const submittedLines = Array.isArray(form.accountLines) ? form.accountLines : [];
     const submittedCustomLines = Array.isArray(form.customAccounts) ? form.customAccounts : [];
@@ -147,14 +147,11 @@ export async function POST(request: NextRequest) {
         else if (value<0 && !line.allowNegative) issues.push(line.code+" "+line.label+": nilai "+column+" tidak boleh negatif.");
       }
     }
-    for (const key of ["roomRevenue","fbRevenue","otherRevenue","costOfSales","payroll","operatingExpenses","overhead"] as const) {
-      if (sumGroup(accounts,key,"actual",accountLines)===null) issues.push("Belum ada nilai Actual pada kelompok "+key+". Isi angka atau masukkan 0 bila telah dipastikan tidak ada transaksi.");
-    }
     const calculations=calculateBudget({...form, accountLines});
     if (calculations.roomAvailable!==null && calculations.roomAvailable<0) issues.push("Room Available hasil perhitungan bernilai negatif.");
     if (calculations.occupancy!==null && (calculations.occupancy<0 || calculations.occupancy>100)) issues.push("Occupancy harus berada antara 0% dan 100%.");
-    if (calculations.revenue===null || calculations.revenue<=0) issues.push("Total revenue harus lebih dari nol untuk menerbitkan P&L.");
-    if (calculations.costs===null) issues.push("Total biaya operasional tidak dapat dihitung dari akun Actual yang diisi.");
+    if (calculations.revenue===null) warnings.push("Total revenue Actual belum dapat dihitung karena belum ada nilai sumber yang terisi; laporan tetap dapat disimpan sebagai hasil uji/input sementara.");
+    if (calculations.costs===null) warnings.push("Total biaya operasional Actual belum lengkap; nilai kosong dipertahankan sebagai kosong dan tidak otomatis dianggap nol.");
     const actualBlankCount=accountLines.filter((line:any)=>numeric(accounts[line.code]?.actual)===null).length;
     if (actualBlankCount) warnings.push(actualBlankCount+" baris akun Actual kosong. Baris kosong tidak otomatis dianggap nol; pastikan akun yang tidak berlaku sudah ditinjau.");
     if (!Array.isArray(form.forecast?.monthly) || form.forecast.monthly.length!==12) issues.push("Forecast bulanan harus memuat tepat 12 bulan.");
@@ -239,7 +236,7 @@ export async function POST(request: NextRequest) {
     const apiKey=process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ passed:false, issues:["GEMINI_API_KEY tidak tersedia; AI Orchestrator wajib menyelesaikan validasi sebelum penyimpanan."], warnings, error:"Validasi AI belum tersedia. Laporan belum disimpan." }, { status:503 });
     const google=createGoogleGenerativeAI({apiKey});
-    const reviewPrompt=`Validasi akhir laporan hotel CoreStay. Jangan mengubah angka, jangan mengarang nilai kosong, dan jangan menyatakan akun kosong sama dengan nol. Periksa konsistensi statistik kamar, occupancy, ADR, RevPAR, rekonsiliasi total revenue, operating cost, GOP, margin, serta variance actual-budget-last year. Kalkulasi server (sumber kebenaran matematis): ${JSON.stringify(calculations)}. Statistik: ${JSON.stringify(stats)}. Master Payroll: ${JSON.stringify(form.payrollEmployees || [])}. Akun P&L (JSON): ${JSON.stringify(accounts)}. Forecast: ${JSON.stringify(form.forecast)}. Periksa juga konsistensi Step 1 ke forecast: Meeting Room A/B dan meeting room tambahan harus memakai hari operasional tahunan, Ballroom harus memakai jumlah event per tahun; pastikan total 12 bulan, Annual Forecast, dan 10-Year Consolidated tidak menggandakan atau menghilangkan pendapatan. Periksa konsistensi matematis Master Payroll dan klasifikasi biaya departemen vs overhead, GOP, OSP/NOSP, serta jangan menganggap nilai kosong sebagai nol. Dalam mode uji coba, baris Master Payroll yang identik antar departemen bukan alasan untuk menggagalkan validasi; tetap gagalkan hanya jika ditemukan kesalahan aritmetika atau validasi wajib yang nyata. Jika ada ketidaksesuaian material, passed=false. Ringkasan Bahasa Indonesia singkat. Warnings boleh berisi data yang belum lengkap, tetapi jangan meloloskan kesalahan aritmetika.`;
+    const reviewPrompt=`Validasi final laporan hotel CoreStay dengan fokus utama pada rekonsiliasi hasil akhir terhadap data sumber yang benar-benar telah diinput. Jangan mengubah angka atau mengarang nilai. Data kosong harus tetap kosong dan tidak otomatis dianggap nol. Bandingkan input Step 1 Statistics/Revenue, Step 2 akun Budget P&L, Master Payroll, Department Expenses, Owner Expenses, Forecast bulanan, Annual Forecast, 1 Year Consolidated, 10 Years Consolidated, dan hasil export bila tersedia. Gunakan kalkulasi server sebagai sumber kebenaran matematis: ${JSON.stringify(calculations)}. Statistik: ${JSON.stringify(stats)}. Master Payroll: ${JSON.stringify(form.payrollEmployees || [])}. Akun P&L (JSON): ${JSON.stringify(accounts)}. Forecast: ${JSON.stringify(form.forecast)}. Periksa transfer nilai dari sumber ke laporan, subtotal/total, revenue, cost of sales, payroll, operating expenses, overhead, GOP/margin, variance, serta deteksi nilai hilang, duplikasi, salah klasifikasi, NaN/Infinity, atau ketidaksesuaian formula. Pastikan total 12 bulan cocok dengan Annual Forecast dan year-1 pada 10-Year Consolidated, serta pertumbuhan tahun berikutnya mengikuti asumsi yang diinput. Nilai Actual yang kosong atau total revenue Actual yang belum tersedia bukan kesalahan otomatis dan tidak boleh menjadi satu-satunya alasan untuk menolak simpan; laporkan sebagai warning. Jangan menganggap kosong sebagai nol. Baris Master Payroll identik antar departemen bukan alasan untuk menggagalkan validasi kecuali ada bukti nilai dihitung ganda dalam hasil akhir. passed=false hanya untuk kesalahan matematis/data invalid atau ketidaksesuaian material yang didukung bukti input. Ringkasan Bahasa Indonesia singkat dan sebutkan sumber/kelompok yang tidak cocok.`;
     let review: z.infer<typeof ReviewSchema>|null=null;
     let lastError: unknown=null;
     for (const modelId of ["gemini-3.8-flash","gemini-3.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"]) {

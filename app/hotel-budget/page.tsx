@@ -1993,7 +1993,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                           const base=line.base?.[j]??null;
                           const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
                           return <Fragment key={j}>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{canOverride?<input aria-label={`Manual override ${line.label} year ${j+1}`} title="Isi target nominal; hapus isi untuk kembali ke proyeksi otomatis" type="number" step="any" value={tenYearOverrides[overrideKey]??(v===null?"":String(v))} onChange={e=>setTenYearOverrides(prev=>({...prev,[overrideKey]:e.target.value}))} className="w-full min-w-[74px] rounded border border-amber-300 bg-amber-50 px-1 py-1 text-right text-[10px] tabular-nums focus:border-amber-500 focus:outline-none" />:displayValue(v)}</td>
+                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(isPercent?(v??null):percentage)}</td>
                           </Fragment>;
                         })}

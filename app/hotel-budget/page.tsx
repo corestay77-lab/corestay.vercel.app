@@ -2012,7 +2012,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                           const base=line.base?.[j]??null;
                           const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
                           return <Fragment key={j}>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
+                            <td className={`w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-1 py-2 text-right tabular-nums whitespace-nowrap ${tenYearMode==="manual"&&j>0&&!!line.inputKey&&line.kind!=="percent"?"bg-amber-50":""}`}>{tenYearMode==="manual"&&j>0&&!!line.inputKey&&line.kind!=="percent"?<input aria-label={`Manual override ${line.label} tahun ${Number(form.yearStart)+j}`} title="Isi nominal target untuk tahun ini. Kosongkan untuk kembali ke proyeksi otomatis." type="number" step="any" value={tenYearOverrides[`${i}:${j}`]??(v===null||v===undefined?"":String(v))} onChange={e=>setTenYearOverrides(prev=>({...prev,[`${i}:${j}`]:e.target.value}))} className="w-[82px] rounded border border-amber-300 bg-white px-1.5 py-1.5 text-right text-xs tabular-nums outline-none focus:border-amber-500 focus:ring-2 focus:ring-amber-100" />:displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(isPercent?(v??null):percentage)}</td>
                           </Fragment>;
                         })}

@@ -1304,11 +1304,11 @@ export default function HotelBudgetPage() {
       ws["!margins"]={left:0.2,right:0.2,top:0.3,bottom:0.3,header:0.1,footer:0.1};
       XLSX.utils.book_append_sheet(workbook,ws,name);
     };
-    const consolidatedMonthly:any[][]=[["CORESTAY ADVISORY — 1 YEAR CONSOLIDATED",...Array(26).fill("")],["Hotel",form.hotelName,"Year",Number(form.yearStart),"Currency",currency],["Account / Description",...form.forecast.monthly.flatMap((row,i)=>[monthNames[i].toUpperCase()+" VALUE",monthNames[i].toUpperCase()+" %"]), "TOTAL / AVERAGE VALUE","TOTAL / AVERAGE %"]];
+    const consolidatedMonthly:any[][]=[["CORESTAY ADVISORY — 1 YEAR CONSOLIDATED",...Array(26).fill("")],["Hotel",form.hotelName,"Year",Number(form.yearStart),"Currency",currency],["Account / Description",...[11,0,1,2,3,4,5,6,7,8,9,10].flatMap(i=>[(i===11?"DES":monthNames[i]).toUpperCase()+" VALUE",(i===11?"DES":monthNames[i]).toUpperCase()+" %"]), "TOTAL / AVERAGE VALUE","TOTAL / AVERAGE %"]];
     buildConsolidatedRows(consolidatedForm).forEach(line=>{
       if(line.kind==="section"){consolidatedMonthly.push([line.label,...Array(26).fill("")]);return;}
       const vals:any[]=[line.label];
-      line.values.forEach((v,i)=>{const base=line.base?.[i]??null;vals.push(v??0,base!==null&&base!==0&&v!==null?v/base*100:0);});
+      [11,0,1,2,3,4,5,6,7,8,9,10].forEach(i=>{const v=line.values[i];const base=line.base?.[i]??null;vals.push(v??0,base!==null&&base!==0&&v!==null?v/base*100:0);});
       vals.push(line.total??0,line.totalPct??0);
       consolidatedMonthly.push(vals);
     });
@@ -1891,11 +1891,11 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   <thead>
                     <tr className="bg-slate-100 text-slate-700">
                       <th rowSpan={2} className="sticky left-0 z-20 w-[250px] min-w-[250px] max-w-[250px] bg-slate-100 px-3 py-2 text-left">ACCOUNT / DESCRIPTION</th>
-                      {form.forecast.monthly.map((row,i)=><th key={row.label} colSpan={2} className="w-[180px] min-w-[180px] max-w-[180px] border-l border-slate-200 px-2 py-2 text-center whitespace-nowrap">{monthNames[i].slice(0,3).toUpperCase()}</th>)}
+                      {[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><th key={form.forecast.monthly[i].label} colSpan={2} className="w-[180px] min-w-[180px] max-w-[180px] border-l border-slate-200 px-2 py-2 text-center whitespace-nowrap">{i===11?"DES":monthNames[i].slice(0,3).toUpperCase()}</th>)}
                       <th colSpan={2} className="w-[220px] min-w-[220px] max-w-[220px] border-l border-teal-200 bg-teal-100 px-3 py-2 text-center">TOTAL / AVERAGE</th>
                     </tr>
                     <tr className="bg-slate-50 text-slate-600">
-                      {form.forecast.monthly.map(row=><Fragment key={row.label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></Fragment>)}
+                      {[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><Fragment key={form.forecast.monthly[i].label}><th className="border-l border-slate-200 px-2 py-1.5 text-right">VALUE</th><th className="px-2 py-1.5 text-right">%</th></Fragment>)}
                       <th className="border-l border-teal-200 bg-teal-50 px-2 py-1.5 text-right">VALUE</th><th className="bg-teal-50 px-2 py-1.5 text-right">%</th>
                     </tr>
                   </thead>
@@ -2045,8 +2045,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
       <section className="mt-7 break-before-page print-one-year">
         <h3 className="mb-1 text-sm font-extrabold">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Konsolidasi bulanan dari sumber forecast yang sama. Persentase dihitung terhadap basis pendapatan terkait; data yang belum tersedia ditampilkan sebagai —.</p>
-        <div className="overflow-x-auto"><table className="w-max min-w-full border-collapse text-[8px]"><thead><tr className="bg-slate-800 text-white"><th className="sticky left-0 z-10 min-w-[180px] bg-slate-800 px-2 py-1.5 text-left">Account / Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="min-w-[86px] px-1 py-1.5 text-right">{monthNames[i].slice(0,3).toUpperCase()}<span className="block font-normal">Value / %</span></th>)}<th className="min-w-[105px] bg-teal-700 px-2 py-1.5 text-right">TOTAL / AVG</th></tr></thead>
-        <tbody>{buildConsolidatedRows(consolidatedForm).map((line,i)=>line.kind==="section"?<tr key={line.label}><th colSpan={14} className="border-t border-slate-300 bg-slate-200 px-2 py-1.5 text-left font-black">{line.label}</th></tr>:<tr key={line.label} className={i%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-2 py-1 font-semibold">{line.label}</td>{line.values.map((v,j)=>{const base=line.base?.[j]??null;const pct=base!==null&&base!==0&&v!==null?v/base*100:null;return <td key={j} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums whitespace-nowrap">{v===null||v===undefined?"—":fmt(v,0)}<span className="block text-slate-500">{pct===null?"—":fmt(pct,1)+"%"}</span></td>;})}<td className="border-b border-slate-200 bg-teal-50 px-2 py-1 text-right font-bold tabular-nums">{line.total===null||line.total===undefined?"—":fmt(line.total,0)}<span className="block text-slate-500">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</span></td></tr>)}</tbody></table></div>
+        <div className="overflow-x-auto"><table className="w-max min-w-full border-collapse text-[8px]"><thead><tr className="bg-slate-800 text-white"><th className="sticky left-0 z-10 min-w-[180px] bg-slate-800 px-2 py-1.5 text-left">Account / Description</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><th key={form.forecast.monthly[i].label} className="min-w-[86px] px-1 py-1.5 text-right">{i===11?"DES":monthNames[i].slice(0,3).toUpperCase()}<span className="block font-normal">Value / %</span></th>)}<th className="min-w-[105px] bg-teal-700 px-2 py-1.5 text-right">TOTAL / AVG</th></tr></thead>
+        <tbody>{buildConsolidatedRows(consolidatedForm).map((line,i)=>line.kind==="section"?<tr key={line.label}><th colSpan={14} className="border-t border-slate-300 bg-slate-200 px-2 py-1.5 text-left font-black">{line.label}</th></tr>:<tr key={line.label} className={i%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-2 py-1 font-semibold">{line.label}</td>{[11,0,1,2,3,4,5,6,7,8,9,10].map((monthIndex,j)=>{const v=line.values[monthIndex];const base=line.base?.[monthIndex]??null;const pct=base!==null&&base!==0&&v!==null?v/base*100:null;return <td key={j} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums whitespace-nowrap">{v===null||v===undefined?"—":fmt(v,0)}<span className="block text-slate-500">{pct===null?"—":fmt(pct,1)+"%"}</span></td>;})}<td className="border-b border-slate-200 bg-teal-50 px-2 py-1 text-right font-bold tabular-nums">{line.total===null||line.total===undefined?"—":fmt(line.total,0)}<span className="block text-slate-500">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,1)+"%"}</span></td></tr>)}</tbody></table></div>
       </section>
       <section className="mt-7 break-before-page print-ten-year">
         <h3 className="mb-1 text-sm font-extrabold">3. 10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3>

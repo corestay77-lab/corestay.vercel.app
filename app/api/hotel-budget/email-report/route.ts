@@ -1,12 +1,15 @@
+import { del, get } from "@vercel/blob";
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@supabase/supabase-js";
 import { Resend } from "resend";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 const SUPABASE_URL = "https://vkejwklhijophavlosze.supabase.co";
+const MAX_PDF_BYTES = 25 * 1024 * 1024;
 
 export async function POST(request: NextRequest) {
+  let uploadedPathname = "";
   try {
     const authorization = request.headers.get("authorization") || "";
     if (!authorization.startsWith("Bearer ")) {
@@ -38,26 +41,31 @@ export async function POST(request: NextRequest) {
     const period = typeof body?.period === "string" ? body.period.trim().slice(0, 100) : "";
     const yearStart = typeof body?.yearStart === "string" || typeof body?.yearStart === "number" ? String(body.yearStart).slice(0, 4) : "";
     const fileName = typeof body?.fileName === "string" ? body.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) : "CoreStay-Hotel-Budget.pdf";
-    const pdfBase64 = typeof body?.pdfBase64 === "string" ? body.pdfBase64 : "";
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
+    uploadedPathname = typeof body?.blobPathname === "string" ? body.blobPathname : "";
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to)) {
       return NextResponse.json({ success: false, error: "Alamat email penerima tidak valid." }, { status: 400 });
     }
-    if (!pdfBase64 || pdfBase64.length > 36_000_000) {
-      return NextResponse.json({ success: false, error: "File PDF kosong atau melebihi batas 25 MB." }, { status: 413 });
+    if (!uploadedPathname.startsWith("hotel-budget-email-reports/") || uploadedPathname.includes("..")) {
+      return NextResponse.json({ success: false, error: "File unggahan tidak ditemukan atau tidak valid. Silakan unggah PDF kembali." }, { status: 400 });
     }
-    const pdf = Buffer.from(pdfBase64, "base64");
-    if (pdf.length > 25 * 1024 * 1024 || pdf.length < 5 || pdf.subarray(0, 5).toString("ascii") !== "%PDF-") {
+
+    const blob = await get(uploadedPathname, { access: "private" });
+    if (!blob || blob.statusCode !== 200 || !blob.stream) {
+      return NextResponse.json({ success: false, error: "PDF sementara tidak dapat dibaca. Silakan unggah ulang file PDF." }, { status: 404 });
+    }
+    const pdf = Buffer.from(await new Response(blob.stream).arrayBuffer());
+    if (pdf.length > MAX_PDF_BYTES || pdf.length < 5 || pdf.subarray(0, 5).toString("ascii") !== "%PDF-") {
       return NextResponse.json({ success: false, error: "Lampiran bukan file PDF yang valid atau ukurannya melebihi 25 MB." }, { status: 400 });
     }
 
+    const safeHotel = (hotelName || "Hotel").replace(/[<>&"]/g, "");
+    const safePeriod = (period || yearStart || "—").replace(/[<>&"]/g, "");
     const resend = new Resend(apiKey);
-    const safeHotel = hotelName || "Hotel";
-    const subject = "Laporan Akhir Hotel Budget — " + safeHotel + (period ? " · " + period : "");
     const result = await resend.emails.send({
       from,
       to: [to],
-      subject,
-      html: `<div style="font-family:Arial,sans-serif;color:#172033;line-height:1.6"><h2 style="color:#17365D">CORESTAY ADVISORY</h2><p>Yth. Penerima,</p><p>Terlampir laporan akhir <strong>Hotel Budget &amp; Financial Report</strong> untuk <strong>${safeHotel.replace(/[<>&"]/g, "")}</strong>, periode ${(period || yearStart || "—").replace(/[<>&"]/g, "")}.</p><p>Dokumen PDF ini dikirim sesuai file yang dipilih dari Preview / Print PDF.</p><p>Hormat kami,<br/><strong>CoreStay Advisory</strong></p><p style="font-size:11px;color:#64748b">Dokumen ini bersifat rahasia dan ditujukan untuk penerima yang tercantum.</p></div>`,
+      subject: "Laporan Akhir Hotel Budget — " + safeHotel + (period ? " · " + period : ""),
+      html: `<div style="font-family:Arial,sans-serif;color:#172033;line-height:1.6"><h2 style="color:#17365D">CORESTAY ADVISORY</h2><p>Yth. Penerima,</p><p>Terlampir laporan akhir <strong>Hotel Budget &amp; Financial Report</strong> untuk <strong>${safeHotel}</strong>, periode ${safePeriod}.</p><p>Dokumen PDF ini dikirim sesuai file yang dipilih dari Preview / Print PDF.</p><p>Hormat kami,<br/><strong>CoreStay Advisory</strong></p><p style="font-size:11px;color:#64748b">Dokumen ini bersifat rahasia dan ditujukan untuk penerima yang tercantum.</p></div>`,
       attachments: [{ filename: fileName.toLowerCase().endsWith(".pdf") ? fileName : fileName + ".pdf", content: pdf }]
     });
     if (result.error) {
@@ -67,6 +75,17 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ success: true, id: result.data?.id });
   } catch (error) {
     console.error("CoreStay Hotel Budget email route failed:", error);
-    return NextResponse.json({ success: false, error: "Terjadi kesalahan saat mengirim email laporan." }, { status: 500 });
+    const message = error instanceof Error && /BLOB_READ_WRITE_TOKEN|token/i.test(error.message)
+      ? "Penyimpanan PDF belum siap. Pastikan private Blob store terhubung ke proyek Vercel."
+      : "Terjadi kesalahan saat mengirim email laporan.";
+    return NextResponse.json({ success: false, error: message }, { status: 500 });
+  } finally {
+    if (uploadedPathname.startsWith("hotel-budget-email-reports/")) {
+      try {
+        await del(uploadedPathname, { access: "private" });
+      } catch (cleanupError) {
+        console.error("CoreStay temporary PDF cleanup failed:", cleanupError);
+      }
+    }
   }
 }

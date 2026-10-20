@@ -484,8 +484,9 @@ export default function HotelBudgetPage() {
   const [summary,setSummary]=useState("");
   const [currency,setCurrency]=useState<"IDR"|"USD">("IDR");
   const [annualGrowthPct,setAnnualGrowthPct]=useState(2);
-  const [tenYearMode,setTenYearMode]=useState<"growth"|"manual">("growth");
+  const [tenYearMode,setTenYearMode]=useState<"growth"|"manual"|"driver">("growth");
   const [tenYearOverrides,setTenYearOverrides]=useState<Record<string,string>>({});
+  const [driverAssumptions,setDriverAssumptions]=useState<Record<string,string>>({rooms:"",fnb:"",mod:"",costOfSales:"",payroll:"",departmentExpenses:"",overhead:""});
   const [expandedFbSection,setExpandedFbSection]=useState("restaurant");
   const [editingFbSection,setEditingFbSection]=useState("");
   const [hiddenFbSections,setHiddenFbSections]=useState<string[]>([]);
@@ -504,7 +505,24 @@ export default function HotelBudgetPage() {
     const rows:R[]=oneYearRows.map((line,index)=>{
       if(line.kind==="section")return {label:line.label,section:true,values:[],total:null,totalPct:null,kind:"section"};
       const firstYear=line.total===undefined?null:line.total;
-      const values=Array.from({length:yearCount},(_,yearIndex)=>firstYear===null?null:(line.kind==="percent"?firstYear:firstYear*growth(yearIndex)));
+      const values=Array.from({length:yearCount},(_,yearIndex)=>{
+        if(firstYear===null)return null;
+        if(line.kind==="percent")return firstYear;
+        if(tenYearMode!=="driver"||yearIndex===0)return firstYear*growth(yearIndex);
+        const label=line.label.toUpperCase();
+        let driver:"rooms"|"fnb"|"mod"|"costOfSales"|"payroll"|"departmentExpenses"|"overhead"|null=null;
+        if(label==="ROOMS"||label.includes("ROOM REVENUE"))driver="rooms";
+        else if(label.includes("FOOD & BEVERAGE")||label.includes("F&B")||label.includes("FOOD REVENUE")||label.includes("BEVERAGE REVENUE"))driver="fnb";
+        else if(label.includes("MINOR OPERATING")||label==="MOD")driver="mod";
+        else if(label.includes("COST OF SALES"))driver="costOfSales";
+        else if(label.includes("PAYROLL")||label.includes("SALARIES")||label.includes("WAGES"))driver="payroll";
+        else if(label.includes("DEPARTMENT EXPENSE"))driver="departmentExpenses";
+        else if(label.includes("OVERHEAD")||label.includes("ADMINISTRATION & GENERAL")||label.includes("SALES & MARKETING")||label.includes("HUMAN RESOURCES")||label.includes("POMEC")||label.includes("ENERGY COST"))driver="overhead";
+        const raw=driver?driverAssumptions[driver]:"";
+        // Blank driver assumptions explicitly fall back to the existing Simple Growth assumption, never to 0%.
+        const rate=raw!==undefined&&raw.trim()!==""&&driver?Number(raw):annualGrowthPct;
+        return Number.isFinite(rate)?firstYear*Math.pow(1+rate/100,yearIndex):null;
+      });
       const baseYear1=line.base?sumPresent(line.base):null;
       const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>baseYear1*growth(yearIndex));
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
@@ -586,7 +604,7 @@ export default function HotelBudgetPage() {
   useEffect(()=>{
     try {
       const raw=window.localStorage.getItem(LOCAL_DRAFT_KEY);
-      if(raw){const draft=JSON.parse(raw);if(draft?.form&&typeof draft.form==="object"){setForm(draft.form as BudgetForm);if(draft.currency==="IDR"||draft.currency==="USD")setCurrency(draft.currency);if(Number.isFinite(draft.annualGrowthPct))setAnnualGrowthPct(draft.annualGrowthPct);if(draft.tenYearMode==="manual"||draft.tenYearMode==="growth")setTenYearMode(draft.tenYearMode);if(draft.tenYearOverrides&&typeof draft.tenYearOverrides==="object")setTenYearOverrides(draft.tenYearOverrides as Record<string,string>);if(typeof draft.savedAt==="string")setDraftSavedAt(draft.savedAt);}}
+      if(raw){const draft=JSON.parse(raw);if(draft?.form&&typeof draft.form==="object"){setForm(draft.form as BudgetForm);if(draft.currency==="IDR"||draft.currency==="USD")setCurrency(draft.currency);if(Number.isFinite(draft.annualGrowthPct))setAnnualGrowthPct(draft.annualGrowthPct);if(draft.tenYearMode==="manual"||draft.tenYearMode==="growth"||draft.tenYearMode==="driver")setTenYearMode(draft.tenYearMode);if(draft.tenYearOverrides&&typeof draft.tenYearOverrides==="object")setTenYearOverrides(draft.tenYearOverrides as Record<string,string>);if(draft.driverAssumptions&&typeof draft.driverAssumptions==="object")setDriverAssumptions({...{rooms:"",fnb:"",mod:"",costOfSales:"",payroll:"",departmentExpenses:"",overhead:""},...draft.driverAssumptions});if(typeof draft.savedAt==="string")setDraftSavedAt(draft.savedAt);}}
     } catch {}
   },[]);
 
@@ -1226,7 +1244,7 @@ export default function HotelBudgetPage() {
   function saveDraft(){
     try {
       const savedAt=new Date().toISOString();
-      window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify({form,currency,annualGrowthPct,tenYearMode,tenYearOverrides,savedAt}));
+      window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify({form,currency,annualGrowthPct,tenYearMode,tenYearOverrides,driverAssumptions,savedAt}));
       setDraftSavedAt(savedAt);setMessage("Draft berhasil disimpan di browser/perangkat ini. Draft dapat dipulihkan setelah halaman di-refresh pada perangkat yang sama.");
     } catch { setMessage("Draft tidak dapat disimpan. Periksa ruang penyimpanan browser/perizinan perangkat."); }
   }
@@ -1912,7 +1930,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               </div>
             </section>
 
-            <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 lg:flex-row lg:items-center lg:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Simple Growth tetap menjadi default dengan asumsi 2% per tahun. Manual Override hanya mengubah akun rincian dan tahun yang diisi; subtotal, GOP, profit, dan margin dihitung ulang.</p><label className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">Metode proyeksi <select value={tenYearMode} onChange={e=>setTenYearMode(e.target.value==="manual"?"manual":"growth")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900"><option value="growth">Simple Growth — Default</option><option value="manual">Manual Override</option></select></label></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 lg:flex-row lg:items-center lg:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Simple Growth tetap menjadi default dengan asumsi 2% per tahun. Manual Override hanya mengubah akun rincian dan tahun yang diisi; subtotal, GOP, profit, dan margin dihitung ulang.</p><label className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">Metode proyeksi <select value={tenYearMode} onChange={e=>setTenYearMode(e.target.value==="manual"?"manual":e.target.value==="driver"?"driver":"growth")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900"><option value="growth">Simple Growth — Default</option><option value="driver">Driver-Based Budget</option><option value="manual">Manual Override</option></select></label></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
+            {tenYearMode==="driver"&&<div className="rounded-2xl border border-sky-200 bg-white p-4 shadow-sm"><h4 className="font-bold text-slate-900">Driver-Based Budget — Asumsi Pertumbuhan per Kelompok</h4><p className="mt-1 text-xs leading-5 text-slate-600">Isi hanya penggerak yang relevan. Kolom kosong tidak dianggap 0%; kelompok tersebut tetap memakai Simple Growth {annualGrowthPct}% per tahun. Perubahan hanya berlaku untuk proyeksi tahun ke-2 dan seterusnya. Nilai tahun pertama tetap sama dengan 1 Year Consolidated.</p><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{([{key:"rooms",label:"Rooms"},{key:"fnb",label:"F&B"},{key:"mod",label:"MOD"},{key:"costOfSales",label:"Cost of Sales"},{key:"payroll",label:"Payroll"},{key:"departmentExpenses",label:"Biaya Departemen"},{key:"overhead",label:"Overhead"}] as const).map(item=><label key={item.key} className="text-xs font-semibold text-slate-700">{item.label} (% / tahun)<input type="number" step="0.1" min="-100" max="100" value={driverAssumptions[item.key]} onChange={e=>setDriverAssumptions(prev=>({...prev,[item.key]:e.target.value}))} placeholder={`Kosong = ${annualGrowthPct}%`} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"/></label>)}</div></div>}
             <section className="overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-sm">
               <div className="bg-gradient-to-r from-teal-900 via-emerald-800 to-cyan-800 px-4 py-4 text-white sm:px-5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-200">STEP 4 · MONTHLY & ANNUAL FORECAST</p>

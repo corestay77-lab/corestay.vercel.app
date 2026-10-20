@@ -484,6 +484,8 @@ export default function HotelBudgetPage() {
   const [summary,setSummary]=useState("");
   const [currency,setCurrency]=useState<"IDR"|"USD">("IDR");
   const [annualGrowthPct,setAnnualGrowthPct]=useState(2);
+  const [tenYearMode,setTenYearMode]=useState<"growth"|"manual">("growth");
+  const [tenYearOverrides,setTenYearOverrides]=useState<Record<string,string>>({});
   const [expandedFbSection,setExpandedFbSection]=useState("restaurant");
   const [editingFbSection,setEditingFbSection]=useState("");
   const [hiddenFbSections,setHiddenFbSections]=useState<string[]>([]);
@@ -553,7 +555,7 @@ export default function HotelBudgetPage() {
   useEffect(()=>{
     try {
       const raw=window.localStorage.getItem(LOCAL_DRAFT_KEY);
-      if(raw){const draft=JSON.parse(raw);if(draft?.form&&typeof draft.form==="object"){setForm(draft.form as BudgetForm);if(draft.currency==="IDR"||draft.currency==="USD")setCurrency(draft.currency);if(Number.isFinite(draft.annualGrowthPct))setAnnualGrowthPct(draft.annualGrowthPct);if(typeof draft.savedAt==="string")setDraftSavedAt(draft.savedAt);}}
+      if(raw){const draft=JSON.parse(raw);if(draft?.form&&typeof draft.form==="object"){setForm(draft.form as BudgetForm);if(draft.currency==="IDR"||draft.currency==="USD")setCurrency(draft.currency);if(Number.isFinite(draft.annualGrowthPct))setAnnualGrowthPct(draft.annualGrowthPct);if(draft.tenYearMode==="manual"||draft.tenYearMode==="growth")setTenYearMode(draft.tenYearMode);if(draft.tenYearOverrides&&typeof draft.tenYearOverrides==="object")setTenYearOverrides(draft.tenYearOverrides as Record<string,string>);if(typeof draft.savedAt==="string")setDraftSavedAt(draft.savedAt);}}
     } catch {}
   },[]);
 
@@ -1193,7 +1195,7 @@ export default function HotelBudgetPage() {
   function saveDraft(){
     try {
       const savedAt=new Date().toISOString();
-      window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify({form,currency,annualGrowthPct,savedAt}));
+      window.localStorage.setItem(LOCAL_DRAFT_KEY,JSON.stringify({form,currency,annualGrowthPct,tenYearMode,tenYearOverrides,savedAt}));
       setDraftSavedAt(savedAt);setMessage("Draft berhasil disimpan di browser/perangkat ini. Draft dapat dipulihkan setelah halaman di-refresh pada perangkat yang sama.");
     } catch { setMessage("Draft tidak dapat disimpan. Periksa ruang penyimpanan browser/perizinan perangkat."); }
   }
@@ -1879,7 +1881,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               </div>
             </section>
 
-            <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 sm:flex-row sm:items-center sm:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Ubah satu kali; proyeksi seluruh tahun dan nilai terkait akan dihitung ulang otomatis. Contoh: 2 berarti naik 2% setiap tahun, 0 berarti tidak ada kenaikan.</p></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
+            <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 lg:flex-row lg:items-center lg:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Simple Growth tetap menjadi default dengan asumsi 2% per tahun. Manual Override hanya mengubah akun rincian dan tahun yang diisi; subtotal, GOP, profit, dan margin dihitung ulang.</p><label className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">Metode proyeksi <select value={tenYearMode} onChange={e=>setTenYearMode(e.target.value==="manual"?"manual":"growth")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900"><option value="growth">Simple Growth — Default</option><option value="manual">Manual Override</option></select></label></div><label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label></div>
             <section className="overflow-hidden rounded-2xl border border-teal-200 bg-white shadow-sm">
               <div className="bg-gradient-to-r from-teal-900 via-emerald-800 to-cyan-800 px-4 py-4 text-white sm:px-5">
                 <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-teal-200">STEP 4 · MONTHLY & ANNUAL FORECAST</p>
@@ -1910,6 +1912,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                         {line.values.map((v,j)=>{
                           const base=line.base?.[j]??null;
                           const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
+                          const canOverride=tenYearMode==="manual"&&j>0&&!!line.inputKey&&line.label!=="TOTAL OPERATING COSTS"&&!isPercent;
+                          const overrideKey=`${i}:${j}`;
                           return <Fragment key={j}>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{isPercent?"—":displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(isPercent?v:percentage)}</td>
@@ -1958,7 +1962,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                           const base=line.base?.[j]??null;
                           const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
                           return <Fragment key={j}>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
+                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{canOverride?<input aria-label={`Manual override ${line.label} year ${j+1}`} title="Isi target nominal; hapus isi untuk kembali ke proyeksi otomatis" type="number" step="any" value={tenYearOverrides[overrideKey]??(v===null?"":String(v))} onChange={e=>setTenYearOverrides(prev=>({...prev,[overrideKey]:e.target.value}))} className="w-full min-w-[74px] rounded border border-amber-300 bg-amber-50 px-1 py-1 text-right text-[10px] tabular-nums focus:border-amber-500 focus:outline-none" />:displayValue(v)}</td>
                             <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(isPercent?(v??null):percentage)}</td>
                           </Fragment>;
                         })}

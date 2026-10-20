@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
     const yearStart = typeof body?.yearStart === "string" || typeof body?.yearStart === "number" ? String(body.yearStart).slice(0, 4) : "";
     const fileName = typeof body?.fileName === "string" ? body.fileName.replace(/[^a-zA-Z0-9._-]/g, "_").slice(0, 120) : "CoreStay-Hotel-Budget.pdf";
     const pdfBase64 = typeof body?.pdfBase64 === "string" ? body.pdfBase64 : "";
-    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(to)) {
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(to)) {
       return NextResponse.json({ success: false, error: "Alamat email penerima tidak valid." }, { status: 400 });
     }
     if (!pdfBase64 || pdfBase64.length > 36_000_000) {

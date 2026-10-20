@@ -1676,8 +1676,17 @@ const row=form.forecast.monthly[i];
 if(k==="roomRevenue"){
 const saved=optional(row?.roomDivisionDetails?.roomRevenue);
 if(saved!==null)return saved;
-const calculated=calcMonthly(row, Number(form.yearStart)||new Date().getFullYear(), i, form.statistics.rooms);
-return calculated.roomRevenue;
+const year=Number(form.yearStart)||new Date().getFullYear();
+const calculated=calcMonthly(row,year,i,form.statistics.rooms).roomRevenue;
+if(calculated!==null)return calculated;
+const annualRoomBudget=optional(form.accounts?.["41101"]?.budget||"");
+if(annualRoomBudget===null)return null;
+const yearDays=Array.from({length:12},(_,month)=>new Date(year,month+1,0).getDate()).reduce((sum,days)=>sum+days,0);
+const priorDays=Array.from({length:i},(_,month)=>new Date(year,month+1,0).getDate()).reduce((sum,days)=>sum+days,0);
+const currentDays=new Date(year,i+1,0).getDate();
+const before=Math.round(annualRoomBudget*priorDays/yearDays);
+const through=Math.round(annualRoomBudget*(priorDays+currentDays)/yearDays);
+return i===11?annualRoomBudget-before:through-before;
 }
 if(k.startsWith("rd")){
 const suffixMap:Record<string,string[]>={rdSalary:["foSalary","hkSalary"],rdIncomeTax:["foIncomeTax","hkIncomeTax"],rdJamsostek:["foJamsostek","hkJamsostek"],rdInsurance:["foInsurance","hkInsurance"],rdThr:["foBonus","hkThr"],rdMeal:["foMeal","hkMeal"],rdMedical:["foMedical","hkMedical"],rdOtherPayroll:["foOtherPayroll","hkOtherPayroll"],rdChina:["hkChina"],rdGlass:["hkGlass"],rdSilver:["hkSilver"],rdLinen:["hkLinen"],rdDecoration:["foDecoration","hkDecoration"],rdDues:["foDues"],rdEntertainment:["foEntertainment"],rdWelcomeDrink:["foWelcomeDrink","hkWelcomeDrink"],rdCable:["hkCable"],rdLaundry:["foLaundry","hkLaundry"],rdMisc:["foMisc"],rdPostage:["foPostage"],rdGuestSupplies:["foGuestSupplies","hkGuestSupplies"],rdCleaning:["foCleaning","hkCleaning"],rdAmenities:["hkAmenities"],rdPrinting:["foPrinting","hkPrinting"],rdTelephone:["foTelephone"],rdTransportGuest:["foTransportGuest"],rdUniform:["foUniform","hkUniform"],rdInternet:["hkInternet"],rdPest:["hkPest"]};

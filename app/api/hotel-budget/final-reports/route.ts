@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
     const comp=numeric(stats.complimentary)??0, paid=numeric(stats.roomPaid)??0;
     if (comp<0||paid<0) issues.push("Complimentary dan Room Paid tidak boleh negatif.");
     if (comp+paid>roomAvailable) issues.push("Complimentary + Room Paid melebihi Room Available. Periksa room nights dan statistik inventori.");
-    if (!form.confirmAccountReview) warnings.push("Konfirmasi tinjauan akun belum dicentang; validasi tetap berfokus pada data aktual yang tersedia dan konsistensi hasil akhir.");
+    if (!form.confirmAccountReview) warnings.push("Konfirmasi tinjauan akun belum dicentang; validasi tetap berfokus pada data budget dan konsistensi hasil akhir.");
     const accounts = form.accounts as Record<string, any>;
     const submittedLines = Array.isArray(form.accountLines) ? form.accountLines : [];
     const submittedCustomLines = Array.isArray(form.customAccounts) ? form.customAccounts : [];

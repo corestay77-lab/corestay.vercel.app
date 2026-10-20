@@ -1909,11 +1909,11 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                           const base=line.base?.[j]??null;
                           const percentage=!isPercent&&v!==null&&base!==null&&base!==0?v/base*100:null;
                           return <Fragment key={j}>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayValue(v)}</td>
-                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(percentage)}</td>
+                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-l border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{isPercent?"—":displayValue(v)}</td>
+                            <td className="w-[90px] min-w-[90px] max-w-[90px] border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{displayPct(isPercent?v:percentage)}</td>
                           </Fragment>;
                         })}
-                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-l border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{displayValue(line.total)}</td>
+                        <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-l border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{isPercent?"—":displayValue(line.total)}</td>
                         <td className="w-[110px] min-w-[110px] max-w-[110px] border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-bold tabular-nums whitespace-nowrap">{displayPct(isPercent?line.total:line.totalPct)}</td>
                       </tr>;
                     })}

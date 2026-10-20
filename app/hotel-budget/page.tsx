@@ -2246,7 +2246,8 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         .print-report section { display: block !important; width: 100% !important; max-width: none !important; overflow: visible !important; }
         .print-report .overflow-x-auto, .print-report .overflow-hidden { overflow: visible !important; }
         .print-statistics, .print-ten-year-statistics, .print-one-year, .print-ten-year, .print-department-details, .print-owner-expenses, .print-payroll-master { break-inside: auto !important; page-break-inside: auto !important; }
-        .print-ten-year-statistics, .print-one-year, .print-ten-year, .print-department-details, .print-owner-expenses, .print-payroll-master { break-before: page !important; page-break-before: always !important; }
+        /* Let the browser paginate naturally; forced page breaks can create blank sheets when a prior section ends at a page boundary. */
+        .print-ten-year-statistics, .print-one-year, .print-ten-year, .print-department-details, .print-owner-expenses, .print-payroll-master { break-before: auto !important; page-break-before: auto !important; }
         .print-statistics table, .print-ten-year-statistics table, .print-one-year table, .print-ten-year table, .print-department-details table, .print-owner-expenses table, .print-payroll-master table { width: 100% !important; min-width: 0 !important; max-width: 100% !important; table-layout: fixed !important; border-collapse: collapse !important; }
         .print-statistics th:first-child, .print-statistics td:first-child { width: 30mm !important; min-width: 30mm !important; max-width: 30mm !important; }
         .print-one-year th:first-child, .print-one-year td:first-child { width: 27mm !important; min-width: 27mm !important; max-width: 27mm !important; }
@@ -2255,7 +2256,11 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         .print-one-year th, .print-one-year td { font-size: 5pt !important; padding: 1.2px !important; }
         .print-ten-year th, .print-ten-year td { font-size: 5.2pt !important; padding: 1.5px !important; }
         .print-report th, .print-report td { overflow-wrap: anywhere !important; word-break: normal !important; }
-        .print-report tr { break-inside: avoid !important; page-break-inside: avoid !important; }
+        /* Allow long tables to continue across pages instead of clipping or pushing content to extra sheets. */
+        .print-report table { break-inside: auto !important; page-break-inside: auto !important; }
+        .print-report thead { display: table-header-group !important; }
+        .print-report tfoot { display: table-footer-group !important; }
+        .print-report tr { break-inside: auto !important; page-break-inside: auto !important; }
         .report-brand-header { background: linear-gradient(110deg,#17365D,#245B8C,#6554B7) !important; color: #fff !important; border-bottom: 3px solid #D5A94D !important; }
         .report-brand-footer { border-top: 2px solid #245B8C !important; color: #475569 !important; }
         .print-statistics th, .print-ten-year-statistics th, .print-one-year th, .print-ten-year th, .print-department-details th, .print-payroll-master th { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }

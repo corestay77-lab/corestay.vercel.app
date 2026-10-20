@@ -165,12 +165,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const pomecOtherValue=pomecOtherDetail;
     const pomecEnergyValue=pomecEnergyDetail;
     const agPayrollTotal=sumEntered(["agPayroll","smPayroll","hrdPayroll"]);
-    const agOtherTotal=sumEntered(["agOtherExpenses","smOtherExpenses","hrdOtherExpenses"]);
+    const smOtherValues=Object.entries(row.smDetails??{}).filter(([key])=>key!=="operatingDays").map(([,raw])=>optional(raw));
+    const smOtherDetail=smOtherValues.some(v=>v!==null)?smOtherValues.reduce<number>((n,v)=>n+(v??0),0):null;
+    const agOtherTotal=sumEntered(["agOtherExpenses","hrdOtherExpenses"]);
     const overheadPayroll=agPayrollTotal===null&&pomecPayrollValue===null?null:(agPayrollTotal??0)+(pomecPayrollValue??0);
-    const overheadOther=agOtherTotal===null&&pomecOtherValue===null&&pomecEnergyValue===null?null:(agOtherTotal??0)+(pomecOtherValue??0)+(pomecEnergyValue??0);
+    const overheadOther=agOtherTotal===null&&smOtherDetail===null&&pomecOtherValue===null&&pomecEnergyValue===null?null:(agOtherTotal??0)+(smOtherDetail??0)+(pomecOtherValue??0)+(pomecEnergyValue??0);
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
-    const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","smOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
-    const hasDetail=detailKeys.some(k=>val(row,k)!==null);
+    const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
+    const hasDetail=detailKeys.some(k=>val(row,k)!==null)||smOtherDetail!==null;
     const detailTotal=sumPresent(detailed);
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };

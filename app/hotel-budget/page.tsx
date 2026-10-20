@@ -1238,7 +1238,7 @@ export default function HotelBudgetPage() {
   const applyDepartmentCostPercent=(detailName:"roomDivisionDetails"|"fbDetails"|"modDetails"|"agDetails"|"smDetails"|"hrdDetails"|"pomecDetails",key:string,update:(monthIndex:number,key:string,value:string)=>void,base:"room"|"fb"|"mod"|"hotel")=>{
     const percentRaw=(form.forecast.monthly[0]?.[detailName] as Record<string,string>|undefined)?.[key+"Percent"]||"";
     const percent=Number(percentRaw);
-    if(percentRaw.trim()===""||!Number.isFinite(percent)||percent<0){setError("Masukkan asumsi persentase biaya yang valid terlebih dahulu.");return;}
+    if(percentRaw.trim()===""||!Number.isFinite(percent)||percent<0){setMessage("Masukkan asumsi persentase biaya yang valid terlebih dahulu.");return;}
     form.forecast.monthly.forEach((row,i)=>{
       let revenue:number|null=null;
       if(base==="room") revenue=calcMonthly(row,Number(form.yearStart),i,form.statistics.rooms).revenue;

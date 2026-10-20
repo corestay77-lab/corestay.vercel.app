@@ -939,8 +939,16 @@ export default function HotelBudgetPage() {
     const roomCount=optional(form.statistics.rooms);
     const roomOccupancy=optional(form.statistics.occupancy)??values.paidOccupancy;
     const roomArr=optional(form.statistics.averageSellingRate);
-    const roomRevenueBudget=roomCount!==null&&roomCount>0&&roomOccupancy!==null&&roomArr!==null&&roomArr>0
+    const roomRevenueFromStatistics=roomCount!==null&&roomCount>0&&roomOccupancy!==null&&roomArr!==null&&roomArr>0
       ?Math.round(roomCount*yearDays*roomOccupancy/100*roomArr):null;
+    // Step 1 may define room revenue by total outlet budget + Rooms allocation
+    // instead of room count/occupancy/ARR. Keep that path connected to Step 3 too.
+    const revenueAllocation=form.budgetAllocations?.parentPercentBySection||{};
+    const totalOutletRevenue=optional(revenueAllocation["__revenueAllOutletTotal"]||"");
+    const roomRevenuePercent=optional(revenueAllocation["__revenueGroupPercent_roomRevenue"]||"");
+    const roomRevenueFromAllocation=totalOutletRevenue!==null&&totalOutletRevenue>0&&roomRevenuePercent!==null
+      ?Math.round(totalOutletRevenue*roomRevenuePercent/100):null;
+    const roomRevenueBudget=roomRevenueFromStatistics??roomRevenueFromAllocation;
     const sources:[string,number|null][]=[
       ["41101",roomRevenueBudget],
       ["41207",fb.banquet],

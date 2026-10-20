@@ -521,6 +521,8 @@ export default function HotelBudgetPage() {
       }
     });
     for(let year=0;year<yearCount;year++){
+      // Preserve YEAR 1 exactly as the current 1 Year Consolidated source; only recalculate projected years after manual overrides.
+      if(year===0)continue;
       const revenueParts=[get("ROOMS",year),get("FOOD & BEVERAGE",year,0),get("TELEPHONE & FACSIMILE",year,0),get("MINOR OPERATING DEPARTMENT",year,0)];
       const revenue=sumPresent(revenueParts);put("TOTAL REVENUES (EXCL. TAX)",year,revenue);
       const cos=sumPresent([get("Food & Beverage",year,0),get("Telephone & Facsimile",year,0),get("Minor Operating Department",year,0)]);put("TOTAL COST OF SALES",year,cos);

@@ -26,7 +26,6 @@ type BudgetForm = {
 };
 type SavedReport = { id: string; hotel_name: string; period_label: string; created_at: string; form_data: BudgetForm; calculated_data: any; validation_data: any };
 const LOCAL_REPORTS_KEY = "corestay-hotel-budget-local-reports-v1";
-const DRAFT_STORAGE_KEY = "corestay-hotel-budget-draft-v1";
 const monthNames = ["Januari","Februari","Maret","April","Mei","Juni","Juli","Agustus","September","Oktober","November","Desember"];
 const FB_BUDGET_GROUPS = [{title:"REVENUES",total:"TOTAL F & B REVENUE",rows:[["foodRevenue","FOOD"],["beverageRevenue","BEVERAGE"]]},{title:"COST OF SALES",total:"TOTAL COST OF SALES",rows:[["foodCost","FOOD"],["beverageCost","BEVERAGE"]]},{title:"PAYROLL & RELATED",total:"TOTAL PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["thr","THR"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"PROV. OP. EQUIPMENT",total:"TOTAL PROV. OP. EQUIPT.",rows:[["glassware","GLASSWARE"],["chinaware","CHINAWARE"],["silverware","SILVERWARE"],["linen","LINEN"]]},{title:"OTHER EXPENSES",total:"TOTAL OTHER EXPENSES",rows:[["decoration","DECORATION"],["duesSubscription","DUES & SUBSCRIPTION"],["extermDisinfectant","EXTERM / DESINFECTANT"],["kitchenFuel","KITCHEN FUEL"],["laundry","LAUNDRY"],["miscellaneous","MISCELLANEOUS"],["spoilage","SPOILAGE"],["cleaningSupplies","CLEANING SUPPLIES"],["guestSupplies","GUEST SUPPLIES"],["printingStationery","PRINTING & STATIONERY"],["telephone","TELEPHONE"],["uniform","UNIFORM"],["utensil","UTENSIL"],["contractCleaning","CONTRACT CLEANING"]]}] as const;
 const POMEC_LINES = [{key:"salaryWages",label:"SALARY & WAGES",group:"payroll"},{key:"incomeTax",label:"INCOME TAX",group:"payroll"},{key:"jamsostek",label:"JAMSOSTEK",group:"payroll"},{key:"insurance",label:"INSURANCE",group:"payroll"},{key:"thr",label:"THR (1 YEAR)",group:"payroll"},{key:"mealAllowances",label:"MEAL ALLOWANCES",group:"payroll"},{key:"medical",label:"MEDICAL / ASKES",group:"payroll"},{key:"otherPayroll",label:"OTHER PAYROLL COST",group:"payroll"},{key:"paintingDecoration",label:"PAINTING & DECORATION",group:"other"},{key:"engineeringSupplies",label:"ENGINEERING SUPPLIES & EQUIPMENT",group:"other"},{key:"bulbsLamp",label:"BULBS & LAMP",group:"other"},{key:"printingStationery",label:"PRINTING & STATIONERY",group:"other"},{key:"laundryUniform",label:"LAUNDRY UNIFORM",group:"other"},{key:"provisionUniform",label:"PROV. FOR UNIFORM",group:"other"},{key:"acMaintenance",label:"AC MAINTENANCE",group:"other"},{key:"buildingMaintenance",label:"BUILDING MAINTENANCE",group:"other"},{key:"electricityMaintenance",label:"ELECTRICITY MAINTENANCE",group:"other"},{key:"floorCovering",label:"FLOOR COVERING",group:"other"},{key:"furnitureFixtureRepair",label:"FURNITURE & FIXTURE REPAIRMENT",group:"other"},{key:"mechanicalElectricalMaintenance",label:"MECHANICAL & ELECTRICAL MAINT",group:"other"},{key:"kitchenEquipmentMaintenance",label:"KITCHEN EQUIPMENT MAINTENANCE",group:"other"},{key:"refrigeratorMaintenance",label:"REFRIGERATOR MAINTENANCE",group:"other"},{key:"automobileRepair",label:"AUTO MOBILE REPAIR & SERVICES",group:"other"},{key:"plumbingHeatingMaintenance",label:"PLUMBING/HEATING MAINTENANCE",group:"other"},{key:"removalWaste",label:"REMOVAL WASTE",group:"other"},{key:"others",label:"OTHERS",group:"other"},{key:"electricityConsumed",label:"ELECTRICITY CONSUMED",group:"energy"},{key:"waterConsumed",label:"WATER CONSUMED",group:"energy"},{key:"fuelDieselConsumed",label:"FUEL / DIESEL CONSUMED",group:"energy"}] as const;
@@ -143,18 +142,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const val=(row:ForecastMonth,key:keyof ForecastMonth)=>optional(String(row[key]??""));
   const monthly=(key:keyof ForecastMonth)=>(form.forecast.monthly.map(r=>val(r,key)));
   const pomecMonthly=(group:"payroll"|"other"|"energy")=>form.forecast.monthly.map(r=>group==="payroll"?(val(r,"pomecPayroll")??pomecTotal(r,group)):pomecTotal(r,group));
-  // Room revenue in Step 4 must follow Step 3 Budget P&L account 41101 even
-  // when the optional occupancy/ARR assumptions are blank or an older saved
-  // forecast still contains an empty roomDivisionDetails.roomRevenue.
-  const roomBudgetAnnual=optional(form.accounts?.["41101"]?.budget||"");
-  const yearDays=months.reduce((sum,m)=>sum+m.days,0);
-  const roomRevenue=months.map((m,i)=>{
-    if(m.roomRevenue!==null)return m.roomRevenue;
-    if(roomBudgetAnnual!==null&&yearDays>0)return i===11
-      ?roomBudgetAnnual-months.slice(0,11).reduce((sum,prior,j)=>sum+(prior.roomRevenue??Math.round(roomBudgetAnnual*prior.days/yearDays)),0)
-      :Math.round(roomBudgetAnnual*m.days/yearDays);
-    return null;
-  }), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
+  const roomRevenue=months.map(m=>m.roomRevenue), fb=monthly("fbRevenue"), phone=monthly("phoneRevenue"), other=monthly("otherRevenue");
   const revenue=months.map(m=>m.revenue), revenueTotal=sumPresent(revenue);
   const unavailableRooms=[form.statistics.outInventory,form.statistics.houseUse,form.statistics.outOfOrder].map(optional);
   const unavailableTotal=unavailableRooms.some(v=>v!==null)?unavailableRooms.reduce<number>((sum,v)=>sum+(v??0),0):0;
@@ -475,8 +463,6 @@ const buildStatisticsSheetRows=(form:BudgetForm,menuConfig?:{hidden?:string[];la
 
 export default function HotelBudgetPage() {
   const [form,setForm]=useState<BudgetForm>(makeBlank);
-  const [draftSavedAt,setDraftSavedAt]=useState("");
-  const [draftInitialized,setDraftInitialized]=useState(false);
   const [activeTab,setActiveTab]=useState("statistics");
   const [selectedDepartment,setSelectedDepartment]=useState("room");
   const [authStatus,setAuthStatus]=useState<"checking"|"authenticated"|"unauthenticated">("checking");
@@ -561,58 +547,6 @@ export default function HotelBudgetPage() {
     });
     return()=>{alive=false;subscription.unsubscribe();};
   },[loadReports]);
-
-  // Restore the most recent unsaved draft once, then autosave every form change locally.
-  useEffect(()=>{
-    try{
-      const raw=window.localStorage.getItem(DRAFT_STORAGE_KEY);
-      if(raw){
-        const draft=JSON.parse(raw) as {form?:BudgetForm;savedAt?:string};
-        if(draft?.form && typeof draft.form==="object"){
-          const blank=makeBlank();
-          const saved=draft.form;
-          const year=Number(saved.yearStart||blank.yearStart);
-          setForm({
-            ...blank,...saved,
-            statistics:{...blank.statistics,...(saved.statistics||{})},
-            accounts:{...emptyAccounts(),...(saved.accounts||{})},
-            forecast:{
-              monthly:makeMonthly(Number.isFinite(year)?year:2027).map((row,i)=>({...row,...(saved.forecast?.monthly?.[i]||{}),label:monthNames[i]+" "+(Number.isFinite(year)?year:2027)})),
-              annual:makeAnnual(Number.isFinite(year)?year:2027).map((row,i)=>({...row,...(saved.forecast?.annual?.[i]||{}),label:String((Number.isFinite(year)?year:2027)+i)}))
-            },
-            accountLines:saved.accountLines||[...ACCOUNT_LINES],
-            customAccounts:saved.customAccounts||[],
-            payrollEmployees:saved.payrollEmployees||[]
-          });
-          setDraftSavedAt(draft.savedAt||"");
-          setMessage("Draft input terakhir dipulihkan dari penyimpanan sementara browser.");
-        }
-      }
-    }catch{setMessage("Draft sementara tidak dapat dibaca. Input baru tetap dapat digunakan.");}
-    finally{setDraftInitialized(true);}
-  },[]);
-
-  useEffect(()=>{
-    if(!draftInitialized)return;
-    const savedAt=new Date().toISOString();
-    try{
-      window.localStorage.setItem(DRAFT_STORAGE_KEY,JSON.stringify({form,savedAt}));
-      setDraftSavedAt(savedAt);
-    }catch{
-      setMessage("Draft otomatis gagal disimpan. Ruang penyimpanan browser mungkin penuh; unduh Excel sebagai cadangan.");
-    }
-  },[form,draftInitialized]);
-
-  const saveDraftNow=()=>{
-    try{
-      const savedAt=new Date().toISOString();
-      window.localStorage.setItem(DRAFT_STORAGE_KEY,JSON.stringify({form,savedAt}));
-      setDraftSavedAt(savedAt);
-      setMessage("Draft sementara berhasil disimpan di browser/perangkat ini. Laporan belum disahkan sebagai laporan final.");
-    }catch{
-      setMessage("Draft tidak dapat disimpan. Unduh Excel sebagai cadangan.");
-    }
-  };
 
   useEffect(()=>{
     const start=Number(form.yearStart);
@@ -950,16 +884,8 @@ export default function HotelBudgetPage() {
     const roomCount=optional(form.statistics.rooms);
     const roomOccupancy=optional(form.statistics.occupancy)??values.paidOccupancy;
     const roomArr=optional(form.statistics.averageSellingRate);
-    const roomRevenueFromStatistics=roomCount!==null&&roomCount>0&&roomOccupancy!==null&&roomArr!==null&&roomArr>0
+    const roomRevenueBudget=roomCount!==null&&roomCount>0&&roomOccupancy!==null&&roomArr!==null&&roomArr>0
       ?Math.round(roomCount*yearDays*roomOccupancy/100*roomArr):null;
-    // Step 1 may define room revenue by total outlet budget + Rooms allocation
-    // instead of room count/occupancy/ARR. Keep that path connected to Step 3 too.
-    const revenueAllocation=form.budgetAllocations?.parentPercentBySection||{};
-    const totalOutletRevenue=optional(revenueAllocation["__revenueAllOutletTotal"]||"");
-    const roomRevenuePercent=optional(revenueAllocation["__revenueGroupPercent_roomRevenue"]||"");
-    const roomRevenueFromAllocation=totalOutletRevenue!==null&&totalOutletRevenue>0&&roomRevenuePercent!==null
-      ?Math.round(totalOutletRevenue*roomRevenuePercent/100):null;
-    const roomRevenueBudget=roomRevenueFromStatistics??roomRevenueFromAllocation;
     const sources:[string,number|null][]=[
       ["41101",roomRevenueBudget],
       ["41207",fb.banquet],
@@ -1616,19 +1542,6 @@ export default function HotelBudgetPage() {
           </div>}
 
           {activeTab==="pnl"&&<div className="space-y-5">
-            <section className="overflow-hidden rounded-2xl border border-indigo-200 bg-white shadow-sm">
-              <div className="bg-gradient-to-r from-indigo-950 via-blue-900 to-sky-800 p-4 text-white sm:p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-sky-200">STEP 3 · ACCOUNT INPUT</p>
-                <h3 className="mt-1 text-lg font-black sm:text-xl">Budget P&amp;L — Account Detail &amp; Actual Input</h3>
-                <p className="mt-1 max-w-4xl text-xs leading-5 text-blue-100">Isi nilai Actual, Budget, Last Year, dan YTD langsung pada akun yang sesuai. Nilai kosong tetap kosong; masukkan 0 hanya jika telah dipastikan tidak ada nilai. Budget yang bersumber dari Step 1 akan tetap disinkronkan oleh perhitungan otomatis.</p>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="min-w-[1100px] w-full border-collapse">
-                  <thead><tr className="bg-indigo-50 text-indigo-950"><th className="sticky left-0 z-10 min-w-[330px] bg-indigo-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th><th className="min-w-36 px-3 py-3 text-right text-xs">ACTUAL</th><th className="min-w-36 px-3 py-3 text-right text-xs">BUDGET</th><th className="min-w-36 px-3 py-3 text-right text-xs">LAST YEAR</th><th className="min-w-36 px-3 py-3 text-right text-xs">YTD ACTUAL</th><th className="min-w-36 px-3 py-3 text-right text-xs">YTD BUDGET</th><th className="min-w-36 px-3 py-3 text-right text-xs">LAST YEAR YTD</th></tr></thead>
-                  <tbody>{GROUP_ORDER.map(group=><Fragment key={group}><tr className="bg-slate-100"><td colSpan={7} className="px-3 py-2 text-xs font-black">{GROUP_LABELS[group]}</td></tr>{allAccountLines.filter(line=>line.group===group).map(line=>{const row=form.accounts[line.code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};return <tr key={line.code} className="border-t border-slate-100 hover:bg-sky-50/40"><td className="sticky left-0 z-[1] bg-white px-3 py-2 text-xs"><span className="mr-2 font-mono text-slate-500">{line.code}</span><span className="font-semibold text-slate-800">{line.label}</span></td>{(["actual","budget","lastYear","ytdActual","ytdBudget","lastYearYtd"] as const).map(column=><td key={column} className="px-2 py-1.5">{numberInput(row[column],value=>updateAccount(line.code,column,value),"—",Boolean(line.allowNegative))}</td>)}</tr>;})}</Fragment>)}</tbody>
-                </table>
-              </div>
-            </section>
             <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
               <div className="mt-5 space-y-4 rounded-2xl border border-slate-200 bg-slate-50/80 p-4 sm:p-5">
 <div className="space-y-4">
@@ -1689,17 +1602,8 @@ const row=form.forecast.monthly[i];
 if(k==="roomRevenue"){
 const saved=optional(row?.roomDivisionDetails?.roomRevenue);
 if(saved!==null)return saved;
-const year=Number(form.yearStart)||new Date().getFullYear();
-const calculated=calcMonthly(row,year,i,form.statistics.rooms).roomRevenue;
-if(calculated!==null)return calculated;
-const annualRoomBudget=optional(form.accounts?.["41101"]?.budget||"");
-if(annualRoomBudget===null)return null;
-const yearDays=Array.from({length:12},(_,month)=>new Date(year,month+1,0).getDate()).reduce((sum,days)=>sum+days,0);
-const priorDays=Array.from({length:i},(_,month)=>new Date(year,month+1,0).getDate()).reduce((sum,days)=>sum+days,0);
-const currentDays=new Date(year,i+1,0).getDate();
-const before=Math.round(annualRoomBudget*priorDays/yearDays);
-const through=Math.round(annualRoomBudget*(priorDays+currentDays)/yearDays);
-return i===11?annualRoomBudget-before:through-before;
+const calculated=calcMonthly(row, Number(form.yearStart)||new Date().getFullYear(), i, form.statistics.rooms);
+return calculated.roomRevenue;
 }
 if(k.startsWith("rd")){
 const suffixMap:Record<string,string[]>={rdSalary:["foSalary","hkSalary"],rdIncomeTax:["foIncomeTax","hkIncomeTax"],rdJamsostek:["foJamsostek","hkJamsostek"],rdInsurance:["foInsurance","hkInsurance"],rdThr:["foBonus","hkThr"],rdMeal:["foMeal","hkMeal"],rdMedical:["foMedical","hkMedical"],rdOtherPayroll:["foOtherPayroll","hkOtherPayroll"],rdChina:["hkChina"],rdGlass:["hkGlass"],rdSilver:["hkSilver"],rdLinen:["hkLinen"],rdDecoration:["foDecoration","hkDecoration"],rdDues:["foDues"],rdEntertainment:["foEntertainment"],rdWelcomeDrink:["foWelcomeDrink","hkWelcomeDrink"],rdCable:["hkCable"],rdLaundry:["foLaundry","hkLaundry"],rdMisc:["foMisc"],rdPostage:["foPostage"],rdGuestSupplies:["foGuestSupplies","hkGuestSupplies"],rdCleaning:["foCleaning","hkCleaning"],rdAmenities:["hkAmenities"],rdPrinting:["foPrinting","hkPrinting"],rdTelephone:["foTelephone"],rdTransportGuest:["foTransportGuest"],rdUniform:["foUniform","hkUniform"],rdInternet:["hkInternet"],rdPest:["hkPest"]};
@@ -2066,7 +1970,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 
           <div className="mt-7 flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-5">
             <button type="button" onClick={goPreviousStep} disabled={sectionIndex===0} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-40">← Tahap Sebelumnya</button>
-            {activeTab!=="export"?<button type="button" onClick={goNextStep} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5">Tahap Berikutnya →</button>:<div className="flex flex-wrap gap-3"><label className="flex max-w-xl items-start gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 py-3 text-sm text-indigo-950"><input type="checkbox" className="mt-1 h-4 w-4 shrink-0 accent-indigo-700" checked={Boolean(form.confirmAccountReview)} onChange={e=>setForm(prev=>({...prev,confirmAccountReview:e.target.checked}))}/><span>Saya telah meninjau akun yang relevan; akun Actual yang kosong memang tidak berlaku atau tidak memiliki nilai.</span></label><button type="button" onClick={saveDraftNow} className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 hover:bg-amber-100">Simpan Draft Sementara</button><button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button><button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final Corestay & Simpan"}</button><button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button>{draftSavedAt&&<span className="self-center text-xs text-slate-500">Draft otomatis tersimpan: {new Date(draftSavedAt).toLocaleString("id-ID")}</span>}</div>}
+            {activeTab!=="export"?<button type="button" onClick={goNextStep} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5">Tahap Berikutnya →</button>:<div className="flex flex-wrap gap-3"><button type="button" onClick={()=>setPreviewOpen(true)} className="rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm font-bold text-slate-700 hover:bg-slate-50">Preview sebelum simpan</button><button type="button" disabled={saving} onClick={()=>void saveFinal()} className="rounded-xl bg-gradient-to-r from-blue-700 to-violet-700 px-5 py-3 text-sm font-bold text-white shadow-md transition hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-60">{saving?"Validasi & simpan berjalan…":"Validasi Final Corestay & Simpan"}</button><button type="button" onClick={downloadExcel} className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-bold text-emerald-800 hover:bg-emerald-100">Download Excel (.xlsx)</button></div>}
           </div>
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
           {(issues.length>0||warnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{warnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{warnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}

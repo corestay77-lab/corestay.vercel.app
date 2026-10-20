@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
   } finally {
     if (uploadedPathname.startsWith("hotel-budget-email-reports/")) {
       try {
-        await del(uploadedPathname, { access: "private" });
+        await del(uploadedPathname);
       } catch (cleanupError) {
         console.error("CoreStay temporary PDF cleanup failed:", cleanupError);
       }

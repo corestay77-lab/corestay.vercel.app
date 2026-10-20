@@ -1268,23 +1268,12 @@ export default function HotelBudgetPage() {
     if(!reportEmail.trim()||!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(reportEmail.trim())){setEmailStatus("error");setMessage("Masukkan alamat email penerima yang valid.");return;}
     if(!reportPdf||!(reportPdf.type==="application/pdf"||reportPdf.name.toLowerCase().endsWith(".pdf"))){setEmailStatus("error");setMessage("Pilih file PDF laporan final yang disimpan dari Preview / Print PDF.");return;}
     if(reportPdf.size>25*1024*1024){setEmailStatus("error");setMessage("Ukuran PDF maksimal 25 MB.");return;}
-    setEmailSending(true);setEmailStatus("sending");setMessage("Memeriksa sesi login, lalu mengunggah PDF secara aman…");
+    setEmailSending(true);setEmailStatus("sending");setMessage("Mengunggah PDF dan mengirim email…");
     let uploadedPathname="";
-    let emailAccessToken="";
     try{
-      // Resolve a fresh Supabase session at send time; React state can lag behind auth refreshes.
-      const sessionResult=await supabase.auth.getSession();
-      emailAccessToken=sessionResult.data.session?.access_token||accessToken||"";
-      if(!emailAccessToken){
-        const refreshed=await supabase.auth.refreshSession();
-        emailAccessToken=refreshed.data.session?.access_token||"";
-      }
-      if(!emailAccessToken) throw new Error("Sesi login sudah berakhir atau tidak tersedia. Silakan login kembali, lalu kirim ulang PDF.");
-      setAccessToken(emailAccessToken);
       const uploaded=await upload("hotel-budget-email-reports/"+reportPdf.name.replace(/[^a-zA-Z0-9._-]/g,"_"),reportPdf,{
         access:"private",
         handleUploadUrl:"/api/hotel-budget/upload-report",
-        headers:{Authorization:"Bearer "+emailAccessToken},
         clientPayload:JSON.stringify({fileName:reportPdf.name}),
         onUploadProgress:(progress)=>{setMessage("Mengunggah PDF… "+Math.round(progress.percentage)+"%");}
       });
@@ -1294,7 +1283,7 @@ export default function HotelBudgetPage() {
       const timeoutId=window.setTimeout(()=>controller.abort(),55000);
       let response:Response;
       try{
-        response=await fetch("/api/hotel-budget/email-report",{method:"POST",headers:{"Content-Type":"application/json",Authorization:"Bearer "+emailAccessToken},body:JSON.stringify({to:reportEmail.trim(),hotelName:form.hotelName,period:form.period,yearStart:form.yearStart,blobPathname:uploadedPathname,fileName:reportPdf.name}),signal:controller.signal});
+        response=await fetch("/api/hotel-budget/email-report",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({to:reportEmail.trim(),hotelName:form.hotelName,period:form.period,yearStart:form.yearStart,blobPathname:uploadedPathname,fileName:reportPdf.name}),signal:controller.signal});
       }finally{window.clearTimeout(timeoutId);}
       const result=await response.json().catch(()=>({}));
       if(!response.ok||!result.success)throw new Error(result.error||(response.status===413?"PDF terlalu besar untuk diproses server. Maksimal 25 MB.":"Email laporan gagal dikirim."));

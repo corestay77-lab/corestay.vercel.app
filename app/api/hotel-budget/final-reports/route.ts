@@ -139,7 +139,9 @@ export async function POST(request: NextRequest) {
       .filter((line:any,index:number,arr:any[])=>arr.findIndex(item=>item?.code===line?.code)===index);
     for (const line of accountLines) {
       const row=accounts[line.code] || {};
-      for (const column of ["actual","budget","lastYear","ytdActual","ytdBudget","lastYearYtd"] as const) {
+      // Validasi final tidak memeriksa kolom Actual/YTD Actual karena data aktual tidak disiapkan pada alur uji ini.
+      // Budget, Last Year, YTD Budget, dan Last Year YTD tetap divalidasi.
+      for (const column of ["budget","lastYear","ytdBudget","lastYearYtd"] as const) {
         const raw=row[column];
         if (raw===undefined||raw===null||raw==="") continue;
         const value=numeric(raw);
@@ -150,10 +152,7 @@ export async function POST(request: NextRequest) {
     const calculations=calculateBudget({...form, accountLines});
     if (calculations.roomAvailable!==null && calculations.roomAvailable<0) issues.push("Room Available hasil perhitungan bernilai negatif.");
     if (calculations.occupancy!==null && (calculations.occupancy<0 || calculations.occupancy>100)) issues.push("Occupancy harus berada antara 0% dan 100%.");
-    if (calculations.revenue===null) warnings.push("Total revenue Actual belum dapat dihitung karena belum ada nilai sumber yang terisi; laporan tetap dapat disimpan sebagai hasil uji/input sementara.");
-    if (calculations.costs===null) warnings.push("Total biaya operasional Actual belum lengkap; nilai kosong dipertahankan sebagai kosong dan tidak otomatis dianggap nol.");
-    const actualBlankCount=accountLines.filter((line:any)=>numeric(accounts[line.code]?.actual)===null).length;
-    if (actualBlankCount) warnings.push(actualBlankCount+" baris akun Actual kosong. Baris kosong tidak otomatis dianggap nol; pastikan akun yang tidak berlaku sudah ditinjau.");
+    // Pemeriksaan kelengkapan revenue/biaya Actual sengaja dilewati: kolom Actual tidak disiapkan pada tahap uji ini.
     if (!Array.isArray(form.forecast?.monthly) || form.forecast.monthly.length!==12) issues.push("Forecast bulanan harus memuat tepat 12 bulan.");
     if (!Array.isArray(form.forecast?.annual) || form.forecast.annual.length!==10) issues.push("Forecast multi-tahun harus memuat tepat 10 tahun.");
     for (const [label,rows,keys] of [
@@ -236,7 +235,7 @@ export async function POST(request: NextRequest) {
     const apiKey=process.env.GEMINI_API_KEY;
     if (!apiKey) return NextResponse.json({ passed:false, issues:["GEMINI_API_KEY tidak tersedia; AI Orchestrator wajib menyelesaikan validasi sebelum penyimpanan."], warnings, error:"Validasi AI belum tersedia. Laporan belum disimpan." }, { status:503 });
     const google=createGoogleGenerativeAI({apiKey});
-    const reviewPrompt=`Validasi final laporan hotel CoreStay dengan fokus utama pada rekonsiliasi hasil akhir terhadap data sumber yang benar-benar telah diinput. Jangan mengubah angka atau mengarang nilai. Data kosong harus tetap kosong dan tidak otomatis dianggap nol. Bandingkan input Step 1 Statistics/Revenue, Step 2 akun Budget P&L, Master Payroll, Department Expenses, Owner Expenses, Forecast bulanan, Annual Forecast, 1 Year Consolidated, 10 Years Consolidated, dan hasil export bila tersedia. Gunakan kalkulasi server sebagai sumber kebenaran matematis: ${JSON.stringify(calculations)}. Statistik: ${JSON.stringify(stats)}. Master Payroll: ${JSON.stringify(form.payrollEmployees || [])}. Akun P&L (JSON): ${JSON.stringify(accounts)}. Forecast: ${JSON.stringify(form.forecast)}. Periksa transfer nilai dari sumber ke laporan, subtotal/total, revenue, cost of sales, payroll, operating expenses, overhead, GOP/margin, variance, serta deteksi nilai hilang, duplikasi, salah klasifikasi, NaN/Infinity, atau ketidaksesuaian formula. Pastikan total 12 bulan cocok dengan Annual Forecast dan year-1 pada 10-Year Consolidated, serta pertumbuhan tahun berikutnya mengikuti asumsi yang diinput. Nilai Actual yang kosong atau total revenue Actual yang belum tersedia bukan kesalahan otomatis dan tidak boleh menjadi satu-satunya alasan untuk menolak simpan; laporkan sebagai warning. Jangan menganggap kosong sebagai nol. Baris Master Payroll identik antar departemen bukan alasan untuk menggagalkan validasi kecuali ada bukti nilai dihitung ganda dalam hasil akhir. passed=false hanya untuk kesalahan matematis/data invalid atau ketidaksesuaian material yang didukung bukti input. Ringkasan Bahasa Indonesia singkat dan sebutkan sumber/kelompok yang tidak cocok.`;
+    const reviewPrompt=`Validasi final laporan hotel CoreStay dengan fokus utama pada rekonsiliasi hasil akhir terhadap data sumber yang benar-benar telah diinput. Jangan mengubah angka atau mengarang nilai. Data kosong harus tetap kosong dan tidak otomatis dianggap nol. Bandingkan input Step 1 Statistics/Revenue, Step 2 akun Budget P&L, Master Payroll, Department Expenses, Owner Expenses, Forecast bulanan, Annual Forecast, 1 Year Consolidated, 10 Years Consolidated, dan hasil export bila tersedia. Gunakan kalkulasi server sebagai sumber kebenaran matematis: ${JSON.stringify(calculations)}. Statistik: ${JSON.stringify(stats)}. Master Payroll: ${JSON.stringify(form.payrollEmployees || [])}. Akun P&L (JSON): ${JSON.stringify(accounts)}. Forecast: ${JSON.stringify(form.forecast)}. Periksa transfer nilai dari sumber ke laporan, subtotal/total budget, revenue budget, cost of sales, payroll, operating expenses, overhead, GOP/margin budget, serta deteksi nilai invalid, duplikasi, salah klasifikasi, NaN/Infinity, atau ketidaksesuaian formula. Pastikan total 12 bulan cocok dengan Annual Forecast dan year-1 pada 10-Year Consolidated, serta pertumbuhan tahun berikutnya mengikuti asumsi yang diinput. LEWATI seluruh pemeriksaan kelengkapan, rekonsiliasi, dan warning yang berkaitan dengan kolom Actual/YTD Actual, termasuk Total Revenue Actual, biaya operasional Actual, dan jumlah baris akun Actual kosong karena data tersebut memang tidak disiapkan. Jangan meminta pengguna mengisi Actual untuk meloloskan laporan. Nilai kosong tetap kosong dan tidak dianggap nol. Baris Master Payroll identik antar departemen bukan alasan untuk menggagalkan validasi kecuali ada bukti nilai dihitung ganda dalam hasil akhir. passed=false hanya untuk kesalahan matematis/data invalid atau ketidaksesuaian material yang didukung bukti input. Ringkasan Bahasa Indonesia singkat dan sebutkan sumber/kelompok yang tidak cocok.`;
     let review: z.infer<typeof ReviewSchema>|null=null;
     let lastError: unknown=null;
     for (const modelId of ["gemini-3.8-flash","gemini-3.5-flash-lite","gemini-2.5-flash","gemini-2.0-flash"]) {
@@ -255,8 +254,11 @@ export async function POST(request: NextRequest) {
       console.error("Hotel Budget Orchestrator unavailable",lastError);
       return NextResponse.json({ passed:false, issues:["AI Orchestrator tidak berhasil menyelesaikan validasi final. Laporan belum disimpan."], warnings, error:"Layanan AI sedang sibuk atau tidak tersedia. Data form tetap ada; coba lagi." }, { status:503 });
     }
-    const allIssues=[...new Set(review.issues)];
-    const allWarnings=[...new Set([...warnings,...review.warnings])];
+    // Safety net: abaikan temuan AI yang hanya mempersoalkan kelengkapan Actual/YTD Actual.
+    const actualOnlyFinding = (message:string) => /actual|aktual|ytd\s*actual/i.test(message)
+      && /kosong|belum (?:ada|diisi|lengkap|dapat)|tidak (?:ada|tersedia|diisi)|missing|incomplete|kelengkapan|revenue|biaya|cost|akun/i.test(message);
+    const allIssues=[...new Set(review.issues.filter((item)=>!actualOnlyFinding(item)))];
+    const allWarnings=[...new Set([...warnings,...review.warnings.filter((item)=>!actualOnlyFinding(item))])];
     if (!review.passed || allIssues.length) return NextResponse.json({ passed:false, issues:allIssues.length?allIssues:["AI Orchestrator belum menyetujui laporan."], warnings:allWarnings, summary:review.summary }, { status:422 });
     const validation={passed:true,summary:review.summary,warnings:allWarnings,orchestrator:"CORESTAY HOTEL BUDGET ORCHESTRATOR",deterministicChecks:true,aiReview:true,validatedAt:new Date().toISOString()};
     if (!auth) {

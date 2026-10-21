@@ -535,8 +535,11 @@ export default function HotelBudgetPage() {
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
     });
     const find=(label:string,occurrence=0)=>{let seen=0;for(let i=0;i<rows.length;i++){if(rows[i].label===label&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
+    const findInSection=(sectionLabel:string,label:string,occurrence=0)=>{let active=false,seen=0;for(let i=0;i<rows.length;i++){if(rows[i].section){if(active)return -1;active=rows[i].label===sectionLabel;continue;}if(active&&rows[i].label===label){if(seen===occurrence)return i;seen++;}}return -1;};
     const get=(label:string,year:number,occurrence=0):number|null=>{const i=find(label,occurrence);return i<0?null:rows[i].values[year]??null;};
+    const getInSection=(sectionLabel:string,label:string,year:number,occurrence=0):number|null=>{const i=findInSection(sectionLabel,label,occurrence);return i<0?null:rows[i].values[year]??null;};
     const put=(label:string,year:number,value:number|null,occurrence=0)=>{const i=find(label,occurrence);if(i>=0)rows[i].values[year]=value;};
+    const putInSection=(sectionLabel:string,label:string,year:number,value:number|null,occurrence=0)=>{const i=findInSection(sectionLabel,label,occurrence);if(i>=0)rows[i].values[year]=value;};
     if(tenYearMode==="manual") rows.forEach((line,index)=>{
       if(!line.inputKey||line.label==="TOTAL OPERATING COSTS"||line.section)return;
       for(let year=1;year<yearCount;year++){
@@ -551,17 +554,17 @@ export default function HotelBudgetPage() {
       const revenueParts=[get("ROOMS",year),get("FOOD & BEVERAGE",year,0),get("TELEPHONE & FACSIMILE",year,0),get("MINOR OPERATING DEPARTMENT",year,0)];
       const revenue=sumPresent(revenueParts);put("TOTAL REVENUES (EXCL. TAX)",year,revenue);
       const cos=sumPresent([get("Food & Beverage",year,0),get("Telephone & Facsimile",year,0),get("Minor Operating Department",year,0)]);put("TOTAL COST OF SALES",year,cos);
-      const payroll=sumPresent([get("ROOM DIVISION",year,0),get("FOOD & BEVERAGE",year,1),get("TELEPHONE",year,0),get("MINOR OPERATING DEPT.",year,0)]);put("TOTAL PAYROLL & RELATED EXPENSES",year,payroll);
-      const deptOther=sumPresent([get("ROOM DIVISION",year,1),get("FOOD & BEVERAGE",year,2),get("TELEPHONE & FACSIMILE",year,1),get("MINOR OPERATING DEPT.",year,1)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
+      const payroll=sumPresent([getInSection("PAYROLL & RELATED EXPENSES","ROOM DIVISION",year),getInSection("PAYROLL & RELATED EXPENSES","FOOD & BEVERAGE",year),getInSection("PAYROLL & RELATED EXPENSES","TELEPHONE",year),getInSection("PAYROLL & RELATED EXPENSES","MINOR OPERATING DEPT.",year)]);put("TOTAL PAYROLL & RELATED EXPENSES",year,payroll);
+      const deptOther=sumPresent([getInSection("OTHER DEPARTMENT EXPENSES","ROOM DIVISION",year),getInSection("OTHER DEPARTMENT EXPENSES","FOOD & BEVERAGE",year),getInSection("OTHER DEPARTMENT EXPENSES","TELEPHONE & FACSIMILE",year),getInSection("OTHER DEPARTMENT EXPENSES","MINOR OPERATING DEPT.",year)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
       const deptOperating=cos!==null&&payroll!==null&&deptOther!==null?cos+payroll+deptOther:null;put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
       const overheadPayroll=sumPresent([get("ADMINISTRATION & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("POMEC & UTILITIES",year,0)]);put("TOTAL OVERHEAD PAYROLL",year,overheadPayroll);
       const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("TOTAL SALES & MARKETING OTHER EXPENSES",year),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
       const overhead=overheadPayroll!==null&&overheadOther!==null?overheadPayroll+overheadOther:null;put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
       const operatingCosts=deptOperating!==null&&overhead!==null?deptOperating+overhead:null;put("TOTAL OPERATING COSTS",year,operatingCosts);
-      const roomDeptRevenue=get("ROOMS",year), roomDeptCosts=sumPresent([get("ROOM DIVISION",year,0),get("ROOM DIVISION",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,1);
-      const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("Food & Beverage",year,0),get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,1);
-      const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
-      const modDeptRevenue=get("MINOR OPERATING DEPARTMENT",year,0), modDeptCosts=sumPresent([get("Minor Operating Department",year,0),get("MINOR OPERATING DEPT.",year,0),get("MINOR OPERATING DEPT.",year,1)]);put("MINOR OPERATING DEPARTMENT",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null,1);
+      const roomDeptRevenue=getInSection("REVENUES","ROOMS",year), roomDeptCosts=sumPresent([getInSection("PAYROLL & RELATED EXPENSES","ROOM DIVISION",year),getInSection("OTHER DEPARTMENT EXPENSES","ROOM DIVISION",year)]);putInSection("DEPARTMENT INCOME","ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null);
+      const fbDeptRevenue=getInSection("REVENUES","FOOD & BEVERAGE",year), fbDeptCosts=sumPresent([getInSection("COST OF SALES","Food & Beverage",year),getInSection("PAYROLL & RELATED EXPENSES","FOOD & BEVERAGE",year),getInSection("OTHER DEPARTMENT EXPENSES","FOOD & BEVERAGE",year)]);putInSection("DEPARTMENT INCOME","FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null);
+      const phoneDeptRevenue=getInSection("REVENUES","TELEPHONE & FACSIMILE",year), phoneDeptCosts=sumPresent([getInSection("COST OF SALES","Telephone & Facsimile",year),getInSection("PAYROLL & RELATED EXPENSES","TELEPHONE",year),getInSection("OTHER DEPARTMENT EXPENSES","TELEPHONE & FACSIMILE",year)]);putInSection("DEPARTMENT INCOME","TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null);
+      const modDeptRevenue=getInSection("REVENUES","MINOR OPERATING DEPARTMENT",year), modDeptCosts=sumPresent([getInSection("COST OF SALES","Minor Operating Department",year),getInSection("PAYROLL & RELATED EXPENSES","MINOR OPERATING DEPT.",year),getInSection("OTHER DEPARTMENT EXPENSES","MINOR OPERATING DEPT.",year)]);putInSection("DEPARTMENT INCOME","MINOR OPERATING DEPARTMENT",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null);
       const houseProfit=revenue!==null&&operatingCosts!==null?revenue-operatingCosts:null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const nonOp=sumPresent([get("MANAGEMENT FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER NON-OPERATING EXPENSES",year,nonOp);
@@ -571,6 +574,19 @@ export default function HotelBudgetPage() {
       const osp=gop!==null&&ownerCost!==null?gop-ownerCost:null;put("OWNER SHARE PROFIT (OSP)",year,osp);
       const otherOwner=get("OTHER OWNER EXPENSES",year);put("TOTAL OWNER EXPENSES",year,otherOwner);put("NET OWNER SHARE PROFIT (NOSP)",year,osp!==null?osp-(otherOwner??0):null);
       const rooms=optional(source.statistics.rooms),nosp=get("NET OWNER SHARE PROFIT (NOSP)",year);put("NET OWNER SHARE PROFIT / UNIT",year,nosp!==null&&rooms!==null&&rooms>0?nosp/rooms:null);
+      // Rebase each row's percentage to its matching revenue driver for every projected year.
+      const baseCandidates=[
+        {first:getInSection("REVENUES","TOTAL REVENUES (EXCL. TAX)",0),current:revenue},
+        {first:getInSection("REVENUES","ROOMS",0),current:getInSection("REVENUES","ROOMS",year)},
+        {first:getInSection("REVENUES","FOOD & BEVERAGE",0),current:getInSection("REVENUES","FOOD & BEVERAGE",year)},
+        {first:getInSection("REVENUES","TELEPHONE & FACSIMILE",0),current:getInSection("REVENUES","TELEPHONE & FACSIMILE",year)},
+        {first:getInSection("REVENUES","MINOR OPERATING DEPARTMENT",0),current:getInSection("REVENUES","MINOR OPERATING DEPARTMENT",year)}
+      ];
+      rows.forEach(line=>{
+        if(!line.base||line.base[0]===null||line.section)return;
+        const match=baseCandidates.find(candidate=>candidate.first!==null&&Math.abs(candidate.first-line.base![0]!)<0.5);
+        line.base[year]=match?match.current:revenue;
+      });
     }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};
@@ -1382,9 +1398,25 @@ export default function HotelBudgetPage() {
       ["Catatan",form.notes],["Rekomendasi / Tindakan",form.actionRecommendation],["PIC",form.actionOwner],["Deadline",form.actionDue],["Target",form.actionTarget],["Status",form.actionStatus],["Progress (%)",optional(form.actionProgress)]
     ];
     const pnlRows:any[][]=[["Account Code","Account / Description","Section","Actual","Actual %","Budget","Budget %","Variance Actual − Budget","Variance %","Last Year Same Month","Variance Actual − Last Year","Variance % LY","YTD Actual","YTD Actual %","YTD Budget","YTD Budget %","YTD Variance A−B","YTD Variance %","Last Year YTD","YTD Variance A−LY","YTD Variance % LY"]];
+    const masterPayrollBudgetForLine=(line:AccountLine):number|null=>{
+      if(line.group!=="payroll")return null;
+      const split=line.label.split(" — ");
+      const department=(split[0]||"").toLowerCase(),item=(split.slice(1).join(" — ")||"").toLowerCase();
+      const deptKey=department.includes("front office")?"FO":department.includes("housekeeping")?"HK":department.includes("food & beverage")?"FB":department.includes("engineering")?"POMEC":department.includes("sales & marketing")?"SM":department.includes("administrative & general")?"AG":department.includes("human resources")?"HRD":department.includes("minor operating")?"MOD":null;
+      if(!deptKey||!payrollDepartmentHasInputs(deptKey))return null;
+      const totals=payrollDepartmentMonthly(deptKey);
+      if(item.includes("salary & wages"))return totals.salary;
+      if(item.includes("thr"))return totals.thr;
+      if(item.includes("meal allowance"))return totals.meal;
+      if(item.includes("jamsostek")||item.includes("bpjs"))return totals.jamsostek;
+      if(item.includes("medical & insurance"))return totals.medical+totals.insurance;
+      if(item.includes("other payroll"))return totals.other;
+      if(item.includes("overtime")||item.includes("bonus / incentive")||item.includes("income tax allowance")||item.includes("pension")||item.includes("temporary staff")||item.includes("employee benefits"))return 0;
+      return null;
+    };
     for(const line of allAccountLines){
       const row=form.accounts[line.code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
-      const a=optional(row.actual),b=optional(row.budget),l=optional(row.lastYear),ya=optional(row.ytdActual),yb=optional(row.ytdBudget),yl=optional(row.lastYearYtd);
+      const a=optional(row.actual),masterPayrollBudget=masterPayrollBudgetForLine(line),b=masterPayrollBudget!==null?masterPayrollBudget:optional(row.budget),l=optional(row.lastYear),ya=optional(row.ytdActual),yb=optional(row.ytdBudget),yl=optional(row.lastYearYtd);
       const variance=a!==null&&b!==null?a-b:null, varianceLastYear=a!==null&&l!==null?a-l:null;
       const ytdVariance=ya!==null&&yb!==null?ya-yb:null, ytdVarianceLastYear=ya!==null&&yl!==null?ya-yl:null;
       pnlRows.push([line.code,line.label,line.section,a,percentNumber(a,revenueActual),b,percentNumber(b,revenueBudget),variance,percentNumber(variance,b),l,varianceLastYear,percentNumber(varianceLastYear,l),ya,percentNumber(ya,ytdRevenueActual),yb,percentNumber(yb,ytdRevenueBudget),ytdVariance,percentNumber(ytdVariance,yb),yl,ytdVarianceLastYear,percentNumber(ytdVarianceLastYear,yl)]);
@@ -1435,8 +1467,8 @@ export default function HotelBudgetPage() {
     buildConsolidatedRows(consolidatedForm).forEach(line=>{
       if(line.kind==="section"){consolidatedMonthly.push([line.label,...Array(26).fill("")]);return;}
       const vals:any[]=[line.label];
-      [11,0,1,2,3,4,5,6,7,8,9,10].forEach(i=>{const v=line.values[i];const base=line.base?.[i]??null;vals.push(v??0,base!==null&&base!==0&&v!==null?v/base*100:0);});
-      vals.push(line.total??0,line.totalPct??0);
+      [11,0,1,2,3,4,5,6,7,8,9,10].forEach(i=>{const v=line.values[i];const base=line.base?.[i]??null;vals.push(v??null,base!==null&&base!==0&&v!==null?v/base*100:null);});
+      vals.push(line.total??null,line.totalPct??null);
       consolidatedMonthly.push(vals);
     });
     const consolidatedAnnual:any[][]=[["CORESTAY ADVISORY — 10 YEARS CONSOLIDATED",...Array(22).fill("")],["Hotel",form.hotelName,"Period",form.yearStart+"–"+(Number(form.yearStart)+9),"Currency",currency],["Account / Description",...form.forecast.annual.flatMap((row,i)=>["YEAR "+(i+1)+" VALUE","YEAR "+(i+1)+" %"]),"TOTAL / AVERAGE VALUE","TOTAL / AVERAGE %"]];

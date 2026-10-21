@@ -1258,6 +1258,27 @@ export default function HotelBudgetPage() {
   const displayAmountInput=(value:string)=>{if(value.trim()==="")return "";const n=Number(value);return Number.isFinite(n)?new Intl.NumberFormat("id-ID",{maximumFractionDigits:2,useGrouping:true}).format(n):value;};
   const numberInput=(value:string,onChange:(v:string)=>void,placeholder="—",allowNegative=false)=><input type="text" inputMode="decimal" min={allowNegative?undefined:"0"} className="w-28 rounded-lg border border-slate-200 bg-white px-2 py-2 text-right text-xs tabular-nums outline-none focus:border-sky-400 focus:ring-2 focus:ring-sky-100 sm:w-32" value={displayAmountInput(value)} onChange={e=>onChange(parseAmountInput(e.target.value))} placeholder={placeholder} />;
 
+  function clearDraftAndInputs(){
+    if(!window.confirm("Kosongkan semua isian Budget & Forecast dan hapus draft sementara yang tersimpan di browser ini? Tindakan ini tidak dapat dibatalkan. Laporan final yang sudah disimpan tidak akan dihapus."))return;
+    try{
+      window.localStorage.removeItem(LOCAL_DRAFT_KEY);
+      setForm(makeBlank());
+      setCurrency("IDR");
+      setAnnualGrowthPct(2);
+      setTenYearMode("growth");
+      setTenYearOverrides({});
+      setDriverAssumptions({rooms:"",fnb:"",mod:"",costOfSales:"",payroll:"",departmentExpenses:"",overhead:""});
+      setDraftSavedAt("");
+      setIssues([]);
+      setWarnings([]);
+      setSummary("");
+      setOrchestrator("idle");
+      setMessage("Semua isian form telah dikosongkan dan draft sementara di browser ini dihapus. Laporan final tersimpan tidak dihapus.");
+    }catch{
+      setMessage("Draft tidak dapat dihapus dari penyimpanan browser. Periksa pengaturan browser lalu coba lagi.");
+    }
+  }
+
   function saveDraft(){
     try {
       const savedAt=new Date().toISOString();
@@ -2067,6 +2088,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <div className="rounded-2xl border border-violet-200 bg-gradient-to-br from-violet-50 to-white p-5 shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-violet-600 text-xl text-white">◉</div><h3 className="mt-4 text-lg font-extrabold text-slate-900">2. Preview Laporan</h3><p className="mt-1 min-h-12 text-sm leading-5 text-slate-600">Tinjau statistik, laporan konsolidasi, forecast, serta rincian departemen sebelum dicetak.</p><button type="button" onClick={()=>setPreviewOpen(true)} className="mt-4 w-full rounded-xl bg-violet-700 px-4 py-3 text-sm font-bold text-white hover:bg-violet-800">Preview Laporan</button></div>
               <div className="rounded-2xl border border-emerald-200 bg-gradient-to-br from-emerald-50 to-white p-5 shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-600 text-xl text-white">⇩</div><h3 className="mt-4 text-lg font-extrabold text-slate-900">3. Download File</h3><p className="mt-1 min-h-12 text-sm leading-5 text-slate-600">Unduh workbook Excel berisi statistik, budget, forecast, dan rincian laporan.</p><button type="button" onClick={downloadExcel} className="mt-4 w-full rounded-xl bg-emerald-700 px-4 py-3 text-sm font-bold text-white hover:bg-emerald-800">Download Excel (.xlsx)</button></div>
               <div className="rounded-2xl border border-amber-200 bg-gradient-to-br from-amber-50 to-white p-5 shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-500 text-xl text-white">▤</div><h3 className="mt-4 text-lg font-extrabold text-slate-900">4. Print / Save PDF</h3><p className="mt-1 min-h-12 text-sm leading-5 text-slate-600">Buka preview laporan terlebih dahulu, lalu pilih Print / Save PDF dan pilih “Save as PDF” pada dialog cetak browser.</p><button type="button" onClick={()=>setPreviewOpen(true)} className="mt-4 w-full rounded-xl bg-amber-600 px-4 py-3 text-sm font-bold text-white hover:bg-amber-700">Preview &amp; Save PDF</button></div>
+              <div className="rounded-2xl border border-rose-200 bg-gradient-to-br from-rose-50 to-white p-5 shadow-sm"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-rose-600 text-xl text-white">🧹</div><h3 className="mt-4 text-lg font-extrabold text-slate-900">5. Reset Draft &amp; Isian</h3><p className="mt-1 min-h-12 text-sm leading-5 text-slate-600">Kosongkan semua input dan hapus draft sementara yang tersimpan di browser ini. Laporan final yang sudah disimpan tetap aman.</p><button type="button" onClick={clearDraftAndInputs} className="mt-4 w-full rounded-xl bg-rose-700 px-4 py-3 text-sm font-bold text-white hover:bg-rose-800"><span aria-hidden="true">🧹 </span>Kosongkan Semua Isian</button></div>
               <div className="rounded-2xl border border-indigo-200 bg-gradient-to-br from-indigo-50 to-white p-5 shadow-sm sm:col-span-2 xl:col-span-2"><div className="flex flex-wrap items-start justify-between gap-3"><div className="flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-700 text-xl text-white">✓</div><span className={"rounded-full px-3 py-1 text-xs font-bold "+(orchestrator==="passed"?"bg-emerald-100 text-emerald-800":orchestrator==="checking"?"bg-amber-100 text-amber-800":orchestrator==="failed"?"bg-rose-100 text-rose-800":"bg-slate-100 text-slate-700")}>{orchestrator==="passed"?"Pemeriksaan lolos":orchestrator==="checking"?"Sedang memeriksa":orchestrator==="failed"?"Perlu ditinjau":"Belum diperiksa"}</span></div><h3 className="mt-4 text-lg font-extrabold text-slate-900">5. Validasi Akhir · CORESTAY VERIFIED — HOTEL BUDGET</h3><p className="mt-1 text-sm leading-5 text-slate-600">Periksa data dari tahap awal sampai akhir: konsistensi antar-laporan, subtotal dan total, formula hotel, serta keseimbangan pembukuan. Nilai kosong tidak otomatis dianggap nol. Temuan hanya ditampilkan bila ada ketidaksesuaian yang relevan.</p><button type="button" disabled={saving} onClick={()=>void saveFinal()} className="mt-4 w-full rounded-xl bg-gradient-to-r from-indigo-700 to-violet-700 px-4 py-3 text-sm font-bold text-white shadow-sm hover:from-indigo-800 hover:to-violet-800 disabled:cursor-not-allowed disabled:opacity-60">{saving?"AI Orchestrator sedang memeriksa…":"Jalankan Validasi Akhir & Simpan Laporan"}</button></div>
             </div>
             <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 text-sm leading-6 text-slate-600"><strong className="text-slate-800">Catatan penyimpanan:</strong> Simpan Draft menyimpan sementara di browser/perangkat ini dan bukan pengganti penyimpanan laporan final. Validasi akhir tetap memeriksa laporan sebelum disimpan. Jika angka dan total sudah konsisten, pemeriksaan tidak perlu meminta pengisian ulang yang tidak relevan.</div>

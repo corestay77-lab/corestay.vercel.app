@@ -174,13 +174,13 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
     const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
     const hasDetail=detailKeys.some(k=>val(row,k)!==null)||smOtherDetail!==null;
-    const detailTotal=sumPresent(detailed);
+    const detailTotal=detailed.every(value=>value!==null)?sumPresent(detailed):null;
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
   const costParts=form.forecast.monthly.map(monthlyCost);
   // A total operating-cost figure is valid only when every required cost bucket is present,
   // or when the user supplied an explicit total. Never turn missing cost buckets into zero.
-  const totalOperatingCosts=costParts.map((c,i)=>c.detailTotal??c.fallback??(revenue[i]!==null?0:null));
+  const totalOperatingCosts=costParts.map(c=>c.detailTotal??c.fallback);
   const deptIncome=form.forecast.monthly.map((r,i)=>{
     const room=roomRevenue[i], rp=val(r,"roomPayroll"), ro=val(r,"roomOtherExpenses");
     const f=fb[i], fc=val(r,"fbCostOfSales"), fp=val(r,"fbPayroll"), fo=val(r,"fbOtherExpenses");
@@ -201,17 +201,18 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // departmental cost buckets even when the costs have not been allocated
   // to every individual department line.
   // Subtotals add all entered amounts, even if other account lines are still blank.  // Missing source values remain blank and are never converted to zero in the report.
-  const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
+  const departmentalOperatingCost=costParts.map(c=>c.cos!==null&&c.payroll!==null&&c.deptOther!==null?c.cos+c.payroll+c.deptOther:null);
   const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.phone,d.mod]));
   // Keep blank account rows blank, but allow available entered values to flow through all calculated subtotals.
   // For derived profit calculations only, unentered cost/fee rows contribute 0 until a value is entered.
   // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
   const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
-  const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null?revenue[i]!-(totalOperatingCosts[i]??0):null);
+  const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
   const basicFee=monthly("basicManagementFee");
-  const goi=houseProfit.map((v,i)=>v!==null?v-(basicFee[i]??0):null);
+  const goi=houseProfit.map((v)=>v);
   const nonOp=form.forecast.monthly.map((r)=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
-  const gop=goi.map((v,i)=>v!==null&&nonOp[i]!==null?v-nonOp[i]!:null);
+  const gop=houseProfit.map(v=>v);
+  const ebitda=houseProfit.map((v,i)=>v!==null&&(basicFee[i]!==null||nonOp[i]!==null)?v-(basicFee[i]??0)-(val(form.forecast.monthly[i],"otherManagementFee")??0)-(val(form.forecast.monthly[i],"insuranceGeneral")??0):null);
   // Owner expense subtotals must reflect entered monthly values even when GOP/revenue is not yet available.
   // OSP and NOSP remain unavailable until their profit basis can be calculated; never replace unknown profit with zero.
   const otherExpense=form.forecast.monthly.map((r)=>sumPresent([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
@@ -269,7 +270,9 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL OVERHEAD PAYROLL",costParts.map(c=>c.overheadPayroll),"sum",undefined,sumPresent(costParts.map(c=>c.overheadPayroll)),revenue);
   section("OVERHEAD DEPARTMENT — OTHER EXPENSES");
   add("ADMINISTRATION & GENERAL",monthly("agOtherExpenses"),"money","agOtherExpenses");
-  add("SALES & MARKETING",form.forecast.monthly.map(row=>smOtherTotal(row)),"money","smOtherExpenses",sumPresent(form.forecast.monthly.map(row=>smOtherTotal(row))),revenue);
+  add("TOTAL SALES & MARKETING OTHER EXPENSES",form.forecast.monthly.map(row=>smOtherTotal(row)),"money","smOtherExpenses",sumPresent(form.forecast.monthly.map(row=>smOtherTotal(row))),revenue);
+  const smExpenseLines=[["advertisingPromotion","ADVERTISING & PROMOTION"],["brochureCollateral","BROCHURE / COLLATERAL"],["directMail","DIRECT MAIL"],["duesTradeAssoc","DUES & TRADE ASSOCIATIONS"],["entertainment","ENTERTAINMENT"],["laundryUniforms","LAUNDRY / UNIFORMS"],["groupAdvertising","GROUP ADVERTISING"],["printingStationery","PRINTING & STATIONERY"],["telephone","TELEPHONE"],["salesMarketingFee","SALES & MARKETING FEE"],["photography","PHOTOGRAPHY"],["centralizedPromotionalProgram","CENTRALIZED PROMOTIONAL PROGRAM"],["promotionVipGift","PROMOTION FOR VIP GIFT"],["salesMarketingKits","SALES & MARKETING KITS"],["provisionUniform","PROVISION UNIFORM"],["others","OTHERS"],["transportation","TRANSPORTATION"],["salesCallOutside","SALES CALL OUTSIDE"],["tradeShows","TRADE SHOWS"],["travellingExpenses","TRAVELLING EXPENSES"],["printMediaNewspaper","PRINT MEDIA — NEWSPAPER"],["otherMediaMagazine","OTHER MEDIA — MAGAZINE"]] as const;
+  smExpenseLines.forEach(([key,label])=>add(label,form.forecast.monthly.map(row=>optional(row.smDetails?.[key])),"money",undefined,sumPresent(form.forecast.monthly.map(row=>optional(row.smDetails?.[key]))),revenue));
   add("HUMAN RESOURCES",monthly("hrdOtherExpenses"),"money","hrdOtherExpenses");
   add("POMEC & UTILITIES",pomecMonthly("other"),"money","pomecOtherExpenses");
   add("ENERGY COST",pomecMonthly("energy"),"money","energyCost");
@@ -285,6 +288,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL OTHER NON-OPERATING EXPENSES",nonOp,"sum",undefined,sumPresent(nonOp),revenue);
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
+  add("EBITDA (AFTER MANAGEMENT FEES, BEFORE DEPRECIATION)",ebitda,"sum",undefined,sumPresent(ebitda),revenue);
   section("OTHER EXPENSES / OWNER SHARE PROFIT");
   add("LAND LEASE / HOLD",monthly("landLease"),"money","landLease");
   add("INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance");
@@ -549,15 +553,20 @@ export default function HotelBudgetPage() {
       const cos=sumPresent([get("Food & Beverage",year,0),get("Telephone & Facsimile",year,0),get("Minor Operating Department",year,0)]);put("TOTAL COST OF SALES",year,cos);
       const payroll=sumPresent([get("ROOM DIVISION",year,0),get("FOOD & BEVERAGE",year,1),get("TELEPHONE",year,0),get("MINOR OPERATING DEPT.",year,0)]);put("TOTAL PAYROLL & RELATED EXPENSES",year,payroll);
       const deptOther=sumPresent([get("ROOM DIVISION",year,1),get("FOOD & BEVERAGE",year,2),get("TELEPHONE & FACSIMILE",year,1),get("MINOR OPERATING DEPT.",year,1)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
-      const deptOperating=sumPresent([cos,payroll,deptOther]);put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
+      const deptOperating=cos!==null&&payroll!==null&&deptOther!==null?cos+payroll+deptOther:null;put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
       const overheadPayroll=sumPresent([get("ADMINISTRATION & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("POMEC & UTILITIES",year,0)]);put("TOTAL OVERHEAD PAYROLL",year,overheadPayroll);
-      const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("SALES & MARKETING",year,1),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
-      const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
-      const operatingCosts=sumPresent([deptOperating,overhead]);put("TOTAL OPERATING COSTS",year,operatingCosts);
+      const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("TOTAL SALES & MARKETING OTHER EXPENSES",year),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
+      const overhead=overheadPayroll!==null&&overheadOther!==null?overheadPayroll+overheadOther:null;put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
+      const operatingCosts=deptOperating!==null&&overhead!==null?deptOperating+overhead:null;put("TOTAL OPERATING COSTS",year,operatingCosts);
+      const roomDeptRevenue=get("ROOMS",year), roomDeptCosts=sumPresent([get("ROOM DIVISION",year,0),get("ROOM DIVISION",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,1);
+      const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("Food & Beverage",year,0),get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,1);
+      const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
+      const modDeptRevenue=get("MINOR OPERATING DEPARTMENT",year,0), modDeptCosts=sumPresent([get("Minor Operating Department",year,0),get("MINOR OPERATING DEPT.",year,0),get("MINOR OPERATING DEPT.",year,1)]);put("MINOR OPERATING DEPARTMENT",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null,1);
       const houseProfit=revenue!==null&&operatingCosts!==null?revenue-operatingCosts:null;put("HOUSE PROFIT",year,houseProfit);
-      const goi=houseProfit!==null?houseProfit-(get("BASIC MANAGEMENT FEE",year)??0):null;put("GROSS OPERATING INCOME",year,goi);
+      const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const nonOp=sumPresent([get("MANAGEMENT FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER NON-OPERATING EXPENSES",year,nonOp);
-      const gop=goi!==null&&nonOp!==null?goi-nonOp:null;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% GOP",year,pct(gop,revenue));
+      const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% GOP",year,pct(gop,revenue));
+      const ebitda=gop!==null&&(get("BASIC MANAGEMENT FEE",year)!==null||get("MANAGEMENT FEES",year)!==null||get("INSURANCE GENERAL",year)!==null)?gop-(get("BASIC MANAGEMENT FEE",year)??0)-(get("MANAGEMENT FEES",year)??0)-(get("INSURANCE GENERAL",year)??0):null;put("EBITDA (AFTER MANAGEMENT FEES, BEFORE DEPRECIATION)",year,ebitda);
       const ownerCost=sumPresent([get("LAND LEASE / HOLD",year),get("INSURANCE",year),get("MAINTENANCE FEE (SERVICE CHARGE)",year)]);put("TOTAL OTHER EXPENSES",year,ownerCost);
       const osp=gop!==null&&ownerCost!==null?gop-ownerCost:null;put("OWNER SHARE PROFIT (OSP)",year,osp);
       const otherOwner=get("OTHER OWNER EXPENSES",year);put("TOTAL OWNER EXPENSES",year,otherOwner);put("NET OWNER SHARE PROFIT (NOSP)",year,osp!==null?osp-(otherOwner??0):null);

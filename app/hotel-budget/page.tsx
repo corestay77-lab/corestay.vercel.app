@@ -174,7 +174,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
     const detailed=[cos,payroll,deptOther,overheadPayroll,overheadOther];
     const detailKeys:(keyof ForecastMonth)[]=["fbCostOfSales","phoneCostOfSales","modCostOfSales","roomPayroll","fbPayroll","phonePayroll","modPayroll","roomOtherExpenses","fbOtherExpenses","phoneOtherExpenses","modOtherExpenses","agPayroll","smPayroll","hrdPayroll","pomecPayroll","agOtherExpenses","hrdOtherExpenses","pomecOtherExpenses","energyCost"];
     const hasDetail=detailKeys.some(k=>val(row,k)!==null)||smOtherDetail!==null;
-    const detailTotal=sumPresent(detailed);
+    const detailTotal=detailed.every(value=>value!==null)?sumPresent(detailed):null;
     return {cos,payroll,deptOther,overheadPayroll,overheadOther,hasDetail,detailTotal,fallback:val(row,"operatingCosts")};
   };
   const costParts=form.forecast.monthly.map(monthlyCost);

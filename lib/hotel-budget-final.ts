@@ -33,6 +33,9 @@ export const ACCOUNT_LINES: AccountLine[] = [
     }))
   ),
   // Dedicated HRD and Minor Operating Department payroll accounts; existing codes remain unchanged.
+  // Explicit employer-paid contribution accounts; employee deductions stay separate.
+  {code:"60901",label:"BPJS Kesehatan — Employer Contribution",group:"payroll",section:"Payroll & Related Expenses"},
+  {code:"60902",label:"JP (Jaminan Pensiun) — Employer Contribution",group:"payroll",section:"Payroll & Related Expenses"},
   ...["Human Resources","Minor Operating Dept."].flatMap((department,di)=>
     ["Salary & Wages","Overtime","THR","Bonus / Incentive","Income Tax Allowance","Meal Allowance","Jamsostek / BPJS","Medical & Insurance","Pension","Temporary Staff","Employee Benefits","Other Payroll"].map((item,i)=>({
       code:"6"+String(di+7).padStart(2,"0")+String(i+1).padStart(2,"0"),

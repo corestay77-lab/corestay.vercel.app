@@ -270,7 +270,9 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL OVERHEAD PAYROLL",costParts.map(c=>c.overheadPayroll),"sum",undefined,sumPresent(costParts.map(c=>c.overheadPayroll)),revenue);
   section("OVERHEAD DEPARTMENT — OTHER EXPENSES");
   add("ADMINISTRATION & GENERAL",monthly("agOtherExpenses"),"money","agOtherExpenses");
-  add("SALES & MARKETING",form.forecast.monthly.map(row=>smOtherTotal(row)),"money","smOtherExpenses",sumPresent(form.forecast.monthly.map(row=>smOtherTotal(row))),revenue);
+  add("TOTAL SALES & MARKETING OTHER EXPENSES",form.forecast.monthly.map(row=>smOtherTotal(row)),"money","smOtherExpenses",sumPresent(form.forecast.monthly.map(row=>smOtherTotal(row))),revenue);
+  const smExpenseLines=[["advertisingPromotion","ADVERTISING & PROMOTION"],["brochureCollateral","BROCHURE / COLLATERAL"],["directMail","DIRECT MAIL"],["duesTradeAssoc","DUES & TRADE ASSOCIATIONS"],["entertainment","ENTERTAINMENT"],["laundryUniforms","LAUNDRY / UNIFORMS"],["groupAdvertising","GROUP ADVERTISING"],["printingStationery","PRINTING & STATIONERY"],["telephone","TELEPHONE"],["salesMarketingFee","SALES & MARKETING FEE"],["photography","PHOTOGRAPHY"],["centralizedPromotionalProgram","CENTRALIZED PROMOTIONAL PROGRAM"],["promotionVipGift","PROMOTION FOR VIP GIFT"],["salesMarketingKits","SALES & MARKETING KITS"],["provisionUniform","PROVISION UNIFORM"],["others","OTHERS"],["transportation","TRANSPORTATION"],["salesCallOutside","SALES CALL OUTSIDE"],["tradeShows","TRADE SHOWS"],["travellingExpenses","TRAVELLING EXPENSES"],["printMediaNewspaper","PRINT MEDIA — NEWSPAPER"],["otherMediaMagazine","OTHER MEDIA — MAGAZINE"]] as const;
+  smExpenseLines.forEach(([key,label])=>add(label,form.forecast.monthly.map(row=>optional(row.smDetails?.[key])),"money",undefined,sumPresent(form.forecast.monthly.map(row=>optional(row.smDetails?.[key]))),revenue));
   add("HUMAN RESOURCES",monthly("hrdOtherExpenses"),"money","hrdOtherExpenses");
   add("POMEC & UTILITIES",pomecMonthly("other"),"money","pomecOtherExpenses");
   add("ENERGY COST",pomecMonthly("energy"),"money","energyCost");
@@ -553,7 +555,7 @@ export default function HotelBudgetPage() {
       const deptOther=sumPresent([get("ROOM DIVISION",year,1),get("FOOD & BEVERAGE",year,2),get("TELEPHONE & FACSIMILE",year,1),get("MINOR OPERATING DEPT.",year,1)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
       const deptOperating=sumPresent([cos,payroll,deptOther]);put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
       const overheadPayroll=sumPresent([get("ADMINISTRATION & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("POMEC & UTILITIES",year,0)]);put("TOTAL OVERHEAD PAYROLL",year,overheadPayroll);
-      const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("SALES & MARKETING",year,1),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
+      const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("TOTAL SALES & MARKETING OTHER EXPENSES",year),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
       const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
       const operatingCosts=sumPresent([deptOperating,overhead]);put("TOTAL OPERATING COSTS",year,operatingCosts);
       const roomDeptRevenue=get("ROOMS",year), roomDeptCosts=sumPresent([get("ROOM DIVISION",year,0),get("ROOM DIVISION",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,1);

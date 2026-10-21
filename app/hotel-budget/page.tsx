@@ -2245,11 +2245,28 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           <tr className="bg-slate-200 font-black"><td colSpan={11} className="border-b border-slate-300 px-2 py-1.5">TOTAL PAYROLL &amp; RELATED EXPENSES</td><td className="border-b border-slate-300 px-2 py-1.5 text-right">{money((form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+payrollCalc(emp).total,0))}</td><td className="border-b border-slate-300 px-2 py-1.5 text-right">{money((form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+payrollCalc(emp).total*12,0))}</td></tr>
           </tbody>
         </table></div>
-        <h4 className="mb-2 mt-5 text-[11px] font-black">B. RINGKASAN PAYROLL PER DEPARTEMEN</h4>
-        <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">
-          <thead><tr className="bg-indigo-900 text-white"><th className="px-2 py-1.5 text-left">Department</th><th className="px-2 py-1.5 text-right">Headcount</th><th className="px-2 py-1.5 text-right">Monthly Payroll &amp; Expenses</th><th className="px-2 py-1.5 text-right">Annual Payroll &amp; Expenses</th></tr></thead>
-          <tbody>{[{id:"FO",label:"Front Office / Room"},{id:"HK",label:"House Keeping"},{id:"FB",label:"Food & Beverage"},{id:"MOD",label:"Minor Operating Department"},{id:"AG",label:"Administration & General"},{id:"SM",label:"Sales & Marketing"},{id:"HRD",label:"Human Resources"},{id:"POMEC",label:"POMEC & Utilities"},{id:"OTHER",label:"Other Departments"}].map((dept,i)=>{const aliases:Record<string,string[]>={FO:["FO","ROOM"],HK:["HK","HOUSE KEEPING","HOUSEKEEPING"],FB:["FB","F&B","FOOD & BEVERAGE"],MOD:["MOD"],AG:["AG","FN"],SM:["SM"],HRD:["HRD","HR"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY","SEC","SECURITY","ENG","ENGINEERING","SECURITY / ENGINEERING","SECURITY & ENGINEERING"],OTHER:[]};const match=(form.payrollEmployees||[]).filter(emp=>aliases[dept.id].includes(emp.department.trim().toUpperCase())&&payrollHasInputs(emp));const people=dept.id==="OTHER"?(form.payrollEmployees||[]).filter(emp=>![...aliases.FO,...aliases.HK,...aliases.FB,...aliases.MOD,...aliases.AG,...aliases.SM,...aliases.HRD,...aliases.POMEC].includes(emp.department.trim().toUpperCase())&&payrollHasInputs(emp)):match;const total=people.reduce((sum,emp)=>sum+payrollCalc(emp).total,0);return <tr key={dept.id} className={i%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-2 py-1">{dept.label}</td><td className="border-b border-slate-200 px-2 py-1 text-right">{people.length?fmt(people.reduce((sum,emp)=>sum+payrollCalc(emp).count,0),0):"—"}</td><td className="border-b border-slate-200 px-2 py-1 text-right">{people.length?money(total):"—"}</td><td className="border-b border-slate-200 px-2 py-1 text-right font-bold">{people.length?money(total*12):"—"}</td></tr>;})}</tbody>
-        </table></div>
+        <h4 className="mb-2 mt-5 text-[11px] font-black">B. PAYROLL DISTRIBUTION — RINGKASAN PER DEPARTEMEN</h4>
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          {(() => {
+            const payrollGrandTotal=(form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+payrollCalc(emp).total,0);
+            const payrollDepartments=[["FO","Front Office","#3B82F6"],["HK","Housekeeping","#8B5CF6"],["FB","Food & Beverage","#F59E0B"],["MOD","Minor Operated Dept","#14B8A6"],["AG","Administration & General","#64748B"],["HR","Human Resources","#EC4899"],["SEC","Security / Engineering","#EF4444"],["SM","Sales & Marketing","#06B6D4"],["POMEC","POMEC & Utilities","#84CC16"],["ROOM","Room Division","#6366F1"]] as const;
+            const payrollHeadcount=(form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+(Number(emp.headcount)||0),0);
+            return <>
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><div className="text-[8px] font-semibold text-blue-700">TOTAL PAYROLL / BULAN</div><div className="mt-0.5 text-sm font-black text-blue-950">{payrollGrandTotal>0?idr(payrollGrandTotal):"—"}</div></div>
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2"><div className="text-[8px] font-semibold text-emerald-700">TOTAL STAF</div><div className="mt-0.5 text-sm font-black text-emerald-950">{payrollHeadcount>0?fmt(payrollHeadcount,0)+" staf":"—"}</div></div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                {payrollDepartments.map(([key,label,color])=>{const v=payrollDepartmentMonthly(key);const people=(form.payrollEmployees||[]).filter(emp=>payrollDepartmentMatches(emp,key)&&payrollHasInputs(emp));const headcount=people.reduce((sum,emp)=>sum+(Number(emp.headcount)||0),0);const hasValue=payrollDepartmentHasInputs(key);const pct=payrollGrandTotal>0&&hasValue?v.total/payrollGrandTotal*100:null;const width=pct===null?0:Math.min(100,Math.max(0,pct));return <div key={key} className="min-w-0 rounded-lg border border-slate-200 p-2">
+                  <div className="mb-1 flex items-start gap-1.5"><span className="mt-0.5 h-2 w-2 shrink-0 rounded-sm" style={{backgroundColor:color}}/><div className="min-w-0 flex-1 text-[9px] font-bold leading-3 text-slate-800">{label}</div><div className="shrink-0 text-right"><div className="text-[9px] font-black leading-3 text-slate-900">{hasValue?idr(v.total):"—"}</div><div className="text-[8px] font-bold" style={{color}}>{pct===null?"—":fmt(pct,1)+"%"}</div></div></div>
+                  <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{width:width+"%",backgroundColor:color}}/></div>
+                  <div className="text-[8px] leading-3 text-slate-500">{headcount>0?fmt(headcount,0)+" staf":"— staf"}</div>
+                </div>;})}
+              </div>
+              <p className="mt-2 text-[8px] leading-3 text-slate-500">Persentase dihitung dari total payroll bulanan. Diagram menggunakan sumber data Master Payroll yang sama dengan ringkasan pada form.</p>
+            </>;
+          })()}
+        </div>
         {!(form.payrollEmployees||[]).length?<p className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-[9px]">Data Master Payroll belum diisi. Silakan lengkapi Master Payroll agar rincian biaya payroll muncul di laporan.</p>:null}
       </section>
       <section className="mt-7 break-before-page print-owner-expenses">

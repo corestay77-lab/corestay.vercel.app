@@ -574,6 +574,19 @@ export default function HotelBudgetPage() {
       const osp=gop!==null&&ownerCost!==null?gop-ownerCost:null;put("OWNER SHARE PROFIT (OSP)",year,osp);
       const otherOwner=get("OTHER OWNER EXPENSES",year);put("TOTAL OWNER EXPENSES",year,otherOwner);put("NET OWNER SHARE PROFIT (NOSP)",year,osp!==null?osp-(otherOwner??0):null);
       const rooms=optional(source.statistics.rooms),nosp=get("NET OWNER SHARE PROFIT (NOSP)",year);put("NET OWNER SHARE PROFIT / UNIT",year,nosp!==null&&rooms!==null&&rooms>0?nosp/rooms:null);
+      // Rebase each row's percentage to its matching revenue driver for every projected year.
+      const baseCandidates=[
+        {first:getInSection("REVENUES","TOTAL REVENUES (EXCL. TAX)",0),current:revenue},
+        {first:getInSection("REVENUES","ROOMS",0),current:getInSection("REVENUES","ROOMS",year)},
+        {first:getInSection("REVENUES","FOOD & BEVERAGE",0),current:getInSection("REVENUES","FOOD & BEVERAGE",year)},
+        {first:getInSection("REVENUES","TELEPHONE & FACSIMILE",0),current:getInSection("REVENUES","TELEPHONE & FACSIMILE",year)},
+        {first:getInSection("REVENUES","MINOR OPERATING DEPARTMENT",0),current:getInSection("REVENUES","MINOR OPERATING DEPARTMENT",year)}
+      ];
+      rows.forEach(line=>{
+        if(!line.base||line.base[0]===null||line.section)return;
+        const match=baseCandidates.find(candidate=>candidate.first!==null&&Math.abs(candidate.first-line.base![0]!)<0.5);
+        line.base[year]=match?match.current:revenue;
+      });
     }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};

@@ -1385,9 +1385,25 @@ export default function HotelBudgetPage() {
       ["Catatan",form.notes],["Rekomendasi / Tindakan",form.actionRecommendation],["PIC",form.actionOwner],["Deadline",form.actionDue],["Target",form.actionTarget],["Status",form.actionStatus],["Progress (%)",optional(form.actionProgress)]
     ];
     const pnlRows:any[][]=[["Account Code","Account / Description","Section","Actual","Actual %","Budget","Budget %","Variance Actual − Budget","Variance %","Last Year Same Month","Variance Actual − Last Year","Variance % LY","YTD Actual","YTD Actual %","YTD Budget","YTD Budget %","YTD Variance A−B","YTD Variance %","Last Year YTD","YTD Variance A−LY","YTD Variance % LY"]];
+    const masterPayrollBudgetForLine=(line:AccountLine):number|null=>{
+      if(line.group!=="payroll")return null;
+      const split=line.label.split(" — ");
+      const department=(split[0]||"").toLowerCase(),item=(split.slice(1).join(" — ")||"").toLowerCase();
+      const deptKey=department.includes("front office")?"FO":department.includes("housekeeping")?"HK":department.includes("food & beverage")?"FB":department.includes("engineering")?"POMEC":department.includes("sales & marketing")?"SM":department.includes("administrative & general")?"AG":department.includes("human resources")?"HRD":department.includes("minor operating")?"MOD":null;
+      if(!deptKey||!payrollDepartmentHasInputs(deptKey))return null;
+      const totals=payrollDepartmentMonthly(deptKey);
+      if(item.includes("salary & wages"))return totals.salary;
+      if(item.includes("thr"))return totals.thr;
+      if(item.includes("meal allowance"))return totals.meal;
+      if(item.includes("jamsostek")||item.includes("bpjs"))return totals.jamsostek;
+      if(item.includes("medical & insurance"))return totals.medical+totals.insurance;
+      if(item.includes("other payroll"))return totals.other;
+      if(item.includes("overtime")||item.includes("bonus / incentive")||item.includes("income tax allowance")||item.includes("pension")||item.includes("temporary staff")||item.includes("employee benefits"))return 0;
+      return null;
+    };
     for(const line of allAccountLines){
       const row=form.accounts[line.code]||{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""};
-      const a=optional(row.actual),b=optional(row.budget),l=optional(row.lastYear),ya=optional(row.ytdActual),yb=optional(row.ytdBudget),yl=optional(row.lastYearYtd);
+      const a=optional(row.actual),masterPayrollBudget=masterPayrollBudgetForLine(line),b=masterPayrollBudget!==null?masterPayrollBudget:optional(row.budget),l=optional(row.lastYear),ya=optional(row.ytdActual),yb=optional(row.ytdBudget),yl=optional(row.lastYearYtd);
       const variance=a!==null&&b!==null?a-b:null, varianceLastYear=a!==null&&l!==null?a-l:null;
       const ytdVariance=ya!==null&&yb!==null?ya-yb:null, ytdVarianceLastYear=ya!==null&&yl!==null?ya-yl:null;
       pnlRows.push([line.code,line.label,line.section,a,percentNumber(a,revenueActual),b,percentNumber(b,revenueBudget),variance,percentNumber(variance,b),l,varianceLastYear,percentNumber(varianceLastYear,l),ya,percentNumber(ya,ytdRevenueActual),yb,percentNumber(yb,ytdRevenueBudget),ytdVariance,percentNumber(ytdVariance,yb),yl,ytdVarianceLastYear,percentNumber(ytdVarianceLastYear,yl)]);

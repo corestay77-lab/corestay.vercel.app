@@ -785,9 +785,10 @@ export default function HotelBudgetPage() {
       const tax=get(pnlLabel("84101001","Income Taxes"),year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
       const nonOperatingExpenseTotal=sumPresent([get("MANAGEMENT & MARKETING FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER EXPENSES",year,nonOperatingExpenseTotal,2);
       const ownerOtherExpenses=completeSum([get("LAND LEASE HOLD",year),get("PROPERTY INSURANCE",year),get("F.F & E REPLACEMENT",year),get("CAPITAL EXPENDITURE",year)]);put("TOTAL OTHER EXPENSES",year,ownerOtherExpenses,3);
-      const ospValue=gop!==null?gop-(ownerOtherExpenses??0):null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
+      // Keep projected owner profit consistent with Year 1: blank owner-cost groups must not silently become zero.
+      const ospValue=gop!==null&&ownerOtherExpenses!==null?gop-ownerOtherExpenses:null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
       const ownerExpenses=completeSum([get("INCENTIVE Fee",year),get("OWNERS EXPENSE",year)]);put("TOTAL OWNER EXPENSES",year,ownerExpenses);
-      const nospValue=ospValue!==null?ospValue-(ownerExpenses??0):null;put("NETT OWNER PROFIT (BEFORE TAX)",year,nospValue);
+      const nospValue=ospValue!==null&&ownerExpenses!==null?ospValue-ownerExpenses:null;put("NETT OWNER PROFIT (BEFORE TAX)",year,nospValue);
       const roomUnits=optional(source.statistics.rooms);put("NET OWNER SHARE PROFIT/UNIT",year,nospValue!==null&&roomUnits!==null&&roomUnits>0?nospValue/roomUnits:null);
     }
     return rows.map(line=>{

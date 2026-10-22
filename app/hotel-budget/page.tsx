@@ -2406,7 +2406,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan konsolidasi tahunan berdasarkan data dan rumus input yang sama. Kolom disusun DEC lalu JAN–NOV, masing-masing dengan nilai dan persentase, diikuti TOTAL / AVG.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const consolidatedRows = buildConsolidatedRows(form);
+          const consolidatedRows = buildConsolidatedRows(consolidatedForm);
           const otherIncomeExpenseStart = consolidatedRows.findIndex(line => line.kind === "section" && line.label === "8 OTHER INCOME & EXPENSES");
           const rows = otherIncomeExpenseStart >= 0 ? consolidatedRows.slice(0, otherIncomeExpenseStart) : consolidatedRows;
           const year = Number(form.yearStart);
@@ -2477,7 +2477,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs text-slate-500">Nama akun, urutan, kelompok, dan subtotal mengikuti 1 YEAR CONSOLIDATED. YEAR 1 memakai basis laporan 1 Year; YEAR 2–10 mengikuti metode proyeksi yang dipilih.</p>
               </div>
               {(() => {
-                const allRows = buildTenYearRows(form);
+                const allRows = buildTenYearRows(consolidatedForm);
                 const otherIncomeExpenseStart = allRows.findIndex(line => line.section && line.label === "8 OTHER INCOME & EXPENSES");
                 const rows = otherIncomeExpenseStart >= 0 ? allRows.slice(0, otherIncomeExpenseStart) : allRows;
                 const headingTone = (label:string) => label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950"
@@ -2648,7 +2648,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(form);
+          const rows = buildConsolidatedRows(consolidatedForm);
           const year = Number(form.yearStart);
           const roomCount = optional(form.statistics.rooms);
           const monthlyStats = order.map(i => {
@@ -2737,7 +2737,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(form);
+          const rows = buildConsolidatedRows(consolidatedForm);
           const year = Number(form.yearStart);
           const roomCount = optional(form.statistics.rooms);
           const monthlyStats = order.map(i => {

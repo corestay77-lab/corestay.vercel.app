@@ -324,7 +324,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal),[]);
   const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
-  const ffeReplacement=monthNames.map((_,i)=>optional(String(form.forecast.monthly[i]?.pnl_81203003??""))??provisionLines[2][i]);
+  const ffeReplacement=monthNames.map((_,i)=>optional(String((form.forecast.monthly[i] as (ForecastMonth & Record<string,string>)|undefined)?.pnl_81203003??""))??provisionLines[2][i]);
   const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),ffeReplacement,monthly("capitalExpenditure")];
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.

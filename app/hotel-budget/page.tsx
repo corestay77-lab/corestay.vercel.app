@@ -717,7 +717,7 @@ export default function HotelBudgetPage() {
     // Recalculate percentage denominators only after all projected rows exist.
     rows.forEach((line)=>{
       if(!line.base||line.base[0]===null||line.base[0]===undefined)return;
-      const baseYear1=sumPresent(line.base);
+      const baseYear1=line.base[0]??null;
       if(baseYear1===null)return;
       const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES")?.total??null;
       const roomsBase=oneYearRows.find(r=>r.label==="ROOMS")?.total??null;

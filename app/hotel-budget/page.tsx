@@ -201,15 +201,15 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // departmental cost buckets even when the costs have not been allocated
   // to every individual department line.
   // Subtotals add all entered amounts, even if other account lines are still blank.  // Missing source values remain blank and are never converted to zero in the report.
-  const departmentalOperatingCost=costParts.map(c=>c.cos!==null&&c.payroll!==null&&c.deptOther!==null?c.cos+c.payroll+c.deptOther:null);
-  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null&&cost!==null?revenue[i]!-cost:null);
+  const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
+  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null?revenue[i]!-(cost??0):null);
   // Keep blank account rows blank, but allow available entered values to flow through all calculated subtotals.
   // For derived profit calculations only, unentered cost/fee rows contribute 0 until a value is entered.
   // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
-  const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
+  const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
   // House Profit follows the hotel consolidated statement: Department Income less Overhead Department.
   // Keep the result blank until both components are available; missing values are not treated as zero.
-  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null&&overheadTotal[i]!==null?income-overheadTotal[i]!:null);
+  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null?income-(overheadTotal[i]??0):null);
   // GOP is reported before management/marketing fees, per the approved CoreStay accounting rule.
   const goi=houseProfit;
   const gop=goi;
@@ -694,11 +694,11 @@ export default function HotelBudgetPage() {
       const cos=sumPresent([get("Food & Beverage",year,0),get("Telephone & Facsimile",year,0),get("Minor Operating Department",year,0)]);put("TOTAL COST OF SALES",year,cos);
       const payroll=sumPresent([get("ROOM DIVISION",year,0),get("FOOD & BEVERAGE",year,1),get("TELEPHONE",year,0),get("MINOR OPERATING DEPT.",year,0)]);put("TOTAL PAYROLL & RELATED EXPENSES",year,payroll);
       const deptOther=sumPresent([get("ROOM DIVISION",year,1),get("FOOD & BEVERAGE",year,2),get("TELEPHONE & FACSIMILE",year,1),get("MINOR OPERATING DEPT.",year,1)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
-      const deptOperating=cos!==null&&payroll!==null&&deptOther!==null?cos+payroll+deptOther:null;put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
+      const deptOperating=sumPresent([cos,payroll,deptOther]);put("DEPARTMENT OPERATING COST & EXPENSES",year,deptOperating);
       const overheadPayroll=sumPresent([get("ADMINISTRATION & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("POMEC & UTILITIES",year,0)]);put("TOTAL OVERHEAD PAYROLL",year,overheadPayroll);
       const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("TOTAL SALES & MARKETING OTHER EXPENSES",year),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year)]);put("TOTAL OVERHEAD OTHER EXPENSES",year,overheadOther);
-      const overhead=overheadPayroll!==null&&overheadOther!==null?overheadPayroll+overheadOther:null;put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
-      const operatingCosts=deptOperating!==null&&overhead!==null?deptOperating+overhead:null;put("TOTAL OPERATING COSTS",year,operatingCosts);
+      const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
+      const operatingCosts=revenue!==null?(deptOperating??0)+(overhead??0):null;put("TOTAL OPERATING COSTS",year,operatingCosts);
       const roomDeptRevenue=get("ROOMS",year), roomDeptCosts=sumPresent([get("ROOM DIVISION",year,0),get("ROOM DIVISION",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,1);
       const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("Food & Beverage",year,0),get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,1);
       const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);

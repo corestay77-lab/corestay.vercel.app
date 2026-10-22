@@ -2179,10 +2179,70 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 </div>
             </section>
           </div>}
-          {activeTab==="forecast"&&<section className="space-y-3 rounded-2xl border border-dashed border-slate-300 bg-white p-6">
-            <p className="text-xs font-bold uppercase tracking-wider text-slate-500">STEP 4 · MONTHLY & ANNUAL FORECAST</p>
-            <h2 className="text-xl font-extrabold text-slate-900">Forecast — akan dibangun ulang</h2>
-            <p className="text-sm leading-6 text-slate-600">Isi modul Monthly Forecast dan Annual Forecast sebelumnya telah dikosongkan. Kita akan menyusunnya kembali secara bertahap. Modul ini sementara tidak menampilkan tabel, input, asumsi, atau perhitungan forecast lama.</p>
+          {activeTab==="forecast"&&<section className="space-y-6">
+            <div className="overflow-hidden rounded-2xl bg-gradient-to-r from-teal-950 via-teal-800 to-emerald-700 p-5 text-white shadow-sm">
+              <p className="text-[10px] font-black uppercase tracking-[.18em] text-teal-100">STEP 4 · STATISTICS</p>
+              <div className="mt-2 flex flex-wrap items-start justify-between gap-4">
+                <div><h2 className="text-xl font-black">LAPORAN STATISTIK — {form.yearStart}</h2><p className="mt-2 max-w-3xl text-sm leading-6 text-teal-50">Proyeksi menggunakan hari kalender, jumlah kamar, okupansi, ARR, pendapatan Rooms, F&amp;B, MOD, dan biaya. Nilai yang belum tersedia tetap ditampilkan sebagai —.</p></div>
+                <div className="rounded-xl border border-white/20 bg-white/10 px-4 py-3"><p className="text-xs text-teal-50">Mata uang</p><p className="mt-1 font-extrabold">{currency==="IDR"?"IDR · Rupiah":"USD · US Dollar"}</p></div>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3 flex flex-wrap items-end justify-between gap-3"><div><h3 className="text-base font-extrabold">Laporan Statistik Bulanan</h3><p className="mt-1 text-xs leading-5 text-slate-500">Urutan kolom: DES, JAN–NOV, lalu YEAR TOTAL / AVG. Sumber data mengikuti Statistik dan forecast bulanan.</p></div><span className="rounded-full bg-teal-50 px-3 py-1.5 text-xs font-bold text-teal-800">12 bulan · {form.yearStart}</span></div>
+              <div className="overflow-x-auto rounded-xl border border-slate-200">
+                <table className="w-max min-w-full border-collapse text-xs">
+                  <thead><tr className="bg-slate-900 text-white"><th className="sticky left-0 z-10 min-w-[220px] bg-slate-900 px-3 py-2.5 text-left">Description</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><th key={i} className="min-w-[105px] px-2 py-2.5 text-right">{i===11?"DES":monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="min-w-[150px] bg-teal-700 px-3 py-2.5 text-right">YEAR TOTAL / AVG</th></tr></thead>
+                  <tbody>{buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels}).map((line,i)=>{
+                    if(line.kind==="section")return <tr key={line.label}><th colSpan={14} className="border-t border-slate-300 bg-slate-100 px-3 py-2 text-left text-[10px] font-black tracking-wide text-slate-700">{line.label}</th></tr>;
+                    const isPercent=line.kind==="percent";
+                    const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
+                    const isRate=/EXCHANGE RATE/i.test(line.label);
+                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
+                    const isGuest=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());
+                    const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuest?fmt(v,2):isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
+                    const ordered=[line.values[11],...line.values.slice(0,11)];
+                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{ordered.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
+                  })}</tbody>
+                </table>
+              </div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-4"><h3 className="text-base font-extrabold">Monthly Forecast · Input &amp; Calculation</h3><p className="mt-1 text-xs leading-5 text-slate-500">Edit okupansi, ARR, F&amp;B, MOD, dan total biaya per bulan. Room Revenue dihitung dari hari × kamar × okupansi × ARR bila input manual Room Revenue tidak tersedia.</p></div>
+              <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-max min-w-full border-collapse text-xs">
+                <thead><tr className="bg-teal-900 text-white"><th className="sticky left-0 z-10 min-w-[190px] bg-teal-900 px-3 py-2.5 text-left">Description</th>{form.forecast.monthly.map((row,i)=><th key={row.label} className="min-w-[112px] px-2 py-2.5 text-right">{monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="min-w-[145px] bg-emerald-700 px-3 py-2.5 text-right">YEAR TOTAL / AVG</th></tr></thead>
+                <tbody>{[
+                  {label:"# OF DAYS",value:(i:number)=>new Date(Number(form.yearStart),i+1,0).getDate(),kind:"count"},
+                  {label:"# OF ROOMS",value:()=>optional(form.statistics.rooms),kind:"count"},
+                  {label:"OCCUPANCY (%)",key:"occupancy" as const,kind:"percent"},
+                  {label:"AVERAGE ROOM RATE (ARR) - RP",key:"adr" as const,kind:"money"},
+                  {label:"ROOM REVENUE - RP",value:(i:number)=>calcMonthly(form.forecast.monthly[i],Number(form.yearStart),i,form.statistics.rooms).roomRevenue,kind:"money"},
+                  {label:"TOTAL F&B REVENUE - RP",key:"fbRevenue" as const,kind:"money"},
+                  {label:"TOTAL MOD REVENUE - RP",key:"otherRevenue" as const,kind:"money"},
+                  {label:"TOTAL REVENUE - RP",value:(i:number)=>calcMonthly(form.forecast.monthly[i],Number(form.yearStart),i,form.statistics.rooms).revenue,kind:"money"},
+                  {label:"OPERATING COSTS - RP",key:"operatingCosts" as const,kind:"money"},
+                  {label:"GOP - RP",value:(i:number)=>calcMonthly(form.forecast.monthly[i],Number(form.yearStart),i,form.statistics.rooms).gop,kind:"money"}
+                ].map((line,ri)=>{
+                  const vals=form.forecast.monthly.map((row,i)=>"key" in line?optional(String(row[line.key]??"")):line.value(i));
+                  const valid=vals.filter((v):v is number=>v!==null);
+                  const total=line.label==="# OF DAYS"||line.label==="ROOM REVENUE - RP"||line.label==="TOTAL F&B REVENUE - RP"||line.label==="TOTAL MOD REVENUE - RP"||line.label==="TOTAL REVENUE - RP"||line.label==="OPERATING COSTS - RP"||line.label==="GOP - RP"?(valid.length?valid.reduce((a,b)=>a+b,0):null):line.label==="OCCUPANCY (%)"?(()=>{const occ=form.forecast.monthly.map((row,i)=>optional(row.occupancy)===null?null:(optional(form.statistics.rooms)!==null?optional(form.statistics.rooms)!*new Date(Number(form.yearStart),i+1,0).getDate()*optional(row.occupancy)!/100:null));const avail=form.forecast.monthly.map((row,i)=>optional(form.statistics.rooms)===null?null:optional(form.statistics.rooms)!*new Date(Number(form.yearStart),i+1,0).getDate());const a=occ.filter((v):v is number=>v!==null).reduce((x,y)=>x+y,0),b=avail.filter((v):v is number=>v!==null).reduce((x,y)=>x+y,0);return occ.some(v=>v!==null)&&b>0?a/b*100:null;})():line.label==="# OF ROOMS"?optional(form.statistics.rooms):valid.length?valid.reduce((a,b)=>a+b,0)/valid.length:null;
+                  const show=(v:number|null)=>v===null||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.kind==="count"?fmt(v,0):money(v);
+                  return <tr key={line.label} className={ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{form.forecast.monthly.map((row,i)=><td key={row.label} className="border-t border-slate-200 px-2 py-1.5 text-right">{line.key? <input aria-label={line.label+" "+row.label} inputMode="decimal" value={String(row[line.key]??"")} onChange={e=>updateMonth(i,line.key!,e.target.value)} className="w-[100px] rounded-md border border-slate-200 bg-white px-2 py-1.5 text-right tabular-nums outline-none focus:border-teal-500 focus:ring-2 focus:ring-teal-100" placeholder="—"/>:<span className="tabular-nums">{show(vals[i])}</span>}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-extrabold tabular-nums">{show(total)}</td></tr>;
+                })}</tbody>
+              </table></div>
+            </div>
+
+            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-4 flex flex-wrap items-start justify-between gap-4"><div><h3 className="text-base font-extrabold">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">Simple Growth menjadi metode default dengan asumsi {annualGrowthPct}% per tahun. Manual Override hanya mengubah akun rincian dan tahun yang diisi; subtotal, GOP, profit, dan margin dihitung ulang.</p></div><div className="w-full max-w-[250px]"><label className="mb-1 block text-xs font-bold text-slate-700">Metode proyeksi</label><select value={tenYearMode} onChange={e=>setTenYearMode(e.target.value as "growth"|"manual"|"driver")} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold"><option value="growth">Simple Growth</option><option value="driver">Driver-Based</option><option value="manual">Manual Override</option></select></div></div>
+              {tenYearMode==="growth"&&<div className="mb-4 max-w-[250px]"><label className="mb-1 block text-xs font-bold text-slate-700">Pertumbuhan % / tahun</label><input type="number" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"/></div>}
+              {tenYearMode==="driver"&&<div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">{[{key:"rooms",label:"Rooms / ARR"},{key:"fnb",label:"F&B Revenue"},{key:"mod",label:"MOD Revenue"},{key:"costOfSales",label:"Cost of Sales"},{key:"payroll",label:"Payroll"},{key:"departmentExpenses",label:"Department Expenses"},{key:"overhead",label:"Overhead"}].map(item=><label key={item.key} className="text-xs font-bold text-slate-700">{item.label} · % / tahun<input type="number" step="0.1" value={driverAssumptions[item.key]||""} onChange={e=>setDriverAssumptions(prev=>({...prev,[item.key]:e.target.value}))} placeholder={"Default "+annualGrowthPct+"%"} className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 font-normal"/></label>)}</div>}
+              <p className="mb-3 text-xs text-slate-500">{tenYearMode==="manual"?"Isi hanya akun rincian dan tahun yang ingin dioverride. Kolom kosong tetap mengikuti proyeksi default.":tenYearMode==="driver"?"Tentukan laju pertumbuhan per driver; driver kosong mengikuti Simple Growth default.":"Semua akun diproyeksikan dengan laju pertumbuhan yang sama; tahun pertama mempertahankan basis 1 Year Consolidated."}</p>
+              <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-max min-w-full border-collapse text-[11px]">
+                <thead><tr className="bg-indigo-950 text-white"><th className="sticky left-0 z-10 min-w-[245px] bg-indigo-950 px-3 py-2.5 text-left">Description</th>{form.forecast.annual.map((row,i)=><th key={row.label} className="min-w-[125px] px-2 py-2.5 text-right">YEAR {i+1}<span className="block text-[9px] font-normal">{row.label}</span></th>)}<th className="min-w-[150px] bg-teal-700 px-3 py-2.5 text-right">TOTAL / AVG</th></tr></thead>
+                <tbody>{annualStatisticsForPreview.map((line,ri)=>{const valid=line.values.filter((v):v is number=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null;const show=(v:number|null)=>v===null||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="# OF DAYS"||line.label==="ROOMS AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);return <tr key={line.label} className={ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{show(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-extrabold tabular-nums">{show(total)}</td></tr>;})}</tbody>
+              </table></div>
+            </div>
           </section>}
 
           {activeTab==="variance"&&<div className="space-y-5">

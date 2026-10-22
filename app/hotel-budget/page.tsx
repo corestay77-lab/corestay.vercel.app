@@ -548,6 +548,7 @@ export default function HotelBudgetPage() {
   const buildTenYearRows=(source:BudgetForm)=>{
     type R={label:string;section?:boolean;values:(number|null)[];total:number|null;base?:(number|null)[];totalPct:number|null;kind?:"section"|"sum"|"avg"|"percent"|"money";inputKey?:keyof Omit<ForecastMonth,"label">};
     const oneYearRows=buildConsolidatedRows(source);
+    const pnlLabel=(code:string,label:string)=>itemLabel("owner","pnl_"+code,label);
     const growth=(yearIndex:number)=>Math.pow(1+annualGrowthPct/100,yearIndex);
     const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((sum,v)=>sum+(v??0),0):null;
     const averagePresent=(items:(number|null)[])=>{const valid=items.filter((v):v is number=>v!==null);return valid.length?valid.reduce((sum,v)=>sum+v,0)/valid.length:null;};
@@ -1860,12 +1861,17 @@ export default function HotelBudgetPage() {
       {code:"81202",label:"Operator Fee",tone:"bg-rose-50 text-rose-900",items:rows.filter(r=>r.group==="OPERATOR FEE"),subtotal:"TOTAL OPERATOR FEE"},
       {code:"81203",label:"Other Provision",tone:"bg-rose-50 text-rose-900",items:rows.filter(r=>r.group==="OTHER PROVISION"),subtotal:"TOTAL OTHER PROVISION"},
       {code:"82",label:"Depreciation & Amortization Expenses",tone:"bg-violet-100 text-violet-950"},
-      {code:"821",label:"Depreciation Expenses",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.group==="DEPRECIATION"),subtotal:"TOTAL DEPRECIATION"},
-      {code:"822",label:"Amortization Expenses",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.group==="AMORTIZATION"),subtotal:"TOTAL AMORTIZATION"},
+      {code:"821",label:"Depreciation Expenses",tone:"bg-violet-50 text-violet-900"},
+      {code:"82101",label:"Depreciation of Building*",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.group==="DEPRECIATION"),subtotal:"TOTAL DEPRECIATION"},
+      {code:"822",label:"Amortization Expenses",tone:"bg-violet-50 text-violet-900"},
+      {code:"82201",label:"Amortization of Intangible Asset",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.group==="AMORTIZATION"&&r.code!=="82202001"),subtotal:"TOTAL AMORTIZATION — INTANGIBLE"},
+      {code:"82202",label:"Amortization Of Other Asset",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.code==="82202001"),subtotal:"TOTAL AMORTIZATION — OTHER ASSET"},
       {code:"83",label:"Interest Expense**",tone:"bg-amber-100 text-amber-950"},
-      {code:"831",label:"Interest Expense*",tone:"bg-amber-50 text-amber-900",items:rows.filter(r=>r.group==="INTEREST"),subtotal:"TOTAL INTEREST EXPENSE"},
+      {code:"831",label:"Interest Expense*",tone:"bg-amber-50 text-amber-900"},
+      {code:"83101",label:"Interest Expense",tone:"bg-amber-50 text-amber-900",items:rows.filter(r=>r.group==="INTEREST"),subtotal:"TOTAL INTEREST EXPENSE"},
       {code:"84",label:"Income Taxes***",tone:"bg-slate-200 text-slate-900"},
-      {code:"841",label:"Income Taxes**",tone:"bg-slate-100 text-slate-900",items:rows.filter(r=>r.group==="INCOME TAX"),subtotal:"TOTAL INCOME TAX"}
+      {code:"841",label:"Income Taxes**",tone:"bg-slate-100 text-slate-900"},
+      {code:"84101",label:"Income Taxes*",tone:"bg-slate-100 text-slate-900",items:rows.filter(r=>r.group==="INCOME TAX"),subtotal:"TOTAL INCOME TAX"}
     ] as const;
     const rowTotal=(items:readonly {key:string}[],i:number)=>total(items,i);
     return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[26rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT CODE / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>

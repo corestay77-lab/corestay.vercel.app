@@ -2314,7 +2314,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           ] as const;
           const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
-          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-2 text-left font-black">{label}</th></tr>;
+          const heading = (label: string) => { const tone = label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950" : label === "COST OF SALES" ? "border-amber-300 bg-amber-100 text-amber-950" : label.includes("PAYROLL") ? "border-violet-300 bg-violet-100 text-violet-950" : label === "OTHER EXPENSES" ? "border-orange-300 bg-orange-100 text-orange-950" : label === "DEPARTMENT INCOME" ? "border-teal-300 bg-teal-100 text-teal-950" : label === "OVERHEAD DEPARTMENT" ? "border-indigo-300 bg-indigo-100 text-indigo-950" : label === "OTHER NON OPERATING EXPENSES" ? "border-rose-300 bg-rose-100 text-rose-950" : "border-slate-300 bg-slate-100 text-slate-900"; return <tr key={label}><th colSpan={27} className={"border-t-2 px-2 py-2 text-left font-black " + tone}>{label}</th></tr>; };
           return <div className="overflow-x-auto">
             <table className="w-max min-w-full border-collapse text-[10px]">
               <thead>

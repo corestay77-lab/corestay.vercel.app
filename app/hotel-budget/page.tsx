@@ -323,14 +323,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("GROSS OPERATING INCOME",goi,"sum",undefined,sumPresent(goi),revenue);
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
-  const completeSum=(items:(number|null)[])=>items.length&&items.every(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v as number),0):null;
+  const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
   const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),provisionLines[2],monthly("capitalExpenditure")];
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
-  const osp=gop.map((v,i)=>v!==null&&ownerOtherExpenseTotal[i]!==null?v-(ownerOtherExpenseTotal[i] as number):null);
+  const osp=gop.map((v,i)=>v!==null?v-(ownerOtherExpenseTotal[i]??0):null);
   const ownersExpense=monthNames.map((_,i)=>completeSum([monthly("maintenanceFee")[i]??null,monthly("ownerOtherExpenses")[i]??null]));
   const incentiveFee=monthly("incentiveFee");
   const totalOwnerExpenses=monthNames.map((_,i)=>completeSum([incentiveFee[i]??null,ownersExpense[i]??null]));
-  const nosp=monthNames.map((_,i)=>osp[i]!==null&&totalOwnerExpenses[i]!==null?(osp[i] as number)-(totalOwnerExpenses[i] as number):null);
+  const nosp=monthNames.map((_,i)=>osp[i]!==null?(osp[i] as number)-(totalOwnerExpenses[i]??0):null);
   const roomUnits=optional(form.statistics.rooms);
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
@@ -647,7 +647,7 @@ export default function HotelBudgetPage() {
     const growth=(yearIndex:number)=>Math.pow(1+annualGrowthPct/100,yearIndex);
     const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((sum,v)=>sum+(v??0),0):null;
     const averagePresent=(items:(number|null)[])=>{const valid=items.filter((v):v is number=>v!==null);return valid.length?valid.reduce((sum,v)=>sum+v,0)/valid.length:null;};
-     const completeSum=(items:(number|null)[])=>items.length&&items.every(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((sum,v)=>sum+(v as number),0):null;
+     const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((sum,v)=>sum+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
     const pct=(value:number|null,base:number|null)=>value===null||base===null||base===0?null:value/base*100;
     const yearCount=Math.max(10,source.forecast.annual.length);
     const rows:R[]=oneYearRows.map((line,index)=>{
@@ -721,9 +721,9 @@ export default function HotelBudgetPage() {
       const ebt=ebit!==null&&interest!==null?ebit-interest:null;put("EBT",year,ebt);
       const tax=get(pnlLabel("84101001","Income Taxes"),year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
       const ownerOtherExpenses=completeSum([get("LAND LEASE HOLD",year),get("PROPERTY INSURANCE",year),get("F.F & E REPLACEMENT",year),get("CAPITAL EXPENDITURE",year)]);put("TOTAL OTHER EXPENSES",year,ownerOtherExpenses);
-      const ospValue=gop!==null&&ownerOtherExpenses!==null?gop-ownerOtherExpenses:null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
+      const ospValue=gop!==null?gop-(ownerOtherExpenses??0):null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
       const ownerExpenses=completeSum([get("INCENTIVE Fee",year),get("OWNERS EXPENSE",year)]);put("TOTAL OWNER EXPENSES",year,ownerExpenses);
-      const nospValue=ospValue!==null&&ownerExpenses!==null?ospValue-ownerExpenses:null;put("NET OWNER SHARE PROFIT (NOSP)",year,nospValue);
+      const nospValue=ospValue!==null?ospValue-(ownerExpenses??0):null;put("NET OWNER SHARE PROFIT (NOSP)",year,nospValue);
       const roomUnits=optional(source.statistics.rooms);put("NET OWNER SHARE PROFIT/UNIT",year,nospValue!==null&&roomUnits!==null&&roomUnits>0?nospValue/roomUnits:null);
     }
     return rows.map(line=>{

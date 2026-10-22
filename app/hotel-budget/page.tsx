@@ -2217,7 +2217,9 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan konsolidasi tahunan berdasarkan data dan rumus input yang sama. Kolom disusun DEC lalu JAN–NOV, masing-masing dengan nilai dan persentase, diikuti TOTAL / AVG.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(form);
+          const consolidatedRows = buildConsolidatedRows(form);
+          const otherIncomeExpenseStart = consolidatedRows.findIndex(line => line.kind === "section" && line.label === "8 OTHER INCOME & EXPENSES");
+          const rows = otherIncomeExpenseStart >= 0 ? consolidatedRows.slice(0, otherIncomeExpenseStart) : consolidatedRows;
           const year = Number(form.yearStart);
           const roomCount = optional(form.statistics.rooms);
           const monthlyStats = order.map(i => {

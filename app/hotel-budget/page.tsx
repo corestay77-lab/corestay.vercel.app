@@ -707,34 +707,37 @@ export default function HotelBudgetPage() {
          return Number.isFinite(rate)?firstYear*Math.pow(1+rate/100,yearIndex):null;
        });
        const baseYear1=line.base?sumPresent(line.base):null;
-      // Project each percentage denominator from the same recalculated revenue driver as the row it represents.
-      // This keeps YEAR 2–10 percentages in sync with driver-based revenue and departmental income.
-      let baseType:"total"|"rooms"|"fnb"|"mod"|null=null;
-      if(line.base&&baseYear1!==null){
-        const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES")?.total??null;
-        const roomsBase=oneYearRows.find(r=>r.label==="ROOMS")?.total??null;
-        const fnbBase=oneYearRows.find(r=>r.label==="FOOD & BEVERAGE"&&r.kind==="money")?.total??null;
-        const modBase=oneYearRows.find(r=>r.label==="MINOR OPERATING DEPART"&&r.kind==="money")?.total??null;
-        if(totalBase!==null&&Math.abs(baseYear1-totalBase)<0.5)baseType="total";
-        else if(roomsBase!==null&&Math.abs(baseYear1-roomsBase)<0.5)baseType="rooms";
-        else if(fnbBase!==null&&Math.abs(baseYear1-fnbBase)<0.5)baseType="fnb";
-        else if(modBase!==null&&Math.abs(baseYear1-modBase)<0.5)baseType="mod";
-      }
-      const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>{
-        if(yearIndex===0)return baseYear1;
-        if(tenYearMode==="driver"&&baseType){
-          const label=baseType==="total"?"TOTAL REVENUES":baseType==="rooms"?"ROOMS":baseType==="fnb"?"FOOD & BEVERAGE":"MINOR OPERATING DEPART";
-          const occurrence=baseType==="fnb"||baseType==="mod"?0:0;
-          const projected=get(label,yearIndex,occurrence);
-          if(projected!==null)return projected;
-        }
-        return baseYear1*growth(yearIndex);
-      });
+      // Denominators are recalculated after all projected rows exist.
+      const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>baseYear1*growth(yearIndex));
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
     });
     const find=(label:string,occurrence=0)=>{let seen=0;const target=label.trim().toUpperCase();for(let i=0;i<rows.length;i++){if(rows[i].label.trim().toUpperCase()===target&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
     const get=(label:string,year:number,occurrence=0):number|null=>{const i=find(label,occurrence);return i<0?null:rows[i].values[year]??null;};
     const put=(label:string,year:number,value:number|null,occurrence=0)=>{const i=find(label,occurrence);if(i>=0)rows[i].values[year]=value;};
+    // Recalculate percentage denominators only after all projected rows exist.
+    rows.forEach((line)=>{
+      if(!line.base||line.base[0]===null||line.base[0]===undefined)return;
+      const baseYear1=sumPresent(line.base);
+      if(baseYear1===null)return;
+      const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES")?.total??null;
+      const roomsBase=oneYearRows.find(r=>r.label==="ROOMS")?.total??null;
+      const fnbBase=oneYearRows.find(r=>r.label==="FOOD & BEVERAGE"&&r.kind==="money")?.total??null;
+      const modBase=oneYearRows.find(r=>r.label==="MINOR OPERATING DEPART"&&r.kind==="money")?.total??null;
+      let baseType:"total"|"rooms"|"fnb"|"mod"|null=null;
+      if(totalBase!==null&&Math.abs(baseYear1-totalBase)<0.5)baseType="total";
+      else if(roomsBase!==null&&Math.abs(baseYear1-roomsBase)<0.5)baseType="rooms";
+      else if(fnbBase!==null&&Math.abs(baseYear1-fnbBase)<0.5)baseType="fnb";
+      else if(modBase!==null&&Math.abs(baseYear1-modBase)<0.5)baseType="mod";
+      line.base=Array.from({length:yearCount},(_,yearIndex)=>{
+        if(yearIndex===0)return baseYear1;
+        if(tenYearMode==="driver"&&baseType){
+          const label=baseType==="total"?"TOTAL REVENUES":baseType==="rooms"?"ROOMS":baseType==="fnb"?"FOOD & BEVERAGE":"MINOR OPERATING DEPART";
+          const projected=get(label,yearIndex,0);
+          if(projected!==null)return projected;
+        }
+        return baseYear1*growth(yearIndex);
+      });
+    });
     if(tenYearMode==="manual") rows.forEach((line,index)=>{
       if(line.kind==="sum"||line.kind==="percent"||line.section||line.label==="TOTAL OPERATING COSTS")return;
       for(let year=1;year<yearCount;year++){
@@ -1110,7 +1113,7 @@ export default function HotelBudgetPage() {
         const has=(details:Record<string,string>)=>Object.values(details).some(v=>String(v??"").trim()!=="");
         const payrollEmployees=prev.payrollEmployees||[];const masterPayrollExists=payrollEmployees.length>0;
         const payrollTotal=(dept:string)=>{
-          const aliases:Record<string,string[]>={FO:["FO","ROOM"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],MOD:["MOD","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY","SEC","SECURITY","ENG","ENGINEERING","SECURITY / ENGINEERING","SECURITY & ENGINEERING"]};
+          const aliases:Record<string,string[]>={FO:["FO"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],MOD:["MOD","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"]};
           const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());
           if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase())&&payrollHasInputs(e))?String(payrollDepartmentMonthly(dept).total):"";
           const fallback:Record<string,number|null>={FO:forecastSource.payrollBudget.fo,HK:forecastSource.payrollBudget.hk,FB:forecastSource.payrollBudget.fb,MOD:forecastSource.payrollBudget.mod,AG:forecastSource.payrollBudget.ag,SM:forecastSource.payrollBudget.sm,HRD:forecastSource.payrollBudget.hrd,POMEC:forecastSource.payrollBudget.pomec};
@@ -1253,11 +1256,11 @@ export default function HotelBudgetPage() {
     // PPh 21 is withheld/remitted from employee income; it is not an extra employer cost
     // unless a separate gross-up/tax-borne-by-company policy is explicitly configured.
     const basicTotal=basic*count,medicalTotal=medical*count,mealTotal=meal*count,thrTotal=Math.round(thr*count),bpjsCompanyTotal=Math.round(bpjsCompany*count),bpjsStaffTotal=Math.round(bpjsStaff*count),grossTotal=basicTotal+medicalTotal+mealTotal+thrTotal,insuranceTotal=insurance*count,otherTotal=other*count;const total=grossTotal+bpjsCompanyTotal+insuranceTotal+otherTotal;return {count,hasPtkp,basic:basicTotal,medical:medicalTotal,thr:thrTotal,meal:mealTotal,bpjsCompany:bpjsCompanyTotal,bpjsStaff:bpjsStaffTotal,gross:grossTotal,ptkp:ptkp*count,jobExpense:jobExpense/12*count,pkp:pkp/12*count,pkpAnnual:pkp*count,taxYear:taxYear*count,taxMonth:taxMonth*count,insurance:insuranceTotal,other:otherTotal,total};};
-  const payrollDepartmentAliases:Record<string,string[]>={FO:["FO"],HK:["HK"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPT.","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL","EXECUTIVE / GENERAL AFFAIR","FN","FINANCE","FINANCE / ACCOUNTING","FINANCE & ACCOUNTING","ACCOUNTING"],FN:["FN","FINANCE","FINANCE / ACCOUNTING","ACCOUNTING"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],HR:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC","SECURITY"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],ENG:["ENG","ENGINEERING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY","SEC","SECURITY","ENG","ENGINEERING","SECURITY / ENGINEERING","SECURITY & ENGINEERING"],ROOM:["FO","HK"]};
+  const payrollDepartmentAliases:Record<string,string[]>={FO:["FO"],HK:["HK"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPT.","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL","EXECUTIVE / GENERAL AFFAIR","FN","FINANCE","FINANCE / ACCOUNTING","FINANCE & ACCOUNTING","ACCOUNTING"],FN:["FN","FINANCE","FINANCE / ACCOUNTING","ACCOUNTING"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],HR:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC","SECURITY"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],ENG:["ENG","ENGINEERING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"],ROOM:["FO","HK"]};
   const payrollDepartmentMatches=(employee:PayrollEmployee,department:string)=>{const normalize=(value:string)=>String(value||"").trim().toUpperCase().replace(/\s+/g," ");const wanted=(payrollDepartmentAliases[department.toUpperCase()]||[department]).map(normalize);return wanted.includes(normalize(employee.department));};
   const payrollDepartmentHasInputs=(department:string)=>(form.payrollEmployees||[]).some(e=>payrollDepartmentMatches(e,department)&&payrollHasInputs(e));
   const payrollDepartmentMonthly=(department:string)=>{const employees=(form.payrollEmployees||[]).filter(e=>payrollDepartmentMatches(e,department)&&payrollHasInputs(e));return employees.reduce((acc,e)=>{const c=payrollCalc(e);acc.salary+=c.basic;acc.medical+=c.medical;acc.thr+=c.thr;acc.meal+=c.meal;acc.jamsostek+=c.bpjsCompany;acc.incomeTax+=c.taxMonth;acc.insurance+=c.insurance;acc.other+=c.other;acc.total+=c.total;return acc;},{salary:0,medical:0,thr:0,meal:0,jamsostek:0,incomeTax:0,insurance:0,other:0,total:0});};
-  const payrollValueFor=(department:string,key:string)=>{const aliases:Record<string,string>={pomecSalary:"salaryWages",pomecIncomeTax:"incomeTax",pomecJamsostek:"jamsostek",pomecInsurance:"insurance",pomecThr:"thr",pomecMeal:"mealAllowances",pomecMedical:"medical",pomecOtherPayroll:"otherPayroll",rdSalary:"salaryWages",rdIncomeTax:"incomeTax",rdJamsostek:"jamsostek",rdInsurance:"insurance",rdThr:"thr",rdMeal:"mealAllowances",rdMedical:"medical",rdOtherPayroll:"otherPayroll",foSalary:"salaryWages",foIncomeTax:"incomeTax",foJamsostek:"jamsostek",foInsurance:"insurance",foBonus:"thr",foMeal:"mealAllowances",foMedical:"medical",foOtherPayroll:"otherPayroll",hkSalary:"salaryWages",hkIncomeTax:"incomeTax",hkJamsostek:"jamsostek",hkInsurance:"insurance",hkThr:"thr",hkMeal:"mealAllowances",hkMedical:"medical",hkOtherPayroll:"otherPayroll",payrollOthers:"otherPayroll"};const normalized=aliases[key]||key;const aliasesDept:Record<string,string[]>={FO:["FO"],HK:["HK"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPT.","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],FN:["FN"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY","SEC","SECURITY","ENG","ENGINEERING","SECURITY / ENGINEERING","SECURITY & ENGINEERING"],ROOM:["FO","HK"]};if(!(form.payrollEmployees||[]).some(e=>payrollDepartmentMatches(e,department)&&payrollHasInputs(e)))return "";const totals=payrollDepartmentMonthly(department);const keys:Record<string,keyof typeof totals>={salaryWages:"salary",incomeTax:"incomeTax",jamsostek:"jamsostek",insurance:"insurance",insurancePayroll:"insurance",thr:"thr",bonusProvision:"thr",bonus:"thr",mealAllowances:"meal",medical:"medical",otherPayroll:"other",payrollOthers:"other"};const mapped=keys[normalized];if(mapped==="incomeTax")return "";return mapped?String(mapped==="thr"?Math.round(totals[mapped]):totals[mapped]):"";};
+  const payrollValueFor=(department:string,key:string)=>{const aliases:Record<string,string>={pomecSalary:"salaryWages",pomecIncomeTax:"incomeTax",pomecJamsostek:"jamsostek",pomecInsurance:"insurance",pomecThr:"thr",pomecMeal:"mealAllowances",pomecMedical:"medical",pomecOtherPayroll:"otherPayroll",rdSalary:"salaryWages",rdIncomeTax:"incomeTax",rdJamsostek:"jamsostek",rdInsurance:"insurance",rdThr:"thr",rdMeal:"mealAllowances",rdMedical:"medical",rdOtherPayroll:"otherPayroll",foSalary:"salaryWages",foIncomeTax:"incomeTax",foJamsostek:"jamsostek",foInsurance:"insurance",foBonus:"thr",foMeal:"mealAllowances",foMedical:"medical",foOtherPayroll:"otherPayroll",hkSalary:"salaryWages",hkIncomeTax:"incomeTax",hkJamsostek:"jamsostek",hkInsurance:"insurance",hkThr:"thr",hkMeal:"mealAllowances",hkMedical:"medical",hkOtherPayroll:"otherPayroll",payrollOthers:"otherPayroll"};const normalized=aliases[key]||key;const aliasesDept:Record<string,string[]>={FO:["FO"],HK:["HK"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPT.","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],FN:["FN"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"],ROOM:["FO","HK"]};if(!(form.payrollEmployees||[]).some(e=>payrollDepartmentMatches(e,department)&&payrollHasInputs(e)))return "";const totals=payrollDepartmentMonthly(department);const keys:Record<string,keyof typeof totals>={salaryWages:"salary",incomeTax:"incomeTax",jamsostek:"jamsostek",insurance:"insurance",insurancePayroll:"insurance",thr:"thr",bonusProvision:"thr",bonus:"thr",mealAllowances:"meal",medical:"medical",otherPayroll:"other",payrollOthers:"other"};const mapped=keys[normalized];if(mapped==="incomeTax")return "";return mapped?String(mapped==="thr"?Math.round(totals[mapped]):totals[mapped]):"";};
   const payrollInputKey=(key:string)=>["salaryWages","incomeTax","jamsostek","insurance","insurancePayroll","thr","bonusProvision","bonus","mealAllowances","medical","otherPayroll","payrollOthers","rdSalary","rdIncomeTax","rdJamsostek","rdInsurance","rdThr","rdMeal","rdMedical","rdOtherPayroll","foSalary","foIncomeTax","foJamsostek","foInsurance","foBonus","foMeal","foMedical","foOtherPayroll","hkSalary","hkIncomeTax","hkJamsostek","hkInsurance","hkThr","hkMeal","hkMedical","hkOtherPayroll","pomecSalary","pomecIncomeTax","pomecJamsostek","pomecInsurance","pomecThr","pomecMeal","pomecMedical","pomecOtherPayroll"].includes(key);
   // STEP 4 uses one normalized forecast source: detailed Step 3 inputs + Master Payroll.
   // This prevents the consolidated report/Excel export from reading stale summary fields.
@@ -1895,7 +1898,7 @@ export default function HotelBudgetPage() {
               {(() => {
                 const payrollGrandTotal=(form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,e)=>sum+payrollCalc(e).total,0);
                 const payrollHeadcount=(form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,e)=>sum+(Number(e.headcount)||0),0);
-                const payrollDepartments=[["FO","Front Office","#3B82F6","bg-blue-500"],["HK","Housekeeping","#8B5CF6","bg-violet-500"],["FB","Food & Beverage","#F59E0B","bg-amber-500"],["MOD","Minor Operated Dept","#14B8A6","bg-teal-500"],["AG","Administration & General","#64748B","bg-slate-500"],["HR","Human Resources","#EC4899","bg-pink-500"],["SEC","Security / Engineering","#EF4444","bg-red-500"],["SM","Sales & Marketing","#06B6D4","bg-cyan-500"],["POMEC","POMEC & Utilities","#84CC16","bg-lime-500"],["ROOM","Room Division","#6366F1","bg-indigo-500"]] as const;
+                const payrollDepartments=[["FO","Front Office","#3B82F6","bg-blue-500"],["HK","Housekeeping","#8B5CF6","bg-violet-500"],["FB","Food & Beverage","#F59E0B","bg-amber-500"],["MOD","Minor Operated Dept","#14B8A6","bg-teal-500"],["AG","Administration & General","#64748B","bg-slate-500"],["HR","Human Resources","#EC4899","bg-pink-500"],["SEC","Security","#EF4444","bg-red-500"],["ENG","Engineering","#F97316","bg-orange-500"],["SM","Sales & Marketing","#06B6D4","bg-cyan-500"],["POMEC","POMEC & Utilities","#84CC16","bg-lime-500"]] as const;
                 return <>
                   <div className="bg-gradient-to-r from-slate-900 via-blue-900 to-violet-800 px-4 py-4 text-white sm:px-5">
                     <div className="flex items-center justify-between gap-3"><div><p className="text-[10px] font-bold uppercase tracking-[0.18em] text-sky-200">STEP PAYROLL · MONTHLY OVERVIEW</p><h4 className="mt-1 text-base font-black sm:text-lg">Payroll Distribution</h4><p className="mt-1 text-xs text-slate-200">Rekap biaya payroll per departemen</p></div><div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-white/15 text-2xl">📊</div></div>

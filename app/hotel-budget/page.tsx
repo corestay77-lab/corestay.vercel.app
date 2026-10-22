@@ -10,7 +10,7 @@ type FbEventRevenueSubcategory = { id:string; name:string; eventsPerYear:string;
 type FbMonthlyInput = { restaurantRevenue:string; meetingRoomARevenue:string; meetingRoomBRevenue:string; ballroomRevenue:string; additionalMeetingRevenue:string; historicalRestaurantRevenue:string; historicalMeetingRoomARevenue:string; historicalMeetingRoomBRevenue:string; historicalBallroomRevenue:string; historicalAdditionalMeetingRevenue:string; note:string };
 const emptyFbMonthlyInput = ():FbMonthlyInput => ({restaurantRevenue:"",meetingRoomARevenue:"",meetingRoomBRevenue:"",ballroomRevenue:"",additionalMeetingRevenue:"",historicalRestaurantRevenue:"",historicalMeetingRoomARevenue:"",historicalMeetingRoomBRevenue:"",historicalBallroomRevenue:"",historicalAdditionalMeetingRevenue:"",note:""});
 type Statistics = { fbBanquetEventsPerYear:string; fbBanquetGuestsPerEvent:string; fbBanquetRevenuePerGuest:string; fbRoomServiceOrdersPerDay:string; fbRoomServiceAverageOrderValue:string; fbOtherRevenueMethod:"direct"|"driver"; fbOtherAnnualRevenue:string; fbOtherDriverVolumePerDay:string; fbOtherDriverAverageCheck:string; fbOtherDriverOperatingDays:string; days: string; rooms: string; outInventory: string; houseUse: string; outOfOrder: string; complimentary: string; roomPaid: string; occupancy: string; exchangeRate: string; averageSellingRate: string; modBusinessCenterRevenue: string; modRentCarRevenue: string; modMassageRevenue: string; modLaundryRevenue: string; modTelephoneRevenue: string; modSportRecreationRevenue: string; modRentedSpaceRevenue: string; modOtherIncomeRevenue: string; modOtherRevenueDiscounts: string; fbRestaurantAnnualRevenue: string; fbMeetingEventAnnualRevenue: string; fbAverageGuestsPerRoom: string; fbLengthOfStay: string; fbRestaurantCoverPercent: string; fbAverageBreakfastCheck: string; fbMeetingRoomAUnits: string; fbMeetingRoomAEventsPerYear: string; fbMeetingRoomAPax: string; fbMeetingRoomACoverPercent: string; fbMeetingRoomBUnits: string; fbMeetingRoomBEventsPerYear: string; fbMeetingRoomBPax: string; fbMeetingRoomBCoverPercent: string; fbMeetingRoomOperatingDays: string; fbBallroomCapacity: string; fbBallroomCoverPercent: string; fbBallroomEventsPerYear: string; fbAverageMeetingCheck: string; fbAdditionalMeetingRooms?: AdditionalMeetingRoom[]; fbEventRevenueSubcategories?: FbEventRevenueSubcategory[]; fbMonthlyInputs?: FbMonthlyInput[] };
-type ForecastMonth = { smDetails?:Record<string,string>; agDetails?:Record<string,string>; hrdDetails?:Record<string,string>; modDetails?:Record<string,string>; fbDetails?:Record<string,string>; roomDivisionDetails?:Record<string,string>; pomecDetails?:Record<string,string>; label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string; capitalExpenditure:string; incentiveFee:string };
+type ForecastMonth = { smDetails?:Record<string,string>; agDetails?:Record<string,string>; hrdDetails?:Record<string,string>; modDetails?:Record<string,string>; fbDetails?:Record<string,string>; roomDivisionDetails?:Record<string,string>; pomecDetails?:Record<string,string>; pnl_81203003?:string; label:string; occupancy:string; adr:string; fbRevenue:string; phoneRevenue:string; otherRevenue:string; fbCostOfSales:string; phoneCostOfSales:string; modCostOfSales:string; roomPayroll:string; fbPayroll:string; phonePayroll:string; modPayroll:string; roomOtherExpenses:string; fbOtherExpenses:string; phoneOtherExpenses:string; modOtherExpenses:string; agPayroll:string; smPayroll:string; hrdPayroll:string; pomecPayroll:string; agOtherExpenses:string; smOtherExpenses:string; hrdOtherExpenses:string; pomecOtherExpenses:string; energyCost:string; operatingCosts:string; basicManagementFee:string; otherManagementFee:string; insuranceGeneral:string; landLease:string; ownerInsurance:string; maintenanceFee:string; operatorSharePercent:string; ownerOtherExpenses:string; capitalExpenditure:string; incentiveFee:string };
 type ForecastYear = { label: string; days: string; rooms: string; occupancy: string; adr: string; fbRevenue: string; otherRevenue: string; operatingCosts: string };
 type PayrollEmployee = { id:string; department:string; position:string; headcount:string; basicSalary:string; medical:string; meal:string; ptkpAnnual:string; insuranceMonthly:string; otherMonthly:string };
 type BudgetForm = {
@@ -133,7 +133,7 @@ const calcAnnual = (row: ForecastYear) => {
 };
 
 
-type ConsolidatedRow = { label:string; kind:"section"|"sum"|"avg"|"percent"|"money"; values:(number|null)[]; total?:number|null; base?:(number|null)[]; totalPct?:number|null; inputKey?:keyof Omit<ForecastMonth,"label">; editable?:boolean[] };
+type ConsolidatedRow = { label:string; labelKey?:string; kind:"section"|"sum"|"avg"|"percent"|"money"; values:(number|null)[]; total?:number|null; base?:(number|null)[]; totalPct?:number|null; inputKey?:keyof Omit<ForecastMonth,"label">; editable?:boolean[] };
 const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const year=Number(form.yearStart), months=form.forecast.monthly.map((r,i)=>calcMonthly(r,year,i,form.statistics.rooms));
   const roomCount=optional(form.statistics.rooms);
@@ -259,7 +259,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const eat=ebt.map((v,i)=>v!==null&&incomeTaxes[i]!==null?v-incomeTaxes[i]!:null);
   const rows:ConsolidatedRow[]=[];
   const section=(label:string)=>rows.push({label,kind:"section",values:[]});
-  const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[])=>{
+  const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[],labelKey?:string)=>{
     // Preserve unknowns as null so reports show an em dash instead of a false zero.
     const displayValues=values;
     const t=total===undefined
@@ -267,7 +267,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
       : total;
     // Cost and expense rows default to total hotel revenue; department income can use its own department revenue.
     const percentageBase=base??revenue;
-    rows.push({label,values:displayValues,kind,inputKey,total:t,base:percentageBase,totalPct:percentageBase?pct(t,sumPresent(percentageBase)):null,editable});
+    rows.push({label,labelKey,values:displayValues,kind,inputKey,total:t,base:percentageBase,totalPct:percentageBase?pct(t,sumPresent(percentageBase)):null,editable});
   };
   section("REVENUES");
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
@@ -339,14 +339,16 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add(ownerLabel("landLease","LAND LEASE HOLD"),monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add(ownerLabel("ownerInsurance","PROPERTY INSURANCE"),monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add(ownerLabel("pnl_81203003","F.F & E REPLACEMENT"),ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
+  add(ownerLabel("pnl_81203003","F.F & E REPLACEMENT"),ffeReplacement,"money","pnl_81203003" as keyof Omit<ForecastMonth,"label">,sumPresent(ffeReplacement),revenue);
   add(ownerLabel("capitalExpenditure","CAPITAL EXPENDITURE"),monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   section("OWNER SHARE PROFIT");
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
   section("OWNER EXPENSES");
   add(ownerLabel("incentiveFee","INCENTIVE Fee"),incentiveFee,"money","incentiveFee",sumPresent(incentiveFee),revenue);
-  add(ownerLabel("maintenanceFee","OWNERS EXPENSE"),ownersExpense,"sum",undefined,sumPresent(ownersExpense),revenue);
+  add(ownerLabel("ownerServiceCharge","OWNERS EXPENSE — SERVICE CHARGE"),monthly("maintenanceFee"),"money","maintenanceFee",sumPresent(monthly("maintenanceFee")),revenue,undefined,"ownerServiceCharge");
+  add(ownerLabel("ownerOtherExpenses","OWNERS EXPENSE — OTHER"),monthly("ownerOtherExpenses"),"money","ownerOtherExpenses",sumPresent(monthly("ownerOtherExpenses")),revenue,undefined,"ownerOtherExpenses");
+  add("OWNERS EXPENSE",ownersExpense,"sum",undefined,sumPresent(ownersExpense),revenue);
   add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),revenue);
   section("NET OWNER SHARE PROFIT");
   add("NETT OWNER PROFIT (BEFORE TAX)",nosp,"sum",undefined,sumPresent(nosp),revenue);
@@ -410,7 +412,9 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
   add(ownerLabel("incentiveFee","INCENTIVE Fee"),incentiveFee,"money","incentiveFee",sumPresent(incentiveFee),revenue);
-  add(ownerLabel("maintenanceFee","OWNERS EXPENSE"),ownersExpense,"sum",undefined,sumPresent(ownersExpense),revenue);
+  add(ownerLabel("ownerServiceCharge","OWNERS EXPENSE — SERVICE CHARGE"),monthly("maintenanceFee"),"money","maintenanceFee",sumPresent(monthly("maintenanceFee")),revenue,undefined,"ownerServiceCharge");
+  add(ownerLabel("ownerOtherExpenses","OWNERS EXPENSE — OTHER"),monthly("ownerOtherExpenses"),"money","ownerOtherExpenses",sumPresent(monthly("ownerOtherExpenses")),revenue,undefined,"ownerOtherExpenses");
+  add("OWNERS EXPENSE",ownersExpense,"sum",undefined,sumPresent(ownersExpense),revenue);
   add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),revenue);
   add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumPresent(nosp),revenue);
   add("NET OWNER SHARE PROFIT/UNIT",nosp.map(v=>v!==null&&roomUnits!==null&&roomUnits>0?v/roomUnits:null),"money",undefined,sumPresent(nosp)!==null&&roomUnits!==null&&roomUnits>0?sumPresent(nosp)!/roomUnits:null,revenue);
@@ -1994,9 +1998,9 @@ export default function HotelBudgetPage() {
       {rows.map((row,index)=>row.kind==="section"
         ? <tr key={row.label+"-"+index}><td colSpan={14} className={sectionTone(row.label)+" px-3 py-2 text-xs font-black"}>{row.label}</td></tr>
         : (() => {
-          const inputKey = row.inputKey ? String(row.inputKey) : row.label === "F.F & E REPLACEMENT" ? "pnl_81203003" : null;
+          const inputKey = row.inputKey ? String(row.inputKey) : null;
           const editable = inputKey !== null && row.kind === "money";
-          const editableLabelKey = row.label === "F.F & E REPLACEMENT" ? "pnl_81203003" : inputKey;
+          const editableLabelKey = row.labelKey || inputKey;
           const defaultLabel = row.label;
           return <tr key={row.label+"-"+index} className={(row.label.startsWith("TOTAL ")||["TOTAL OVERHEAD DEPARTMENT","HOUSE PROFIT","GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","% GOP"].includes(row.label)?"bg-emerald-50 font-extrabold ":"")+"border-t border-slate-100"}>
             <td className="sticky left-0 z-[1] min-w-[22rem] bg-inherit px-3 py-2 text-xs">{editableLabelKey ? <input aria-label={"Edit nama "+defaultLabel} className="w-full min-w-[210px] rounded border border-slate-200 bg-white px-2 py-1 text-xs font-medium" value={itemLabel("owner",editableLabelKey,defaultLabel)} onChange={e=>setForm(prev=>({...prev,itemLabelOverrides:{...(prev.itemLabelOverrides||{}),["owner:"+editableLabelKey]:e.target.value}}))}/> : row.label}</td>

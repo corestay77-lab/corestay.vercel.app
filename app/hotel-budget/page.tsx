@@ -202,14 +202,17 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // to every individual department line.
   // Subtotals add all entered amounts, even if other account lines are still blank.  // Missing source values remain blank and are never converted to zero in the report.
   const departmentalOperatingCost=costParts.map(c=>c.cos!==null&&c.payroll!==null&&c.deptOther!==null?c.cos+c.payroll+c.deptOther:null);
-  const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.phone,d.mod]));
+  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null&&cost!==null?revenue[i]!-cost:null);
   // Keep blank account rows blank, but allow available entered values to flow through all calculated subtotals.
   // For derived profit calculations only, unentered cost/fee rows contribute 0 until a value is entered.
   // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
   const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
-  const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
+  // House Profit follows the hotel consolidated statement: Department Income less Overhead Department.
+  // Keep the result blank until both components are available; missing values are not treated as zero.
+  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null&&overheadTotal[i]!==null?income-overheadTotal[i]!:null);
+  // GOP is reported before management/marketing fees, per the approved CoreStay accounting rule.
   const goi=houseProfit;
-  const gop=houseProfit;
+  const gop=goi;
   // Detailed below-GOP accounts are read from the monthly Owner P&L input table.
   const pnlLabel=(code:string,label:string)=>form.itemLabelOverrides?.["owner:pnl_"+code]?.trim()||label;
   const accountMonthly=(code:string):(number|null)[]=>form.forecast.monthly.map(month=>optional(String((month as unknown as Record<string,string>)["pnl_"+code]??"")));

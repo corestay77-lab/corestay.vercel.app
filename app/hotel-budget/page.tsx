@@ -2252,7 +2252,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
           const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
           return <div className="overflow-x-auto">
-            <table className="w-full min-w-[2200px] border-collapse text-[8px]">
+            <table className="w-full min-w-[1850px] border-collapse text-[8px]">
               <thead>
                 <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[170px] px-1 py-1 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-0.5 py-1 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-0.5 py-1 text-center">TOTAL / AVG</th></tr>
                 <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-0.5 py-1 text-right">VALUE</th><th className="px-0.5 py-1 text-right">%</th></Fragment>)}<th className="px-0.5 py-1 text-right">VALUE</th><th className="px-0.5 py-1 text-right">%</th></tr>
@@ -2441,14 +2441,14 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
           const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
           return <div className="overflow-x-auto">
-            <table className="w-full min-w-[2200px] border-collapse text-[8px]">
+            <table className="w-full min-w-[1850px] border-collapse text-[8px]">
               <thead>
-                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[190px] px-2 py-1.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-1 py-1.5 text-center">TOTAL / AVG</th></tr>
+                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[155px] px-1 py-1 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-0.5 py-1 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-0.5 py-1 text-center">TOTAL / AVG</th></tr>
                 <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
               </thead>
               <tbody>
                 {heading("STATISTICS")}
-                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-2 py-1 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right">—</td></tr>)}
+                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-1 py-0.5 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-0.5 py-0.5 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-0.5 py-0.5 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right">—</td></tr>)}
                 {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
                   <th className="border-b border-slate-200 px-2 py-1 text-left font-semibold">{line.label}</th>
                   {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
@@ -2530,14 +2530,14 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
           const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
           return <div className="overflow-x-auto">
-            <table className="w-full min-w-[2200px] border-collapse text-[8px]">
+            <table className="w-full min-w-[1850px] border-collapse text-[8px]">
               <thead>
-                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[190px] px-2 py-1.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-1 py-1.5 text-center">TOTAL / AVG</th></tr>
+                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[155px] px-1 py-1 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-0.5 py-1 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-0.5 py-1 text-center">TOTAL / AVG</th></tr>
                 <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
               </thead>
               <tbody>
                 {heading("STATISTICS")}
-                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-2 py-1 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right">—</td></tr>)}
+                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-1 py-0.5 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-0.5 py-0.5 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-0.5 py-0.5 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right">—</td></tr>)}
                 {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
                   <th className="border-b border-slate-200 px-2 py-1 text-left font-semibold">{line.label}</th>
                   {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}

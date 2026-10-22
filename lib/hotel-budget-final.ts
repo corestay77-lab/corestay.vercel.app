@@ -96,7 +96,7 @@ export const GROUP_LABELS: Record<AccountGroup,string> = {
   roomRevenue:"Room Revenue",fbRevenue:"F&B Revenue",otherRevenue:"Other Operating Revenue",
   costOfSales:"Cost of Sales",payroll:"Payroll & Related Expenses",
   operatingExpenses:"Other Departmental Operating Expenses",overhead:"Undistributed / Overhead Expenses",
-  otherIncome:"Other Income",otherExpenses:"Other Expenses",operatorFees:"Operator Fees",ownerShareProfit:"Owner Share Profit (OSP)",
+  otherIncome:"Other Income",otherExpenses:"Other Expenses",operatorFees:"Operator Fees",ownerShareProfit:"OTHER INCOME & EXPENSES — OWNER SHARE PROFIT",
   provisions:"Provisions",depreciation:"Depreciation",amortization:"Amortization",interest:"Interest / Finance Cost",tax:"Income Tax",ownerCashItems:"Owner Cash Items (outside P&L)"
 };
 export const GROUP_ORDER: AccountGroup[] = ["roomRevenue","fbRevenue","otherRevenue","costOfSales","payroll","operatingExpenses","overhead","otherIncome","otherExpenses","operatorFees","provisions","depreciation","amortization","interest","tax","ownerCashItems","ownerShareProfit"];

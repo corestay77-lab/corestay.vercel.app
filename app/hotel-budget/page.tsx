@@ -324,7 +324,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal),[]);
   const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
-  const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),provisionLines[2],monthly("capitalExpenditure")];
+  const ffeReplacement=monthNames.map((_,i)=>optional(String(form.forecast.monthly[i]?.pnl_81203003??""))??provisionLines[2][i]);
+  const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),ffeReplacement,monthly("capitalExpenditure")];
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
@@ -337,7 +338,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",provisionLines[2],"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   section("OWNER SHARE PROFIT");
@@ -403,7 +404,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",provisionLines[2],"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
@@ -2747,12 +2748,12 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             {key:"otherManagementFee",label:"MANAGEMENT & MARKETING FEES",group:"OTHER EXPENSES"},
             {key:"insuranceGeneral",label:"GENERAL INSURANCE",group:"OTHER EXPENSES"},
             {key:"pnl_81203003",label:"F.F & E REPLACEMENT",group:"OTHER EXPENSES"},
-            {key:"landLease",label:"LAND LEASE / HOLD",group:"OWNER EXPENSES"},
-            {key:"ownerInsurance",label:"OWNER INSURANCE",group:"OWNER EXPENSES"},
-            {key:"maintenanceFee",label:"SERVICE CHARGE / MAINTENANCE FEE",group:"OWNER EXPENSES"},
-            {key:"ownerOtherExpenses",label:"OTHER OWNER EXPENSES",group:"OWNER EXPENSES"},
+            {key:"landLease",label:"LAND LEASE HOLD",group:"OWNER EXPENSES"},
+            {key:"ownerInsurance",label:"PROPERTY INSURANCE",group:"OWNER EXPENSES"},
             {key:"capitalExpenditure",label:"CAPITAL EXPENDITURE",group:"OTHER EXPENSES"},
-            {key:"incentiveFee",label:"INCENTIVE FEE",group:"OWNER EXPENSES"}
+            {key:"incentiveFee",label:"INCENTIVE Fee",group:"OWNER EXPENSES"},
+            {key:"maintenanceFee",label:"OWNERS EXPENSE — SERVICE CHARGE",group:"OWNER EXPENSES"},
+            {key:"ownerOtherExpenses",label:"OWNERS EXPENSE — OTHER",group:"OWNER EXPENSES"}
           ] as const;
           const value=(i:number,key:string)=>optional(String(form.forecast.monthly[i]?.[key as keyof ForecastMonth]??""));
           const sum=(key:string)=>order.some(i=>value(i,key)!==null)?order.reduce<number>((n,i)=>n+(value(i,key)??0),0):null;
@@ -2766,11 +2767,11 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             <thead><tr className="bg-rose-900 text-white"><th className="px-2 py-1.5 text-left">Account / Description</th>{order.map(i=><th key={i} className="px-1 py-1.5 text-right">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="px-2 py-1.5 text-right">TOTAL</th></tr></thead>
             <tbody>
               <tr><td colSpan={14} className="bg-slate-200 px-2 py-1 font-black">OTHER EXPENSES</td></tr>
-              {groupRows("OTHER EXPENSES").map(row=><tr key={row.key}><td className="border-b border-slate-200 px-2 py-1">{itemLabel("owner",row.key,row.label)}</td>{order.map(i=><td key={i} className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(value(i,row.key))}</td>)}<td className="border-b border-slate-200 px-2 py-1 text-right font-bold tabular-nums">{display(sum(row.key))}</td></tr>)}
+              {groupRows("OTHER EXPENSES").map(row=><tr key={row.key}><td className="border-b border-slate-200 px-2 py-1"><div className="flex min-w-[190px] items-center gap-1"><input aria-label={"Edit nama "+row.label} className="w-full min-w-0 rounded border border-slate-200 bg-white px-1.5 py-1 font-medium" value={itemLabel("owner",row.key,row.label)} onChange={e=>setForm(prev=>({...prev,itemLabelOverrides:{...(prev.itemLabelOverrides||{}),["owner:"+row.key]:e.target.value}}))}/></div></td>{order.map(i=><td key={i} className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap"><input aria-label={itemLabel("owner",row.key,row.label)+" "+monthNames[i]} inputMode="numeric" className="w-[92px] rounded border border-slate-200 bg-white px-1 py-1 text-right tabular-nums" value={String(form.forecast.monthly[i]?.[row.key as keyof ForecastMonth]??"")} onChange={e=>updateMonth(i,row.key as keyof Omit<ForecastMonth,"label">,e.target.value.replace(/[^0-9.,-]/g,""))}/></td>)}<td className="border-b border-slate-200 px-2 py-1 text-right font-bold tabular-nums">{display(sum(row.key))}</td></tr>)}
               {subtotal("SUBTOTAL OTHER EXPENSES","OTHER EXPENSES")}
               <tr><td colSpan={14} className="h-2"></td></tr>
               <tr><td colSpan={14} className="bg-slate-200 px-2 py-1 font-black">OWNER EXPENSES</td></tr>
-              {groupRows("OWNER EXPENSES").map(row=><tr key={row.key}><td className="border-b border-slate-200 px-2 py-1">{itemLabel("owner",row.key,row.label)}</td>{order.map(i=><td key={i} className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(value(i,row.key))}</td>)}<td className="border-b border-slate-200 px-2 py-1 text-right font-bold tabular-nums">{display(sum(row.key))}</td></tr>)}
+              {groupRows("OWNER EXPENSES").map(row=><tr key={row.key}><td className="border-b border-slate-200 px-2 py-1"><div className="flex min-w-[190px] items-center gap-1"><input aria-label={"Edit nama "+row.label} className="w-full min-w-0 rounded border border-slate-200 bg-white px-1.5 py-1 font-medium" value={itemLabel("owner",row.key,row.label)} onChange={e=>setForm(prev=>({...prev,itemLabelOverrides:{...(prev.itemLabelOverrides||{}),["owner:"+row.key]:e.target.value}}))}/></div></td>{order.map(i=><td key={i} className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap"><input aria-label={itemLabel("owner",row.key,row.label)+" "+monthNames[i]} inputMode="numeric" className="w-[92px] rounded border border-slate-200 bg-white px-1 py-1 text-right tabular-nums" value={String(form.forecast.monthly[i]?.[row.key as keyof ForecastMonth]??"")} onChange={e=>updateMonth(i,row.key as keyof Omit<ForecastMonth,"label">,e.target.value.replace(/[^0-9.,-]/g,""))}/></td>)}<td className="border-b border-slate-200 px-2 py-1 text-right font-bold tabular-nums">{display(sum(row.key))}</td></tr>)}
               {subtotal("SUBTOTAL OWNER EXPENSES","OWNER EXPENSES")}
               {subtotal("TOTAL OTHER EXPENSES + OWNER EXPENSES",null)}
             </tbody>

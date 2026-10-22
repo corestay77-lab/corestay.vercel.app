@@ -211,7 +211,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const goi=houseProfit;
   const gop=houseProfit;
   // Detailed below-GOP accounts are read from the monthly Owner P&L input table.
-  const pnlLabel=(code:string,label:string)=>itemLabel("owner","pnl_"+code,label);
+  const pnlLabel=(code:string,label:string)=>form.itemLabelOverrides?.["owner:pnl_"+code]?.trim()||label;
   const accountMonthly=(code:string):(number|null)[]=>form.forecast.monthly.map(month=>optional(String((month as unknown as Record<string,string>)["pnl_"+code]??"")));
   const accountCodes={
     otherIncome:[["81101001","Gain/Loss on Disposal Asset"],["81101002","Deferred Tax"],["81101003","Interest Income"],["81101004","Exchange Rates"],["81101999","Other - Other Income"]],
@@ -548,7 +548,7 @@ export default function HotelBudgetPage() {
   const buildTenYearRows=(source:BudgetForm)=>{
     type R={label:string;section?:boolean;values:(number|null)[];total:number|null;base?:(number|null)[];totalPct:number|null;kind?:"section"|"sum"|"avg"|"percent"|"money";inputKey?:keyof Omit<ForecastMonth,"label">};
     const oneYearRows=buildConsolidatedRows(source);
-    const pnlLabel=(code:string,label:string)=>itemLabel("owner","pnl_"+code,label);
+    const pnlLabel=(code:string,label:string)=>source.itemLabelOverrides?.["owner:pnl_"+code]?.trim()||label;
     const growth=(yearIndex:number)=>Math.pow(1+annualGrowthPct/100,yearIndex);
     const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((sum,v)=>sum+(v??0),0):null;
     const averagePresent=(items:(number|null)[])=>{const valid=items.filter((v):v is number=>v!==null);return valid.length?valid.reduce((sum,v)=>sum+v,0)/valid.length:null;};

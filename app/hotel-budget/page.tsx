@@ -208,17 +208,57 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
   const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
   const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
-  const basicFee=monthly("basicManagementFee");
-  const goi=houseProfit.map((v)=>v);
-  const nonOp=form.forecast.monthly.map((r)=>sumPresent([val(r,"otherManagementFee"),val(r,"insuranceGeneral")]));
-  const gop=houseProfit.map(v=>v);
-  const ebitda=houseProfit.map((v,i)=>v!==null&&(basicFee[i]!==null||nonOp[i]!==null)?v-(basicFee[i]??0)-(val(form.forecast.monthly[i],"otherManagementFee")??0)-(val(form.forecast.monthly[i],"insuranceGeneral")??0):null);
-  // Owner expense subtotals must reflect entered monthly values even when GOP/revenue is not yet available.
-  // OSP and NOSP remain unavailable until their profit basis can be calculated; never replace unknown profit with zero.
-  const otherExpense=form.forecast.monthly.map((r)=>sumPresent([val(r,"landLease"),val(r,"ownerInsurance"),val(r,"maintenanceFee")]));
-  const osp=gop.map((v,i)=>v!==null&&otherExpense[i]!==null?v-otherExpense[i]!:null);
-  const totalOwnerExpenses=form.forecast.monthly.map((r)=>val(r,"ownerOtherExpenses"));
-  const nosp=osp.map((v,i)=>v!==null?v-(totalOwnerExpenses[i]??0):null);
+  // Below-GOP account values are sourced from Step 2 Budget P&L (annual Budget column).
+  // Where no monthly detail exists, distribute the annual amount evenly across 12 months.
+  const annualAccount=(code:string):number|null=>optional(form.accounts?.[code]?.budget??"");
+  const accountMonthly=(code:string):(number|null)[]=>{const annual=annualAccount(code);return Array.from({length:12},()=>annual===null?null:annual/12);};
+  const accountCluster=(codes:string[]):(number|null)[]=>{
+    const lines=codes.map(accountMonthly);
+    return Array.from({length:12},(_,i)=>{
+      const vals=lines.map(line=>line[i]);
+      return vals.some(v=>v!==null)?vals.reduce<number>((total,v)=>total+(v??0),0):null;
+    });
+  };
+  const accountCodes={
+    otherIncome:["80101","80102","80103","80104","80105"],
+    otherExpense:["80201","80202","80203","80204","80205","80206","80207","80208"],
+    operatorFee:["80301","80302","80303"],
+    provision:["80401","80402","80403"],
+    depreciation:["80501","80502","80503","80504","80505","80506","80507"],
+    amortization:["80601","80602","80603","80604"],
+    interest:["80701","80702","80703"],
+    tax:["80801"]
+  };
+  const otherIncomeLines=accountCodes.otherIncome.map(accountMonthly);
+  const otherExpenseLines=accountCodes.otherExpense.map(accountMonthly);
+  const operatorFeeLines=accountCodes.operatorFee.map(accountMonthly);
+  const provisionLines=accountCodes.provision.map(accountMonthly);
+  const depreciationLines=accountCodes.depreciation.map(accountMonthly);
+  const amortizationLines=accountCodes.amortization.map(accountMonthly);
+  const interestLines=accountCodes.interest.map(accountMonthly);
+  const taxLines=accountCodes.tax.map(accountMonthly);
+  const sumLines=(lines:(number|null)[][]): (number|null)[]=>Array.from({length:12},(_,i)=>{
+    const vals=lines.map(line=>line[i]);return vals.some(v=>v!==null)?vals.reduce<number>((total,v)=>total+(v??0),0):null;
+  });
+  const otherIncome= sumLines(otherIncomeLines);
+  const otherExpense= sumLines(otherExpenseLines);
+  const operatorFees= sumLines(operatorFeeLines);
+  const provisions= sumLines(provisionLines);
+  const depreciation= sumLines(depreciationLines);
+  const amortization= sumLines(amortizationLines);
+  const interestExpense= sumLines(interestLines);
+  const incomeTaxes= sumLines(taxLines);
+  const combineEntered=(groups:(number|null)[][]): (number|null)[]=>Array.from({length:12},(_,i)=>{
+    const vals=groups.map(group=>group[i]);return vals.some(v=>v!==null)?vals.reduce<number>((total,v)=>total+(v??0),0):null;
+  });
+  const ebitda=Array.from({length:12},(_,i)=>{
+    const entered=[otherIncome[i],otherExpense[i],operatorFees[i],provisions[i]].some(v=>v!==null);
+    return gop[i]!==null&&entered?gop[i]!+(otherIncome[i]??0)-(otherExpense[i]??0)-(operatorFees[i]??0)-(provisions[i]??0):null;
+  });
+  const da=combineEntered([depreciation,amortization]);
+  const ebit=ebitda.map((v,i)=>v!==null&&da[i]!==null?v-da[i]!:null);
+  const ebt=ebit.map((v,i)=>v!==null&&interestExpense[i]!==null?v-interestExpense[i]!:null);
+  const eat=ebt.map((v,i)=>v!==null&&incomeTaxes[i]!==null?v-incomeTaxes[i]!:null);
   const rows:ConsolidatedRow[]=[];
   const section=(label:string)=>rows.push({label,kind:"section",values:[]});
   const add=(label:string,values:(number|null)[],kind:ConsolidatedRow["kind"]="money",inputKey?:keyof Omit<ForecastMonth,"label">,total?:number|null,base?:(number|null)[],editable?:boolean[])=>{
@@ -282,23 +322,33 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("HOUSE PROFIT",houseProfit,"sum",undefined,sumPresent(houseProfit),revenue);
   add("BASIC MANAGEMENT FEE",monthly("basicManagementFee"),"money","basicManagementFee",sumPresent(monthly("basicManagementFee")),revenue);
   add("GROSS OPERATING INCOME",goi,"sum",undefined,sumPresent(goi),revenue);
-  section("OTHER NON-OPERATING EXPENSES / GOP");
-  add("MANAGEMENT FEES",monthly("otherManagementFee"),"money","otherManagementFee");
-  add("INSURANCE GENERAL",monthly("insuranceGeneral"),"money","insuranceGeneral");
-  add("TOTAL OTHER NON-OPERATING EXPENSES",nonOp,"sum",undefined,sumPresent(nonOp),revenue);
-  add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
-  add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
-  add("EBITDA (AFTER MANAGEMENT FEES, BEFORE DEPRECIATION)",ebitda,"sum",undefined,sumPresent(ebitda),revenue);
-  section("OTHER EXPENSES / OWNER SHARE PROFIT");
-  add("LAND LEASE / HOLD",monthly("landLease"),"money","landLease");
-  add("INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance");
-  add("MAINTENANCE FEE (SERVICE CHARGE)",monthly("maintenanceFee"),"money","maintenanceFee");
-  add("TOTAL OTHER EXPENSES",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
-  add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
-  add("OTHER OWNER EXPENSES",monthly("ownerOtherExpenses"),"money","ownerOtherExpenses");
-  add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),revenue);
-  add("NET OWNER SHARE PROFIT (NOSP)",nosp,"sum",undefined,sumPresent(nosp),revenue);
-  add("NET OWNER SHARE PROFIT / UNIT",nosp.map((v)=>v!==null&&roomCount!==null&&roomCount>0?v/roomCount:null),"money",undefined,roomCount!==null&&roomCount>0&&sumPresent(nosp)!==null?sumPresent(nosp)!/roomCount:null);
+  section("OTHER INCOME");
+  ["Gain/Loss on Disposal Asset","Deferred Tax","Interest Income","Exchange Rates","Other - Other Income"].forEach((label,i)=>add(label,otherIncomeLines[i],"money",undefined,sumPresent(otherIncomeLines[i]),revenue));
+  add("TOTAL OTHER INCOME",otherIncome,"sum",undefined,sumPresent(otherIncome),revenue);
+  section("OTHER EXPENSE");
+  ["Loss and Breakage","Owners Expenses","Property Insurance","Property Tax","Property Rent / Land Assessment","Project & Building Renovation","Consultant Fee","Other - Other Expense"].forEach((label,i)=>add(label,otherExpenseLines[i],"money",undefined,sumPresent(otherExpenseLines[i]),revenue));
+  add("TOTAL OTHER EXPENSE",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
+  section("OPERATOR FEE");
+  ["Management Fee","Marketing Fee","Royalty Fee"].forEach((label,i)=>add(label,operatorFeeLines[i],"money",undefined,sumPresent(operatorFeeLines[i]),revenue));
+  add("TOTAL OPERATOR FEE",operatorFees,"sum",undefined,sumPresent(operatorFees),revenue);
+  section("OTHER PROVISION");
+  ["Provision for THR","Provision for Bonus","Provision for Replacement FFE"].forEach((label,i)=>add(label,provisionLines[i],"money",undefined,sumPresent(provisionLines[i]),revenue));
+  add("TOTAL OTHER PROVISION",provisions,"sum",undefined,sumPresent(provisions),revenue);
+  add("EBITDA",ebitda,"sum",undefined,sumPresent(ebitda),revenue);
+  section("DEPRECIATION EXPENSES");
+  ["Depreciation of Building*","Depreciation of Equipment","Depreciation of Vehicle*","Depreciation of Fixed Asset Leased","Depreciation of General Building System","Depreciation of Machine","Depreciation of Furniture & Fixture"].forEach((label,i)=>add(label,depreciationLines[i],"money",undefined,sumPresent(depreciationLines[i]),revenue));
+  add("TOTAL DEPRECIATION",depreciation,"sum",undefined,sumPresent(depreciation),revenue);
+  section("AMORTIZATION EXPENSES");
+  ["Amortization of Intangible Asset","Amortization of Other Asset","Amortization of Pre-Opening Expenses","Amortization SOFTWARE"].forEach((label,i)=>add(label,amortizationLines[i],"money",undefined,sumPresent(amortizationLines[i]),revenue));
+  add("TOTAL AMORTIZATION",amortization,"sum",undefined,sumPresent(amortization),revenue);
+  add("EBIT",ebit,"sum",undefined,sumPresent(ebit),revenue);
+  section("INTEREST EXPENSE");
+  ["Interest Bank Loan (IDR)","Interest Bank Loan (IDR) - Provision Cost","Interest Expense - Leased Assets"].forEach((label,i)=>add(label,interestLines[i],"money",undefined,sumPresent(interestLines[i]),revenue));
+  add("TOTAL INTEREST EXPENSE",interestExpense,"sum",undefined,sumPresent(interestExpense),revenue);
+  add("EBT",ebt,"sum",undefined,sumPresent(ebt),revenue);
+  section("INCOME TAXES");
+  add("Income Taxes",incomeTaxes,"money",undefined,sumPresent(incomeTaxes),revenue);
+  add("EAT",eat,"sum",undefined,sumPresent(eat),revenue);
   return rows;
 };
 

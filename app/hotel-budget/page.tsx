@@ -689,7 +689,29 @@ export default function HotelBudgetPage() {
          return Number.isFinite(rate)?firstYear*Math.pow(1+rate/100,yearIndex):null;
        });
        const baseYear1=line.base?sumPresent(line.base):null;
-      const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>baseYear1*growth(yearIndex));
+      // Project each percentage denominator from the same recalculated revenue driver as the row it represents.
+      // This keeps YEAR 2–10 percentages in sync with driver-based revenue and departmental income.
+      let baseType:"total"|"rooms"|"fnb"|"mod"|null=null;
+      if(line.base&&baseYear1!==null){
+        const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES (EXCL. 21%)")?.total??null;
+        const roomsBase=oneYearRows.find(r=>r.label==="ROOMS")?.total??null;
+        const fnbBase=oneYearRows.find(r=>r.label==="FOOD & BEVERAGE"&&r.kind==="money")?.total??null;
+        const modBase=oneYearRows.find(r=>r.label==="MINOR OPERATING DEPARTMENT"&&r.kind==="money")?.total??null;
+        if(totalBase!==null&&Math.abs(baseYear1-totalBase)<0.5)baseType="total";
+        else if(roomsBase!==null&&Math.abs(baseYear1-roomsBase)<0.5)baseType="rooms";
+        else if(fnbBase!==null&&Math.abs(baseYear1-fnbBase)<0.5)baseType="fnb";
+        else if(modBase!==null&&Math.abs(baseYear1-modBase)<0.5)baseType="mod";
+      }
+      const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>{
+        if(yearIndex===0)return baseYear1;
+        if(tenYearMode==="driver"&&baseType){
+          const label=baseType==="total"?"TOTAL REVENUES (EXCL. 21%)":baseType==="rooms"?"ROOMS":baseType==="fnb"?"FOOD & BEVERAGE":"MINOR OPERATING DEPARTMENT";
+          const occurrence=baseType==="fnb"||baseType==="mod"?0:0;
+          const projected=get(label,yearIndex,occurrence);
+          if(projected!==null)return projected;
+        }
+        return baseYear1*growth(yearIndex);
+      });
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
     });
     const find=(label:string,occurrence=0)=>{let seen=0;for(let i=0;i<rows.length;i++){if(rows[i].label===label&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
@@ -706,8 +728,11 @@ export default function HotelBudgetPage() {
     for(let year=0;year<yearCount;year++){
       // Preserve YEAR 1 exactly as the current 1 Year Consolidated source; only recalculate projected years after manual overrides.
       if(year===0)continue;
-      const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPART",year,0)];
-      const revenue=sumPresent(revenueParts);put("TOTAL REVENUES",year,revenue);
+      const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPARTMENT",year,0)];
+      const revenue=sumPresent(revenueParts);
+      // Match the exact consolidated statement labels; otherwise put() silently misses the row.
+      put("TOTAL REVENUES (EXCL. 21%)",year,revenue);
+      put("TOTAL REVENUES (INCL. 21%)",year,revenue===null?null:revenue*1.21);
       const cos=sumPresent([get("FOOD & BEVERAGE",year,1),get("MINOR OPERATING DEPART",year,1)]);put("TOTAL COST OF SALES",year,cos);
       const payroll=sumPresent([get("ROOM",year,0),get("FOOD & BEVERAGE",year,2),get("MINOR OPERATING DEPART",year,2)]);put("TOTAL PAYROLL & RELATED EXP.",year,payroll);
       const deptOther=sumPresent([get("ROOM",year,1),get("FOOD & BEVERAGE",year,3),get("MINOR OPERATING DEPART",year,3)]);put("TOTAL OTHER EXPENSES",year,deptOther,0);

@@ -211,25 +211,26 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const goi=houseProfit;
   const gop=houseProfit;
   // Detailed below-GOP accounts are read from the monthly Owner P&L input table.
+  const pnlLabel=(code:string,label:string)=>itemLabel("owner","pnl_"+code,label);
   const accountMonthly=(code:string):(number|null)[]=>form.forecast.monthly.map(month=>optional(String((month as unknown as Record<string,string>)["pnl_"+code]??"")));
   const accountCodes={
-    otherIncome:["81101001","81101002","81101003","81101004","81101999"],
-    otherExpense:["81201001","81201002","81201003","81201004","81201005","81201006","81201007","81201999"],
-    operatorFee:["81202001","81202002","81202003"],
-    provision:["81203001","81203002","81203003"],
-    depreciation:["82101001","82101002","82101003","82101004","82101005","82101999","82101006"],
-    amortization:["82201001","82201002","82201003","82201004","82201999","82202001"],
-    interest:["83101001","83101002","83101003"],
-    tax:["84101001"]
-  };
-  const otherIncomeLines=accountCodes.otherIncome.map(accountMonthly);
-  const otherExpenseLines=accountCodes.otherExpense.map(accountMonthly);
-  const operatorFeeLines=accountCodes.operatorFee.map(accountMonthly);
-  const provisionLines=accountCodes.provision.map(accountMonthly);
-  const depreciationLines=accountCodes.depreciation.map(accountMonthly);
-  const amortizationLines=accountCodes.amortization.map(accountMonthly);
-  const interestLines=accountCodes.interest.map(accountMonthly);
-  const taxLines=accountCodes.tax.map(accountMonthly);
+    otherIncome:[["81101001","Gain/Loss on Disposal Asset"],["81101002","Deferred Tax"],["81101003","Interest Income"],["81101004","Exchange Rates"],["81101999","Other - Other Income"]],
+    otherExpense:[["81201001","Loss and Breakage"],["81201002","Owners Expenses"],["81201003","Property Insurance"],["81201004","Property Tax"],["81201005","Property Rent / Land Assessment"],["81201006","Project & Building Renovation"],["81201007","Consultant Fee"],["81201999","Other - Other Expense"]],
+    operatorFee:[["81202001","Management Fee"],["81202002","Marketing Fee"],["81202003","Royalty Fee"]],
+    provision:[["81203001","Provision for THR"],["81203002","Provision for Bonus"],["81203003","Provision for Replacement FFE"]],
+    depreciation:[["82101001","Depreciation of Building*"],["82101002","Depreciation of Equipment"],["82101003","Depreciation of Vehicle*"],["82101004","Depreciation of Fixed Asset Leased"],["82101005","Depreciation of General Building System"],["82101999","Depreciation of Machine"],["82101006","Depreciation of Furniture & Fixture"]],
+    amortization:[["82201001","Amortization of Software"],["82201002","Amortization of Goodwill"],["82201003","Amortization of License"],["82201004","Amortization of Building Rights on Land"],["82201999","Amortization of Other Intangible Asset"],["82202001","Amortization of Pre Opening Expenses"]],
+    interest:[["83101001","Interest Bank Loan (IDR)"],["83101002","Interest Bank Loan (IDR) - Provision Cost"],["83101003","Interest Expense - Leased Assets"]],
+    tax:[["84101001","Income Taxes"]]
+  } as const;
+  const otherIncomeLines=accountCodes.otherIncome.map(([code])=>accountMonthly(code));
+  const otherExpenseLines=accountCodes.otherExpense.map(([code])=>accountMonthly(code));
+  const operatorFeeLines=accountCodes.operatorFee.map(([code])=>accountMonthly(code));
+  const provisionLines=accountCodes.provision.map(([code])=>accountMonthly(code));
+  const depreciationLines=accountCodes.depreciation.map(([code])=>accountMonthly(code));
+  const amortizationLines=accountCodes.amortization.map(([code])=>accountMonthly(code));
+  const interestLines=accountCodes.interest.map(([code])=>accountMonthly(code));
+  const taxLines=accountCodes.tax.map(([code])=>accountMonthly(code));
   const sumLines=(lines:(number|null)[][]): (number|null)[]=>Array.from({length:12},(_,i)=>{
     const vals=lines.map(line=>line[i]);return vals.some(v=>v!==null)?vals.reduce<number>((total,v)=>total+(v??0),0):null;
   });
@@ -315,32 +316,32 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("HOUSE PROFIT",houseProfit,"sum",undefined,sumPresent(houseProfit),revenue);
   add("BASIC MANAGEMENT FEE",monthly("basicManagementFee"),"money","basicManagementFee",sumPresent(monthly("basicManagementFee")),revenue);
   add("GROSS OPERATING INCOME",goi,"sum",undefined,sumPresent(goi),revenue);
-  section("OTHER INCOME");
-  ["Gain/Loss on Disposal Asset","Deferred Tax","Interest Income","Exchange Rates","Other - Other Income"].forEach((label,i)=>add(label,otherIncomeLines[i],"money",undefined,sumPresent(otherIncomeLines[i]),revenue));
+  section("8 OTHER INCOME & EXPENSES");
+  section("811 OTHER INCOME*");
+  accountCodes.otherIncome.forEach(([code,label],i)=>add(pnlLabel(code,label),otherIncomeLines[i],"money",undefined,sumPresent(otherIncomeLines[i]),revenue));
   add("TOTAL OTHER INCOME",otherIncome,"sum",undefined,sumPresent(otherIncome),revenue);
-  section("OTHER EXPENSE");
-  ["Loss and Breakage","Owners Expenses","Property Insurance","Property Tax","Property Rent / Land Assessment","Project & Building Renovation","Consultant Fee","Other - Other Expense"].forEach((label,i)=>add(label,otherExpenseLines[i],"money",undefined,sumPresent(otherExpenseLines[i]),revenue));
+  section("812 OTHER EXPENSES");
+  accountCodes.otherExpense.forEach(([code,label],i)=>add(pnlLabel(code,label),otherExpenseLines[i],"money",undefined,sumPresent(otherExpenseLines[i]),revenue));
   add("TOTAL OTHER EXPENSE",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
-  section("OPERATOR FEE");
-  ["Management Fee","Marketing Fee","Royalty Fee"].forEach((label,i)=>add(label,operatorFeeLines[i],"money",undefined,sumPresent(operatorFeeLines[i]),revenue));
+  accountCodes.operatorFee.forEach(([code,label],i)=>add(pnlLabel(code,label),operatorFeeLines[i],"money",undefined,sumPresent(operatorFeeLines[i]),revenue));
   add("TOTAL OPERATOR FEE",operatorFees,"sum",undefined,sumPresent(operatorFees),revenue);
-  section("OTHER PROVISION");
-  ["Provision for THR","Provision for Bonus","Provision for Replacement FFE"].forEach((label,i)=>add(label,provisionLines[i],"money",undefined,sumPresent(provisionLines[i]),revenue));
+  accountCodes.provision.forEach(([code,label],i)=>add(pnlLabel(code,label),provisionLines[i],"money",undefined,sumPresent(provisionLines[i]),revenue));
   add("TOTAL OTHER PROVISION",provisions,"sum",undefined,sumPresent(provisions),revenue);
   add("EBITDA",ebitda,"sum",undefined,sumPresent(ebitda),revenue);
-  section("DEPRECIATION EXPENSES");
-  ["Depreciation of Building*","Depreciation of Equipment","Depreciation of Vehicle*","Depreciation of Fixed Asset Leased","Depreciation of General Building System","Depreciation of Machine","Depreciation of Furniture & Fixture"].forEach((label,i)=>add(label,depreciationLines[i],"money",undefined,sumPresent(depreciationLines[i]),revenue));
+  section("82 DEPRECIATION & AMORTIZATION EXPENSES");
+  section("821 DEPRECIATION EXPENSES");
+  accountCodes.depreciation.forEach(([code,label],i)=>add(pnlLabel(code,label),depreciationLines[i],"money",undefined,sumPresent(depreciationLines[i]),revenue));
   add("TOTAL DEPRECIATION",depreciation,"sum",undefined,sumPresent(depreciation),revenue);
-  section("AMORTIZATION EXPENSES");
-  ["Amortization of Intangible Asset","Amortization of Other Asset","Amortization of Pre-Opening Expenses","Amortization SOFTWARE"].forEach((label,i)=>add(label,amortizationLines[i],"money",undefined,sumPresent(amortizationLines[i]),revenue));
+  section("822 AMORTIZATION EXPENSES");
+  accountCodes.amortization.forEach(([code,label],i)=>add(pnlLabel(code,label),amortizationLines[i],"money",undefined,sumPresent(amortizationLines[i]),revenue));
   add("TOTAL AMORTIZATION",amortization,"sum",undefined,sumPresent(amortization),revenue);
   add("EBIT",ebit,"sum",undefined,sumPresent(ebit),revenue);
-  section("INTEREST EXPENSE");
-  ["Interest Bank Loan (IDR)","Interest Bank Loan (IDR) - Provision Cost","Interest Expense - Leased Assets"].forEach((label,i)=>add(label,interestLines[i],"money",undefined,sumPresent(interestLines[i]),revenue));
+  section("83 INTEREST EXPENSE**");
+  accountCodes.interest.forEach(([code,label],i)=>add(pnlLabel(code,label),interestLines[i],"money",undefined,sumPresent(interestLines[i]),revenue));
   add("TOTAL INTEREST EXPENSE",interestExpense,"sum",undefined,sumPresent(interestExpense),revenue);
   add("EBT",ebt,"sum",undefined,sumPresent(ebt),revenue);
-  section("INCOME TAXES");
-  add("Income Taxes",incomeTaxes,"money",undefined,sumPresent(incomeTaxes),revenue);
+  section("84 INCOME TAXES***");
+  accountCodes.tax.forEach(([code,label],i)=>add(pnlLabel(code,label),taxLines[i],"money",undefined,sumPresent(taxLines[i]),revenue));
   add("EAT",eat,"sum",undefined,sumPresent(eat),revenue);
   return rows;
 };
@@ -608,20 +609,20 @@ export default function HotelBudgetPage() {
       const houseProfit=revenue!==null&&operatingCosts!==null?revenue-operatingCosts:null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% GOP",year,pct(gop,revenue));
-      const otherIncome=sumPresent(["Gain/Loss on Disposal Asset","Deferred Tax","Interest Income","Exchange Rates","Other - Other Income"].map(label=>get(label,year)));
-      const otherExpense=sumPresent(["Loss and Breakage","Owners Expenses","Property Insurance","Property Tax","Property Rent / Land Assessment","Project & Building Renovation","Consultant Fee","Other - Other Expense"].map(label=>get(label,year)));
-      const operatorFee=sumPresent(["Management Fee","Marketing Fee","Royalty Fee"].map(label=>get(label,year)));
-      const provision=sumPresent(["Provision for THR","Provision for Bonus","Provision for Replacement FFE"].map(label=>get(label,year)));
+      const otherIncome=sumPresent([pnlLabel("81101001","Gain/Loss on Disposal Asset"),pnlLabel("81101002","Deferred Tax"),pnlLabel("81101003","Interest Income"),pnlLabel("81101004","Exchange Rates"),pnlLabel("81101999","Other - Other Income")].map(label=>get(label,year)));
+      const otherExpense=sumPresent([pnlLabel("81201001","Loss and Breakage"),pnlLabel("81201002","Owners Expenses"),pnlLabel("81201003","Property Insurance"),pnlLabel("81201004","Property Tax"),pnlLabel("81201005","Property Rent / Land Assessment"),pnlLabel("81201006","Project & Building Renovation"),pnlLabel("81201007","Consultant Fee"),pnlLabel("81201999","Other - Other Expense")].map(label=>get(label,year)));
+      const operatorFee=sumPresent([pnlLabel("81202001","Management Fee"),pnlLabel("81202002","Marketing Fee"),pnlLabel("81202003","Royalty Fee")].map(label=>get(label,year)));
+      const provision=sumPresent([pnlLabel("81203001","Provision for THR"),pnlLabel("81203002","Provision for Bonus"),pnlLabel("81203003","Provision for Replacement FFE")].map(label=>get(label,year)));
       put("TOTAL OTHER INCOME",year,otherIncome);put("TOTAL OTHER EXPENSE",year,otherExpense);put("TOTAL OPERATOR FEE",year,operatorFee);put("TOTAL OTHER PROVISION",year,provision);
       const hasEbitdaInputs=[otherIncome,otherExpense,operatorFee,provision].some(v=>v!==null);
       const ebitda=gop!==null&&hasEbitdaInputs?gop+(otherIncome??0)-(otherExpense??0)-(operatorFee??0)-(provision??0):null;put("EBITDA",year,ebitda);
-      const depreciation=sumPresent(["Depreciation of Building*","Depreciation of Equipment","Depreciation of Vehicle*","Depreciation of Fixed Asset Leased","Depreciation of General Building System","Depreciation of Machine","Depreciation of Furniture & Fixture"].map(label=>get(label,year)));
-      const amortization=sumPresent(["Amortization of Intangible Asset","Amortization of Other Asset","Amortization of Pre-Opening Expenses","Amortization SOFTWARE"].map(label=>get(label,year)));
+      const depreciation=sumPresent([pnlLabel("82101001","Depreciation of Building*"),pnlLabel("82101002","Depreciation of Equipment"),pnlLabel("82101003","Depreciation of Vehicle*"),pnlLabel("82101004","Depreciation of Fixed Asset Leased"),pnlLabel("82101005","Depreciation of General Building System"),pnlLabel("82101999","Depreciation of Machine"),pnlLabel("82101006","Depreciation of Furniture & Fixture")].map(label=>get(label,year)));
+      const amortization=sumPresent([pnlLabel("82201001","Amortization of Software"),pnlLabel("82201002","Amortization of Goodwill"),pnlLabel("82201003","Amortization of License"),pnlLabel("82201004","Amortization of Building Rights on Land"),pnlLabel("82201999","Amortization of Other Intangible Asset"),pnlLabel("82202001","Amortization of Pre Opening Expenses")].map(label=>get(label,year)));
       put("TOTAL DEPRECIATION",year,depreciation);put("TOTAL AMORTIZATION",year,amortization);
       const da=sumPresent([depreciation,amortization]);const ebit=ebitda!==null&&da!==null?ebitda-da:null;put("EBIT",year,ebit);
-      const interest=sumPresent(["Interest Bank Loan (IDR)","Interest Bank Loan (IDR) - Provision Cost","Interest Expense - Leased Assets"].map(label=>get(label,year)));put("TOTAL INTEREST EXPENSE",year,interest);
+      const interest=sumPresent([pnlLabel("83101001","Interest Bank Loan (IDR)"),pnlLabel("83101002","Interest Bank Loan (IDR) - Provision Cost"),pnlLabel("83101003","Interest Expense - Leased Assets")].map(label=>get(label,year)));put("TOTAL INTEREST EXPENSE",year,interest);
       const ebt=ebit!==null&&interest!==null?ebit-interest:null;put("EBT",year,ebt);
-      const tax=get("Income Taxes",year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
+      const tax=get(pnlLabel("84101001","Income Taxes"),year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
     }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};
@@ -1868,11 +1869,11 @@ export default function HotelBudgetPage() {
     ] as const;
     const rowTotal=(items:readonly {key:string}[],i:number)=>total(items,i);
     return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[26rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT CODE / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
-      {groups.map((group,index)=><React.Fragment key={group.code}>
+      {groups.map((group,index)=><Fragment key={group.code}>
         <tr><td colSpan={14} className={`${group.tone} px-3 py-2 text-xs font-black`}>{group.code} &nbsp; {group.label}</td></tr>
         {"items" in group&&group.items?.map(item=><tr key={item.key} className="border-t border-slate-100"><td className="sticky left-0 z-[1] min-w-[26rem] bg-white px-3 py-2 text-xs"><div className="flex flex-wrap items-center gap-1"><span className="w-24 shrink-0 font-mono text-[10px] text-slate-500">{item.code}</span><span>{itemLabel("owner",item.key,item.label)}</span>{editLabelButton("owner",item.key,item.label)}</div></td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={item.label+" "+form.forecast.monthly[i].label} inputMode="numeric" placeholder="—" className="w-28 rounded-md border border-slate-200 px-2 py-1.5 text-right text-xs tabular-nums focus:border-rose-400 focus:outline-none" value={String((form.forecast.monthly[i] as unknown as Record<string,string>)[item.key]??"")} onChange={e=>setValue(i,item.key,e.target.value.replace(/[^0-9]/g,""))}/></td>)}<td className="px-3 py-2 text-right text-xs font-extrabold tabular-nums">{amount(order.some(i=>value(i,item.key)!==null)?order.reduce<number>((n,i)=>n+(value(i,item.key)??0),0):null)}</td></tr>)}
         {"items" in group&&group.items?.length>0&&<tr className="bg-rose-100 font-black"><td className="sticky left-0 z-[1] bg-rose-100 px-3 py-2 text-xs">{group.subtotal}</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{amount(rowTotal(group.items,i))}</td>)}<td className="px-3 py-2 text-right text-xs tabular-nums">{amount(annual(group.items))}</td></tr>}
-      </React.Fragment>)}
+      </Fragment>)}
       <tr className="bg-violet-100 font-black"><td className="sticky left-0 z-[1] bg-violet-100 px-3 py-2 text-xs">EBITDA / EBIT / EBT / EAT dihitung otomatis di konsolidasi</td><td colSpan={13} className="px-3 py-2 text-xs text-violet-900">Tidak perlu input subtotal manual.</td></tr>
       </tbody></table></div>;
   })()}

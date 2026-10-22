@@ -208,6 +208,8 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
   const overheadTotal=costParts.map(c=>c.overheadPayroll!==null&&c.overheadOther!==null?c.overheadPayroll+c.overheadOther:null);
   const houseProfit=form.forecast.monthly.map((r,i)=>revenue[i]!==null&&totalOperatingCosts[i]!==null?revenue[i]!-totalOperatingCosts[i]!:null);
+  const goi=houseProfit;
+  const gop=houseProfit;
   // Below-GOP account values are sourced from Step 2 Budget P&L (annual Budget column).
   // Where no monthly detail exists, distribute the annual amount evenly across 12 months.
   const annualAccount=(code:string):number|null=>optional(form.accounts?.[code]?.budget??"");

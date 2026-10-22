@@ -1566,14 +1566,27 @@ export default function HotelBudgetPage() {
       items.forEach(item=>ownerExpenseRows.push([item.code+" "+itemLabel("owner",item.key,item.label),...ownerOrder.map(i=>ownerValue(i,item.key)),ownerAnnual(i=>ownerValue(i,item.key))]));
       ownerExpenseRows.push(["TOTAL "+label,...ownerOrder.map(i=>ownerTotal(items,i)),ownerAnnual(i=>ownerTotal(items,i))]);
     };
-    ownerExportSection("811","OTHER INCOME",ownerGroup("OTHER INCOME"),"OTHER INCOME");
-    ownerExportSection("81201","OTHER EXPENSE",ownerGroup("OTHER EXPENSE"),"OTHER EXPENSE");
-    ownerExportSection("81202","OPERATOR FEE",ownerGroup("OPERATOR FEE"),"OPERATOR FEE");
-    ownerExportSection("81203","OTHER PROVISION",ownerGroup("OTHER PROVISION"),"OTHER PROVISION");
-    ownerExportSection("821","DEPRECIATION EXPENSES",ownerGroup("DEPRECIATION"),"DEPRECIATION");
-    ownerExportSection("822","AMORTIZATION EXPENSES",ownerGroup("AMORTIZATION"),"AMORTIZATION");
-    ownerExportSection("831","INTEREST EXPENSE",ownerGroup("INTEREST"),"INTEREST");
-    ownerExportSection("841","INCOME TAXES",ownerGroup("INCOME TAX"),"INCOME TAX");
+    const exportHeader=(code:string,label:string)=>ownerExpenseRows.push([code+" "+label,...Array(13).fill(null)]);
+    exportHeader("8","OTHER INCOME & EXPENSES");
+    exportHeader("81","Other Income & Expense");
+    exportHeader("811","Other Income*");
+    ownerExportSection("81101","Other Income",ownerGroup("OTHER INCOME"),"OTHER INCOME");
+    exportHeader("812","Other Expenses");
+    ownerExportSection("81201","Other Expense",ownerGroup("OTHER EXPENSE"),"OTHER EXPENSE");
+    ownerExportSection("81202","Operator Fee",ownerGroup("OPERATOR FEE"),"OPERATOR FEE");
+    ownerExportSection("81203","Other Provision",ownerGroup("OTHER PROVISION"),"OTHER PROVISION");
+    exportHeader("82","Depreciation & Amortization Expenses");
+    exportHeader("821","Depreciation Expenses");
+    ownerExportSection("82101","Depreciation of Building*",ownerGroup("DEPRECIATION"),"DEPRECIATION");
+    exportHeader("822","Amortization Expenses");
+    ownerExportSection("82201","Amortization of Intangible Asset",ownerRows.filter(item=>item.group==="AMORTIZATION"&&item.code!=="82202001"),"AMORTIZATION");
+    ownerExportSection("82202","Amortization Of Other Asset",ownerRows.filter(item=>item.code==="82202001"),"AMORTIZATION");
+    exportHeader("83","Interest Expense**");
+    exportHeader("831","Interest Expense*");
+    ownerExportSection("83101","Interest Expense",ownerGroup("INTEREST"),"INTEREST");
+    exportHeader("84","Income Taxes***");
+    exportHeader("841","Income Taxes**");
+    ownerExportSection("84101","Income Taxes*",ownerGroup("INCOME TAX"),"INCOME TAX");
     add("Owner Expenses",ownerExpenseRows,[38,...Array(12).fill(16),18],"wide");
 
     const payrollRows:any[][]=[["MASTER PAYROLL — DETAIL KARYAWAN & BIAYA"],["Department","Position","Headcount","Basic Salary / Month","Medical / Month","Meal / Month","THR / Month","BPJS Company / Month","PPh / Month","Insurance / Month","Other / Month","Monthly Total","Annual Total"]];
@@ -1877,7 +1890,7 @@ export default function HotelBudgetPage() {
     return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[26rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT CODE / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
       {groups.map((group,index)=><Fragment key={group.code}>
         <tr><td colSpan={14} className={`${group.tone} px-3 py-2 text-xs font-black`}>{group.code} &nbsp; {group.label}</td></tr>
-        {"items" in group&&group.items?.map(item=><tr key={item.key} className="border-t border-slate-100"><td className="sticky left-0 z-[1] min-w-[26rem] bg-white px-3 py-2 text-xs"><div className="flex flex-wrap items-center gap-1"><span className="w-24 shrink-0 font-mono text-[10px] text-slate-500">{item.code}</span><span>{itemLabel("owner",item.key,item.label)}</span>{editLabelButton("owner",item.key,item.label)}</div></td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={item.label+" "+form.forecast.monthly[i].label} inputMode="numeric" placeholder="—" className="w-28 rounded-md border border-slate-200 px-2 py-1.5 text-right text-xs tabular-nums focus:border-rose-400 focus:outline-none" value={String((form.forecast.monthly[i] as unknown as Record<string,string>)[item.key]??"")} onChange={e=>setValue(i,item.key,e.target.value.replace(/[^0-9]/g,""))}/></td>)}<td className="px-3 py-2 text-right text-xs font-extrabold tabular-nums">{amount(order.some(i=>value(i,item.key)!==null)?order.reduce<number>((n,i)=>n+(value(i,item.key)??0),0):null)}</td></tr>)}
+        {"items" in group&&group.items?.map(item=><tr key={item.key} className="border-t border-slate-100"><td className="sticky left-0 z-[1] min-w-[26rem] bg-white px-3 py-2 text-xs"><div className="flex flex-wrap items-center gap-1"><span className="w-24 shrink-0 font-mono text-[10px] text-slate-500">{item.code}</span><span>{itemLabel("owner",item.key,item.label)}</span>{editLabelButton("owner",item.key,item.label)}</div></td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={item.label+" "+form.forecast.monthly[i].label} inputMode="numeric" placeholder="—" className="w-28 rounded-md border border-slate-200 px-2 py-1.5 text-right text-xs tabular-nums focus:border-rose-400 focus:outline-none" value={String((form.forecast.monthly[i] as unknown as Record<string,string>)[item.key]??"")} onChange={e=>setValue(i,item.key,e.target.value.replace(/[^0-9-]/g,"").replace(/(?!^)-/g,""))}/></td>)}<td className="px-3 py-2 text-right text-xs font-extrabold tabular-nums">{amount(order.some(i=>value(i,item.key)!==null)?order.reduce<number>((n,i)=>n+(value(i,item.key)??0),0):null)}</td></tr>)}
         {"items" in group&&group.items?.length>0&&<tr className="bg-rose-100 font-black"><td className="sticky left-0 z-[1] bg-rose-100 px-3 py-2 text-xs">{group.subtotal}</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{amount(rowTotal(group.items,i))}</td>)}<td className="px-3 py-2 text-right text-xs tabular-nums">{amount(annual(group.items))}</td></tr>}
       </Fragment>)}
       <tr className="bg-violet-100 font-black"><td className="sticky left-0 z-[1] bg-violet-100 px-3 py-2 text-xs">EBITDA / EBIT / EBT / EAT dihitung otomatis di konsolidasi</td><td colSpan={13} className="px-3 py-2 text-xs text-violet-900">Tidak perlu input subtotal manual.</td></tr>

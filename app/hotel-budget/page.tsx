@@ -2152,7 +2152,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           </div>}
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
           {(issues.length>0||displayWarnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{displayWarnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{displayWarnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}
-          {activeTab==="export"&&<div className="mt-5 border-t border-slate-200 pt-4">
+          {activeTab==="export"&&orchestrator==="passed"&&<div className="mt-5 border-t border-slate-200 pt-4">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-sky-700">CORESTAY · MANAGEMENT INSIGHTS</p><h3 className="mt-1 text-lg font-extrabold text-slate-900">A. Analisis Profitabilitas</h3><p className="mt-1 max-w-3xl text-sm leading-5 text-slate-600">Evaluasi awal pendapatan dan kemampuan operasional menghasilkan laba berdasarkan kolom Budget pada Budget P&amp;L. Analisis ini terpisah dari status validasi matematis.</p></div>
               <span className="rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-bold text-sky-800">Budget P&amp;L</span>
@@ -2177,6 +2177,58 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <div className={"mt-3 rounded-xl border p-3 "+marginTone}><p className="font-bold">{marginLabel}</p><p className="mt-1 text-sm leading-5">{margin===null?"Margin belum dapat dihitung. Pastikan Total Revenue Budget dan biaya operasional memiliki data yang memadai.":margin<0?"Budget menunjukkan biaya operasional melebihi pendapatan. Periksa asumsi pendapatan, payroll, cost of sales, dan biaya departemen sebelum laporan disahkan.":margin<20?"GOP Margin berada di bawah indikator awal 20%. Tinjau produktivitas pendapatan dan biaya terbesar; ambang ini hanya indikator umum, bukan standar universal untuk semua tipe hotel.":margin<35?"GOP Margin menunjukkan ruang untuk evaluasi efisiensi lebih lanjut. Bandingkan dengan tipe hotel, kelas layanan, lokasi, dan kinerja historis sebelum menetapkan target.":"GOP Margin tampak relatif kuat berdasarkan indikator awal. Tetap periksa kewajaran asumsi pendapatan, biaya, dan kesesuaiannya dengan kinerja historis hotel."}</p></div>
               <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3"><p className="text-sm font-bold text-slate-800">Payroll Cost / Revenue</p><p className="mt-1 text-lg font-extrabold text-slate-900">{pct(payrollPct)}</p><p className="mt-1 text-sm leading-5 text-slate-600">{payrollPct===null?"Belum dapat dinilai karena data payroll atau pendapatan belum lengkap.": "Gunakan rasio ini sebagai sinyal awal dan tinjau bersama jumlah staf, tingkat layanan, serta produktivitas departemen. Tidak ada satu ambang yang cocok untuk seluruh hotel."}</p></div>
               <p className="mt-3 text-xs leading-5 text-slate-500">Catatan: angka dihitung dari Budget P&amp;L yang terisi. Nilai kosong tetap dianggap belum tersedia, bukan nol. GOP adalah pendapatan operasional dikurangi Cost of Sales, Payroll, Other Departmental Operating Expenses, dan Undistributed / Overhead Expenses; biaya di bawah GOP tidak dimasukkan ke perhitungan ini.</p></>;
+            })()}
+
+          </div>}
+          {activeTab==="export"&&orchestrator==="passed"&&<div className="mt-5 space-y-5 border-t border-slate-200 pt-5">
+            {(() => {
+              const rev=revenueBudget,costs=costBudget,priorRev=revenueLastYear,priorCost=costLastYear;
+              const gop=rev!==null&&costs!==null?rev-costs:null;
+              const margin=rev!==null&&rev>0&&gop!==null?gop/rev*100:null;
+              const payroll=sumGroup(form.accounts,"payroll","budget",allAccountLines);
+              const payrollPct=rev!==null&&rev>0&&payroll!==null?payroll/rev*100:null;
+              const fmt=(v:number|null)=>v===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(v);
+              const pct=(v:number|null)=>v===null?"—":v.toLocaleString("id-ID",{maximumFractionDigits:1,minimumFractionDigits:1})+"%";
+              const change=(a:number|null,b:number|null)=>a!==null&&b!==null&&b!==0?(a-b)/Math.abs(b)*100:null;
+              const revChange=change(rev,priorRev),costChange=change(costs,priorCost);
+              const findings:string[]=[];
+              if(rev===null||costs===null)findings.push("Pendapatan atau biaya Budget P&L belum lengkap; kesimpulan profitabilitas masih terbatas.");
+              if(gop!==null&&gop<0)findings.push("GOP negatif ("+fmt(gop)+"): biaya operasional melebihi pendapatan. Risiko: kerugian operasional; periksa asumsi pendapatan dan akun biaya utama.");
+              else if(margin!==null&&margin<20)findings.push("GOP Margin "+pct(margin)+" berada di bawah indikator awal 20%. Risiko: ruang penyangga terhadap penurunan pendapatan/kenaikan biaya terbatas.");
+              if(payrollPct!==null&&payrollPct>35)findings.push("Payroll / Revenue "+pct(payrollPct)+" melewati indikator awal 35%; tinjau roster, lembur, dan produktivitas dengan tetap menjaga layanan.");
+              if(revChange!==null&&revChange<0)findings.push("Revenue Budget turun "+pct(Math.abs(revChange))+" dibanding Last Year; validasi asumsi okupansi, ARR, dan outlet.");
+              if(costChange!==null&&costChange>0)findings.push("Cost Budget naik "+pct(costChange)+" dibanding Last Year; pastikan kenaikan didukung kebutuhan operasional atau diimbangi pendapatan.");
+              if(!findings.length)findings.push("Belum ada sinyal risiko utama yang dapat disimpulkan dari indikator terisi. Tetap tinjau kewajaran asumsi dan kondisi hotel.");
+              const actions=[
+                {p:"P1 · Tinggi",a:"Validasi baseline revenue, okupansi/ARR, dan anggaran outlet agar proyeksi punya dasar yang jelas.",t:"Setujui budget dan KPI bulanan sebelum periode berjalan.",d:"Finance + Sales & Marketing + Rooms"},
+                ...(gop!==null&&gop<0||margin!==null&&margin<20?[{p:"P1 · Tinggi",a:"Susun recovery plan untuk memperbaiki GOP dan telaah akun biaya terbesar.",t:"Tetapkan target GOP yang disetujui manajemen setelah review akun.",d:"Finance + seluruh HOD"}]:[]),
+                ...(payrollPct!==null&&payrollPct>35?[{p:"P2 · Tinggi",a:"Tinjau roster, lembur, dan produktivitas tanpa mengorbankan standar layanan.",t:"Sepakati target payroll/revenue berdasarkan benchmark hotel.",d:"HRD + Department Heads"}]:[]),
+                ...(costChange!==null&&costChange>0?[{p:"P2 · Menengah",a:"Analisis akun biaya yang meningkat dan pisahkan dampak harga, volume, serta biaya satu kali.",t:"Buat action plan per akun dan review bulanan.",d:"Finance + masing-masing HOD"}]:[])
+              ];
+              return <>
+                <div>
+                  <p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-sky-700">CORESTAY · FINAL MANAGEMENT REVIEW</p>
+                  <h3 className="mt-1 text-lg font-extrabold text-slate-900">B. Pendapatan, Efisiensi Biaya &amp; Tren Forecast</h3>
+                  <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                    <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs text-slate-500">Revenue Budget</p><p className="mt-1 text-lg font-extrabold">{fmt(rev)}</p><p className="text-xs text-slate-500">vs Last Year: {pct(revChange)}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs text-slate-500">Cost Budget</p><p className="mt-1 text-lg font-extrabold">{fmt(costs)}</p><p className="text-xs text-slate-500">vs Last Year: {pct(costChange)}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs text-slate-500">GOP Budget</p><p className="mt-1 text-lg font-extrabold">{fmt(gop)}</p></div>
+                    <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs text-slate-500">Payroll / Revenue</p><p className="mt-1 text-lg font-extrabold">{pct(payrollPct)}</p></div>
+                  </div>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Perubahan dibanding Last Year dihitung hanya jika data pembanding tersedia. Ini perbandingan budget tahunan, bukan klaim tren aktual bulanan. Data kosong tetap —.</p>
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">3. Key Findings &amp; Business Risks</h3>
+                  <p className="mt-1 text-sm text-slate-600">Temuan relevan berdasarkan indikator, angka yang tersedia, dan dampak bisnis.</p>
+                  <ul className="mt-3 space-y-2">{findings.map((f,i)=><li key={i} className="rounded-xl border border-slate-200 bg-white p-3 text-sm leading-5"><strong className="mr-2 text-sky-700">{String(i+1).padStart(2,"0")}</strong>{f}</li>)}</ul>
+                </div>
+                <div>
+                  <h3 className="text-lg font-extrabold text-slate-900">4. Recommended Management Actions</h3>
+                  <p className="mt-1 text-sm text-slate-600">Prioritas, alasan, target awal, dan departemen penanggung jawab.</p>
+                  <div className="mt-3 overflow-x-auto rounded-xl border border-slate-200 bg-white"><table className="w-full min-w-[680px] text-left text-sm"><thead className="bg-slate-100 text-xs uppercase text-slate-600"><tr><th className="px-3 py-3">Prioritas</th><th className="px-3 py-3">Tindakan &amp; alasan</th><th className="px-3 py-3">Target awal</th><th className="px-3 py-3">PIC</th></tr></thead><tbody>{actions.map((a,i)=><tr key={i} className="border-t border-slate-200"><td className="px-3 py-3 font-bold">{a.p}</td><td className="px-3 py-3">{a.a}</td><td className="px-3 py-3">{a.t}</td><td className="px-3 py-3">{a.d}</td></tr>)}</tbody></table></div>
+                  <p className="mt-2 text-xs leading-5 text-slate-500">Target angka spesifik tidak dibuat tanpa dasar data yang cukup; manajemen perlu mengesahkan target akhir sesuai karakteristik hotel.</p>
+                </div>
+              </>;
             })()}
           </div>}
         </section>

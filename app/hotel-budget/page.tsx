@@ -649,28 +649,47 @@ export default function HotelBudgetPage() {
      const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((sum,v)=>sum+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
     const pct=(value:number|null,base:number|null)=>value===null||base===null||base===0?null:value/base*100;
     const yearCount=Math.max(10,source.forecast.annual.length);
+    const sectionIndex=(label:string,from=0)=>oneYearRows.findIndex((line,index)=>index>=from&&line.kind==="section"&&line.label===label);
+    const costSalesSection=sectionIndex("COST OF SALES");
+    const payrollSection=sectionIndex("PAYROLL & RELATED EXPENSES");
+    const departmentOtherSection=sectionIndex("OTHER EXPENSES",payrollSection+1);
+    const departmentIncomeSection=sectionIndex("DEPARTMENT INCOME");
+    const overheadSection=sectionIndex("OVERHEAD DEPARTMENT");
+    const overheadPayrollSection=sectionIndex("PAYROLL & RELATED",overheadSection+1);
+    const overheadOtherSection=sectionIndex("OTHER EXPENSES",overheadPayrollSection+1);
+    const houseProfitIndex=oneYearRows.findIndex(line=>line.label==="HOUSE PROFIT");
     const rows:R[]=oneYearRows.map((line,index)=>{
-      if(line.kind==="section")return {label:line.label,section:true,values:[],total:null,totalPct:null,kind:"section"};
-      const firstYear=line.total===undefined?null:line.total;
-      const values=Array.from({length:yearCount},(_,yearIndex)=>{
-        if(firstYear===null)return null;
-        if(line.kind==="percent")return firstYear;
-        if(tenYearMode!=="driver"||yearIndex===0)return firstYear*growth(yearIndex);
-        const label=line.label.toUpperCase();
-        let driver:"rooms"|"fnb"|"mod"|"costOfSales"|"payroll"|"departmentExpenses"|"overhead"|null=null;
-        if(label==="ROOMS"||label.includes("ROOM REVENUE"))driver="rooms";
-        else if(label.includes("FOOD & BEVERAGE")||label.includes("F&B")||label.includes("FOOD REVENUE")||label.includes("BEVERAGE REVENUE"))driver="fnb";
-        else if(label.includes("MINOR OPERATING")||label==="MOD")driver="mod";
-        else if(label.includes("COST OF SALES"))driver="costOfSales";
-        else if(label.includes("PAYROLL")||label.includes("SALARIES")||label.includes("WAGES"))driver="payroll";
-        else if(label.includes("DEPARTMENT EXPENSE"))driver="departmentExpenses";
-        else if(label.includes("OVERHEAD")||label.includes("ADMINISTRATION & GENERAL")||label.includes("SALES & MARKETING")||label.includes("HUMAN RESOURCES")||label.includes("POMEC")||label.includes("ENERGY COST"))driver="overhead";
-        const raw=driver?driverAssumptions[driver]:"";
-        // Blank driver assumptions explicitly fall back to the existing Simple Growth assumption, never to 0%.
-        const rate=raw!==undefined&&raw.trim()!==""&&driver?Number(raw):annualGrowthPct;
-        return Number.isFinite(rate)?firstYear*Math.pow(1+rate/100,yearIndex):null;
-      });
-      const baseYear1=line.base?sumPresent(line.base):null;
+       if(line.kind==="section")return {label:line.label,section:true,values:[],total:null,totalPct:null,kind:"section"};
+       const firstYear=line.total===undefined?null:line.total;
+       const values=Array.from({length:yearCount},(_,yearIndex)=>{
+         if(firstYear===null)return null;
+         if(line.kind==="percent")return firstYear;
+         if(tenYearMode!=="driver"||yearIndex===0)return firstYear*growth(yearIndex);
+         let driver:"rooms"|"fnb"|"mod"|"costOfSales"|"payroll"|"departmentExpenses"|"overhead"|null=null;
+         const label=line.label.toUpperCase();
+         // Determine driver by statement section because account labels repeat in multiple departments.
+         if(line.kind==="money"&&index<costSalesSection){
+           if(label==="ROOMS"||label.includes("ROOM REVENUE"))driver="rooms";
+           else if(label.includes("FOOD & BEVERAGE")||label.includes("F&B")||label.includes("FOOD REVENUE")||label.includes("BEVERAGE REVENUE"))driver="fnb";
+           else if(label.includes("MINOR OPERATING")||label==="MOD")driver="mod";
+         } else if(line.kind==="money"&&index>costSalesSection&&index<payrollSection){
+           driver="costOfSales";
+         } else if(line.kind==="money"&&index>payrollSection&&index<departmentOtherSection){
+           driver="payroll";
+         } else if(line.kind==="money"&&index>departmentOtherSection&&index<departmentIncomeSection){
+           driver="departmentExpenses";
+         } else if(line.kind==="money"&&index>overheadPayrollSection&&index<overheadOtherSection){
+           driver="payroll";
+         } else if(line.kind==="money"&&index>overheadOtherSection&&index<houseProfitIndex){
+           driver="overhead";
+         }
+         const raw=driver?driverAssumptions[driver]:"";
+         // Blank driver assumptions fall back to Simple Growth, never to 0%.
+         const parsedRate=raw!==undefined&&raw.trim()!==""&&driver?Number(raw):annualGrowthPct;
+         const rate=Math.max(-100,Math.min(100,parsedRate));
+         return Number.isFinite(rate)?firstYear*Math.pow(1+rate/100,yearIndex):null;
+       });
+       const baseYear1=line.base?sumPresent(line.base):null;
       const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>baseYear1*growth(yearIndex));
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
     });

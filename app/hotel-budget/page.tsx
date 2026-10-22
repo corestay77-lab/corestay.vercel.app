@@ -349,7 +349,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   section("OWNER SHARE PROFIT");
@@ -415,7 +415,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);

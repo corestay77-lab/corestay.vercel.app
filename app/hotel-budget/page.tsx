@@ -2201,6 +2201,153 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               </div>
             </section>
 
+      <section className="mt-7 one-year-consolidated-report">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">1 YEAR CONSOLIDATED — {form.yearStart}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
+        {(() => {
+          const order = [11,0,1,2,3,4,5,6,7,8,9,10];
+          const rows = buildConsolidatedRows(form);
+          const year = Number(form.yearStart);
+          const roomCount = optional(form.statistics.rooms);
+          const monthlyStats = order.map(i => {
+            const month = form.forecast.monthly[i];
+            const days = new Date(year, i + 1, 0).getDate();
+            const occupancy = optional(month.occupancy) ?? optional(form.statistics.occupancy);
+            const adr = optional(month.adr) ?? optional(form.statistics.averageSellingRate);
+            const calc = calcMonthly(month, year, i, form.statistics.rooms);
+            const roomAvailable = roomCount !== null ? roomCount * days : null;
+            const occupied = roomAvailable !== null && occupancy !== null ? roomAvailable * occupancy / 100 : null;
+            const arr = calc.roomRevenue !== null && occupied !== null && occupied > 0 ? calc.roomRevenue / occupied : adr;
+            const revpar = calc.roomRevenue !== null && roomAvailable !== null && roomAvailable > 0 ? calc.roomRevenue / roomAvailable : arr !== null && occupancy !== null ? arr * occupancy / 100 : null;
+            return { days, rooms: roomCount, roomAvailable, occupied, occupancy, arr, revpar, exchangeRate: optional(form.statistics.exchangeRate), sellingRate: null as number | null, roomRevenue: calc.roomRevenue };
+          });
+          const sum = (values: (number | null)[]) => values.some(v => v !== null) ? values.reduce<number>((n,v) => n + (v ?? 0), 0) : null;
+          const avg = (values: (number | null)[]) => { const valid = values.filter((v): v is number => v !== null); return valid.length ? valid.reduce((a,b) => a+b,0) / valid.length : null; };
+          const ratio = (num: number | null, den: number | null) => num === null || den === null || den === 0 ? null : num / den;
+          const statRows = [
+            { label: "# OF DAYS", values: monthlyStats.map(x => x.days), total: sum(monthlyStats.map(x => x.days)), kind: "count" },
+            { label: "# OF ROOMS", values: monthlyStats.map(x => x.rooms), total: avg(monthlyStats.map(x => x.rooms)), kind: "count" },
+            { label: "ROOM AVAILABLE", values: monthlyStats.map(x => x.roomAvailable), total: sum(monthlyStats.map(x => x.roomAvailable)), kind: "count" },
+            { label: "OCCUPIED ROOMS", values: monthlyStats.map(x => x.occupied), total: sum(monthlyStats.map(x => x.occupied)), kind: "count" },
+            { label: "OCCUPANCY (%)", values: monthlyStats.map(x => x.occupancy), total: (sum(monthlyStats.map(x => x.occupied)) === null || sum(monthlyStats.map(x => x.roomAvailable)) === null ? null : ratio(sum(monthlyStats.map(x => x.occupied)), sum(monthlyStats.map(x => x.roomAvailable)))! * 100), kind: "percent" },
+            { label: "AVERAGE ROOM RATE (ARR)", values: monthlyStats.map(x => x.arr), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.occupied))), kind: "money" },
+            { label: "REVPAR", values: monthlyStats.map(x => x.revpar), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.roomAvailable))), kind: "money" },
+            { label: "EXCHANGE RATE US $ TO RP", values: monthlyStats.map(x => x.exchangeRate), total: avg(monthlyStats.map(x => x.exchangeRate)), kind: "rate" },
+            { label: "AVERAGE SELLING RATE (RP)", values: monthlyStats.map(x => x.sellingRate), total: avg(monthlyStats.map(x => x.sellingRate)), kind: "money" }
+          ] as const;
+          const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
+          const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
+          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
+          return <div className="overflow-x-auto">
+            <table className="w-full min-w-[2200px] border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[190px] px-2 py-1.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-1 py-1.5 text-center">TOTAL / AVG</th></tr>
+                <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
+              </thead>
+              <tbody>
+                {heading("STATISTICS")}
+                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-2 py-1 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right">—</td></tr>)}
+                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
+                  <th className="border-b border-slate-200 px-2 py-1 text-left font-semibold">{line.label}</th>
+                  {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
+                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total ?? null, "money")}</td>
+                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{line.totalPct === null || line.totalPct === undefined ? "—" : fmt(line.totalPct, 2) + "%"}</td>
+                </tr>)}
+              </tbody>
+            </table>
+          </div>;
+        })()}
+      </section>
+
+    </section>}
+    {previewOpen&&<div className="print-preview-overlay fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
+      <div className="report-brand-header mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#17365D] via-[#245B8C] to-[#6554B7] px-5 py-5 text-white print:rounded-none"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-2xl">🏨</div><div><p className="text-[10px] font-extrabold uppercase tracking-[.22em] text-sky-100">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">HOTEL BUDGET &amp; FINANCIAL REPORT</h2><p className="mt-1 text-xs text-blue-100">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"} · {form.yearStart}</p></div></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">Confidential</p><p className="mt-1 text-xs text-white/90">Management Report</p><button type="button" onClick={()=>setPreviewOpen(false)} className="mt-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white print:hidden" aria-label="Tutup preview">Tutup ✕</button></div></div>
+      
+      <section className="mt-7 print-statistics">
+        <h3 className="mb-1 text-sm font-extrabold">1A. LAPORAN STATISTIK BULANAN — {form.yearStart}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Tampilan, susunan baris, kolom bulanan, dan YEAR TOTAL / AVG mengikuti LAPORAN STATISTIK pada tahap sebelumnya. Nilai dan formula menggunakan sumber yang sama; data kosong tetap —.</p>
+        <div className="overflow-x-auto">
+                <table className="w-max min-w-[1956px] table-fixed border-collapse text-[11px]">
+                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[240px] min-w-[240px] max-w-[240px] bg-slate-100 px-3 py-2 text-left">Description</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><th key={form.forecast.monthly[i].label} className="w-[128px] min-w-[128px] max-w-[128px] px-3 py-2 text-right whitespace-nowrap">{i===11?"DES":monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="w-[180px] min-w-[180px] max-w-[180px] bg-sky-100 px-3 py-2 text-right whitespace-nowrap">YEAR TOTAL / AVG</th></tr></thead>
+                  <tbody>{buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels}).map((line,i)=>{
+                    if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
+                    const isPercent=line.kind==="percent";
+                    const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
+                    const isRate=/EXCHANGE RATE/i.test(line.label);
+                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
+                    const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());
+                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
+                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{[line.values[11],...line.values.slice(0,11)].map((v,j)=><td key={j} className="w-[128px] min-w-[128px] max-w-[128px] border-t border-slate-200 px-3 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[180px] min-w-[180px] max-w-[180px] border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
+                  })}</tbody>
+                </table>
+        </div>
+      </section>
+      <section className="mt-7 break-before-page print-ten-year-statistics">
+        <h3 className="mb-1 text-sm font-extrabold">1B. RINGKASAN STATISTIK 10 TAHUN — {form.yearStart}–{Number(form.yearStart)+9}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Ringkasan statistik tahunan dengan struktur kolom yang sama: YEAR 1–10 dan TOTAL / AVG. Menggunakan sumber forecast yang sama, tanpa mengubah input atau rumus forecast.</p>
+        <div className="overflow-x-auto"><table className="w-max min-w-[1500px] border-collapse text-[9px]">
+          <thead><tr className="bg-indigo-900 text-white"><th className="sticky left-0 z-10 min-w-[240px] bg-indigo-900 px-3 py-2 text-left">Description</th>{form.forecast.annual.map((row,i)=><th key={row.label} className="min-w-[112px] px-2 py-2 text-right">YEAR {i+1}<span className="block text-[8px] font-normal">{row.label}</span></th>)}<th className="min-w-[150px] bg-teal-700 px-2 py-2 text-right">TOTAL / AVG</th></tr></thead>
+          <tbody>{annualStatisticsForPreview.map((line,i)=>{const valid=line.values.filter((v):v is number=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null;const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());const display=(v:number|null)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):line.kind==="percent"?fmt(v,1)+"%":line.label==="# OF DAYS"||line.label==="ROOMS AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums">{display(total)}</td></tr>;})}</tbody>
+        </table></div>
+      </section>
+      <section className="mt-7 one-year-consolidated-report">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
+        {(() => {
+          const order = [11,0,1,2,3,4,5,6,7,8,9,10];
+          const rows = buildConsolidatedRows(form);
+          const year = Number(form.yearStart);
+          const roomCount = optional(form.statistics.rooms);
+          const monthlyStats = order.map(i => {
+            const month = form.forecast.monthly[i];
+            const days = new Date(year, i + 1, 0).getDate();
+            const occupancy = optional(month.occupancy) ?? optional(form.statistics.occupancy);
+            const adr = optional(month.adr) ?? optional(form.statistics.averageSellingRate);
+            const calc = calcMonthly(month, year, i, form.statistics.rooms);
+            const roomAvailable = roomCount !== null ? roomCount * days : null;
+            const occupied = roomAvailable !== null && occupancy !== null ? roomAvailable * occupancy / 100 : null;
+            const arr = calc.roomRevenue !== null && occupied !== null && occupied > 0 ? calc.roomRevenue / occupied : adr;
+            const revpar = calc.roomRevenue !== null && roomAvailable !== null && roomAvailable > 0 ? calc.roomRevenue / roomAvailable : arr !== null && occupancy !== null ? arr * occupancy / 100 : null;
+            return { days, rooms: roomCount, roomAvailable, occupied, occupancy, arr, revpar, exchangeRate: optional(form.statistics.exchangeRate), sellingRate: null as number | null, roomRevenue: calc.roomRevenue };
+          });
+          const sum = (values: (number | null)[]) => values.some(v => v !== null) ? values.reduce<number>((n,v) => n + (v ?? 0), 0) : null;
+          const avg = (values: (number | null)[]) => { const valid = values.filter((v): v is number => v !== null); return valid.length ? valid.reduce((a,b) => a+b,0) / valid.length : null; };
+          const ratio = (num: number | null, den: number | null) => num === null || den === null || den === 0 ? null : num / den;
+          const statRows = [
+            { label: "# OF DAYS", values: monthlyStats.map(x => x.days), total: sum(monthlyStats.map(x => x.days)), kind: "count" },
+            { label: "# OF ROOMS", values: monthlyStats.map(x => x.rooms), total: avg(monthlyStats.map(x => x.rooms)), kind: "count" },
+            { label: "ROOM AVAILABLE", values: monthlyStats.map(x => x.roomAvailable), total: sum(monthlyStats.map(x => x.roomAvailable)), kind: "count" },
+            { label: "OCCUPIED ROOMS", values: monthlyStats.map(x => x.occupied), total: sum(monthlyStats.map(x => x.occupied)), kind: "count" },
+            { label: "OCCUPANCY (%)", values: monthlyStats.map(x => x.occupancy), total: (sum(monthlyStats.map(x => x.occupied)) === null || sum(monthlyStats.map(x => x.roomAvailable)) === null ? null : ratio(sum(monthlyStats.map(x => x.occupied)), sum(monthlyStats.map(x => x.roomAvailable)))! * 100), kind: "percent" },
+            { label: "AVERAGE ROOM RATE (ARR)", values: monthlyStats.map(x => x.arr), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.occupied))), kind: "money" },
+            { label: "REVPAR", values: monthlyStats.map(x => x.revpar), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.roomAvailable))), kind: "money" },
+            { label: "EXCHANGE RATE US $ TO RP", values: monthlyStats.map(x => x.exchangeRate), total: avg(monthlyStats.map(x => x.exchangeRate)), kind: "rate" },
+            { label: "AVERAGE SELLING RATE (RP)", values: monthlyStats.map(x => x.sellingRate), total: avg(monthlyStats.map(x => x.sellingRate)), kind: "money" }
+          ] as const;
+          const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
+          const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
+          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
+          return <div className="overflow-x-auto">
+            <table className="w-full min-w-[2200px] border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[190px] px-2 py-1.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-1 py-1.5 text-center">TOTAL / AVG</th></tr>
+                <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
+              </thead>
+              <tbody>
+                {heading("STATISTICS")}
+                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-2 py-1 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right">—</td></tr>)}
+                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
+                  <th className="border-b border-slate-200 px-2 py-1 text-left font-semibold">{line.label}</th>
+                  {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
+                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total ?? null, "money")}</td>
+                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{line.totalPct === null || line.totalPct === undefined ? "—" : fmt(line.totalPct, 2) + "%"}</td>
+                </tr>)}
+              </tbody>
+            </table>
+          </div>;
+        })()}
+      </section>
+
             <div className="flex flex-col gap-3 rounded-2xl border border-indigo-200 bg-indigo-50/70 p-4 lg:flex-row lg:items-center lg:justify-between"><div><h3 className="font-bold text-slate-900">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 text-xs leading-5 text-slate-600">Simple Growth tetap menjadi default dengan asumsi 2% per tahun. Manual Override hanya mengubah akun rincian dan tahun yang diisi; subtotal, GOP, profit, dan margin dihitung ulang.</p><label className="mt-3 flex flex-wrap items-center gap-2 text-sm font-semibold text-slate-700">Metode proyeksi <select value={tenYearMode} onChange={e=>setTenYearMode(e.target.value==="manual"?"manual":e.target.value==="driver"?"driver":"growth")} className="rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm font-semibold text-slate-900"><option value="growth">Simple Growth — Default</option><option value="driver">Driver-Based Budget</option><option value="manual">Manual Override</option></select></label></div>{tenYearMode==="growth"&&<label className="flex shrink-0 items-center gap-2 text-sm font-semibold text-slate-700">Pertumbuhan <input aria-label="Asumsi pertumbuhan tahunan persen" type="number" min="-100" max="100" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-24 rounded-lg border border-slate-300 bg-white px-3 py-2 text-right font-bold text-slate-900 outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200" /><span>% / tahun</span></label>}</div>
             {tenYearMode==="driver"&&<div className="rounded-2xl border border-sky-200 bg-white p-4 shadow-sm"><h4 className="font-bold text-slate-900">Driver-Based Budget — Asumsi Pertumbuhan per Kelompok</h4><p className="mt-1 text-xs leading-5 text-slate-600">Isi hanya penggerak yang relevan. Kolom kosong tidak dianggap 0%; kelompok tersebut tetap memakai Simple Growth {annualGrowthPct}% per tahun. Perubahan hanya berlaku untuk proyeksi tahun ke-2 dan seterusnya. Nilai tahun pertama tetap sama dengan 1 Year Consolidated.</p><div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-3 xl:grid-cols-4">{([{key:"rooms",label:"Rooms"},{key:"fnb",label:"F&B"},{key:"mod",label:"MOD"},{key:"costOfSales",label:"Cost of Sales"},{key:"payroll",label:"Payroll"},{key:"departmentExpenses",label:"Biaya Departemen"},{key:"overhead",label:"Overhead"}] as const).map(item=><label key={item.key} className="text-xs font-semibold text-slate-700">{item.label} (% / tahun)<input type="number" step="0.1" min="-100" max="100" value={driverAssumptions[item.key]} onChange={e=>setDriverAssumptions(prev=>({...prev,[item.key]:e.target.value}))} placeholder={`Kosong = ${annualGrowthPct}%`} className="mt-1 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900"/></label>)}</div></div>}
                       </div>}

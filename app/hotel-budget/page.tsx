@@ -230,6 +230,18 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const otherExpenseLines=accountCodes.otherExpense.map(([code])=>accountMonthly(code));
   const operatorFeeLines=accountCodes.operatorFee.map(([code])=>accountMonthly(code));
   const provisionLines=accountCodes.provision.map(([code])=>accountMonthly(code));
+  // Reclassify departmental operating-equipment provisions to the below-GOP F.F & E Replacement line.
+  // Room Department rows mirror House Keeping rows, so count the source HK values only to avoid duplication.
+  const equipmentReplacementKeys = ["hkChina","hkGlass","hkSilver","hkLinen","chinaware","glassware","silverware","linen"];
+  const ffeReplacement = provisionLines[2].map((base,index)=>{
+    const month=form.forecast.monthly[index];
+    const details=[month?.roomDivisionDetails,month?.fbDetails,month?.modDetails];
+    const entered=details.flatMap((group)=>Object.entries(group||{}))
+      .filter(([key,value])=>equipmentReplacementKeys.includes(key)&&String(value??"").trim()!==""&&Number.isFinite(Number(value)))
+      .reduce((sum,[,value])=>sum+Number(value),0);
+    const hasEquipment=details.some(group=>Object.entries(group||{}).some(([key,value])=>equipmentReplacementKeys.includes(key)&&String(value??"").trim()!==""&&Number.isFinite(Number(value))));
+    return base===null&&!hasEquipment?null:(base??0)+entered;
+  });
   const depreciationLines=accountCodes.depreciation.map(([code])=>accountMonthly(code));
   const amortizationLines=accountCodes.amortization.map(([code])=>accountMonthly(code));
   const interestLines=accountCodes.interest.map(([code])=>accountMonthly(code));
@@ -324,7 +336,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal),[]);
   const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
-  const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),provisionLines[2],monthly("capitalExpenditure")];
+  const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),ffeReplacement,monthly("capitalExpenditure")];
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
@@ -337,7 +349,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",provisionLines[2],"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(provisionLines[2]),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   section("OWNER SHARE PROFIT");
@@ -403,7 +415,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",provisionLines[2],"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(provisionLines[2]),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
@@ -1276,10 +1288,10 @@ export default function HotelBudgetPage() {
           return entries.length?entries.reduce((total,[,value])=>total+Number(value),0):null;
         };
         const roomDetails=row.roomDivisionDetails||{};
-        const roomCosts=sumDetails(roomDetails,Object.keys(roomDetails).filter(key=>key!=="roomRevenue"&&!key.toLowerCase().includes("percent")&&!payrollInputKey(key)));
+        const roomCosts=sumDetails(roomDetails,Object.keys(roomDetails).filter(key=>key!=="roomRevenue"&&!key.toLowerCase().includes("percent")&&!payrollInputKey(key)&&!["hkChina","hkGlass","hkSilver","hkLinen","rdChina","rdGlass","rdSilver","rdLinen"].includes(key)));
         const fbRevenueDetails=sumDetails(row.fbDetails,["foodRevenue","beverageRevenue"]);
         const fbCosDetails=sumDetails(row.fbDetails,["foodCost","beverageCost"]);
-        const fbOtherDetails=sumDetails(row.fbDetails,["glassware","chinaware","silverware","linen","decoration","duesSubscription","extermDisinfectant","kitchenFuel","laundry","miscellaneous","spoilage","cleaningSupplies","guestSupplies","printingStationery","telephone","uniform","utensil","contractCleaning"]);
+        const fbOtherDetails=sumDetails(row.fbDetails,["decoration","duesSubscription","extermDisinfectant","kitchenFuel","laundry","miscellaneous","spoilage","cleaningSupplies","guestSupplies","printingStationery","telephone","uniform","utensil","contractCleaning"]);
         const modRevenueDetails=sumDetails(row.modDetails,["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"]);
         const modCosDetails=sumDetails(row.modDetails,["laundryCost"]);
         const modOtherDetails=sumDetails(row.modDetails,["guestSupplies","paperSupplies","laundryValetSupplies","laundrySupplies","casual","cleaningSupplies","printingStationery","decoration","telephoneFax","laundryExpense","casualOther","laundryValetOther","cleaningOther","provisionUniform","pteb","uniform","otherExpenses"]);

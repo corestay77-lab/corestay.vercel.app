@@ -1706,13 +1706,16 @@ export default function HotelBudgetPage() {
     ];
     const overheadExportRows=buildConsolidatedRows(form);
     const overheadStart=overheadExportRows.findIndex(row=>row.label==="OVERHEAD DEPARTMENT");
-    const overheadEnd=overheadExportRows.findIndex((row,index)=>index>overheadStart&&row.label==="% GOP");
+    const overheadGop=overheadExportRows.findIndex((row,index)=>index>overheadStart&&row.label==="% G O P");
+    const ownerStart=overheadExportRows.findIndex((row,index)=>index>overheadGop&&row.kind==="section"&&row.label==="OTHER EXPENSES");
+    const ownerEnd=overheadExportRows.findIndex((row,index)=>index>ownerStart&&row.label==="TOTAL OWNER EXPENSES");
     const overheadOrder=[11,0,1,2,3,4,5,6,7,8,9,10];
-    if(overheadStart>=0&&overheadEnd>=overheadStart){
-      overheadExportRows.slice(overheadStart,overheadEnd+1).forEach(row=>{
-        ownerExpenseRows.push([row.label,...(row.kind==="section"?Array(12).fill(null):overheadOrder.map(i=>row.values[i]??null)),row.kind==="section"?null:(row.total??null)]);
-      });
-    }
+    const selectedRows=overheadStart>=0&&overheadGop>=overheadStart&&ownerStart>overheadGop&&ownerEnd>ownerStart
+      ?[...overheadExportRows.slice(overheadStart,overheadGop+1),...overheadExportRows.slice(ownerStart,ownerEnd+1)]
+      :[];
+    selectedRows.forEach(row=>{
+      ownerExpenseRows.push([row.label,...(row.kind==="section"?Array(12).fill(null):overheadOrder.map(i=>row.values[i]??null)),row.kind==="section"?null:(row.total??null)]);
+    });
     add("Overhead Department",ownerExpenseRows,[38,...Array(12).fill(16),18],"wide");
 
     const payrollRows:any[][]=[["MASTER PAYROLL — DETAIL KARYAWAN & BIAYA"],["Department","Position","Headcount","Basic Salary / Month","Medical / Month","Meal / Month","THR / Month","BPJS Company / Month","PPh / Month","Insurance / Month","Other / Month","Monthly Total","Annual Total"]];
@@ -1973,14 +1976,18 @@ export default function HotelBudgetPage() {
                 {selectedDepartment==="owner"&&<section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
   <div className="bg-rose-900 px-4 py-3 text-white">
     <h4 className="text-sm font-extrabold">OVERHEAD DEPARTMENT</h4>
-    <p className="mt-1 text-[11px] text-rose-100">Ringkasan operasional bulanan dari data forecast dan biaya departemen. Nilai dihitung otomatis; item akun OWNER SHARE PROFIT sebelumnya tidak ditampilkan di bagian ini.</p>
+    <p className="mt-1 text-[11px] text-rose-100">Ringkasan OVERHEAD DEPARTMENT, GOP, dan rincian biaya pemilik per bulan. Nilai ditarik otomatis dari forecast; data yang belum diisi tetap ditampilkan sebagai —.</p>
   </div>
   {(() => {
     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
     const reportRows=buildConsolidatedRows(form);
     const start=reportRows.findIndex(row=>row.label==="OVERHEAD DEPARTMENT");
-    const end=reportRows.findIndex((row,index)=>index>start&&row.label==="% GOP");
-    const rows=start>=0&&end>=start?reportRows.slice(start,end+1):[];
+    const gopIndex=reportRows.findIndex((row,index)=>index>start&&row.label==="% G O P");
+    const ownerStart=reportRows.findIndex((row,index)=>index>gopIndex&&row.kind==="section"&&row.label==="OTHER EXPENSES");
+    const ownerEnd=reportRows.findIndex((row,index)=>index>ownerStart&&row.label==="TOTAL OWNER EXPENSES");
+    const rows=start>=0&&gopIndex>=start&&ownerStart>gopIndex&&ownerEnd>ownerStart
+      ?[...reportRows.slice(start,gopIndex+1),...reportRows.slice(ownerStart,ownerEnd+1)]
+      :[];
     const amount=(n:number|null|undefined,kind:string)=>n===null||n===undefined||!Number.isFinite(n)?"—":kind==="percent"?new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n)+"%":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
     const sectionTone=(label:string)=>label==="OVERHEAD DEPARTMENT"?"bg-rose-900 text-white":label==="PAYROLL & RELATED"?"bg-sky-100 text-sky-950":label==="OTHER EXPENSES"?"bg-amber-100 text-amber-950":label==="LESS DEDUCTION :"?"bg-violet-100 text-violet-950":label==="OTHER NON OPERATING EXPENSES"?"bg-indigo-100 text-indigo-950":"bg-slate-100 text-slate-900";
     return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[22rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>

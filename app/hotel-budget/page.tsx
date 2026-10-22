@@ -679,7 +679,7 @@ export default function HotelBudgetPage() {
     const get=(label:string,year:number,occurrence=0):number|null=>{const i=find(label,occurrence);return i<0?null:rows[i].values[year]??null;};
     const put=(label:string,year:number,value:number|null,occurrence=0)=>{const i=find(label,occurrence);if(i>=0)rows[i].values[year]=value;};
     if(tenYearMode==="manual") rows.forEach((line,index)=>{
-      if(!line.inputKey||line.label==="TOTAL OPERATING COSTS"||line.section)return;
+      if(line.kind==="sum"||line.kind==="percent"||line.section||line.label==="TOTAL OPERATING COSTS")return;
       for(let year=1;year<yearCount;year++){
         const raw=tenYearOverrides[`${index}:${year}`];
         if(raw===undefined||raw.trim()==="")continue;
@@ -2385,7 +2385,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                         : <tr key={line.label+"-"+idx} className={["TOTAL OTHER EXPENSES","TOTAL OWNER EXPENSES"].includes(line.label) ? "bg-orange-50 font-bold" : ["OWNER SHARE PROFIT (OSP)","NET OWNER SHARE PROFIT (NOSP)","NET OWNER SHARE PROFIT/UNIT"].includes(line.label) ? "bg-teal-50 font-bold" : ["GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","HOUSE PROFIT"].includes(line.label) ? "bg-indigo-50 font-bold" : (idx%2 ? "bg-slate-50" : "bg-white")}>
                           <th className="sticky left-0 z-[1] border-b border-slate-200 bg-inherit px-2 py-1.5 text-left font-semibold">{line.label}</th>
                           {line.values.slice(0,10).map((v,i)=><Fragment key={i}>
-                            <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{displayYear(v)}</td>
+                            <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{tenYearMode==="manual"&&i>0&&line.kind!=="sum"&&line.kind!=="percent"?<input aria-label={line.label+" Year "+(i+1)} type="number" step="any" value={tenYearOverrides[`${idx}:${i}`]??(v===null||v===undefined?"":String(v))} onChange={e=>setTenYearOverrides(prev=>({...prev,[`${idx}:${i}`]:e.target.value}))} className="w-[105px] rounded border border-violet-300 bg-violet-50 px-1 py-1 text-right tabular-nums outline-none focus:ring-2 focus:ring-violet-400" />:displayYear(v)}</td>
                             <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{v===null||v===undefined||line.base?.[i]===null||line.base?.[i]===undefined||line.base[i]===0?"—":fmt(v/line.base[i]*100,2)+"%"}</td>
                           </Fragment>)}
                           <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{displayYear(line.total)}</td>

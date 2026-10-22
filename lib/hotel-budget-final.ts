@@ -2,7 +2,7 @@ export type AccountValue = { actual: string; budget: string; lastYear: string; y
 export type AccountGroup =
   | "roomRevenue" | "fbRevenue" | "otherRevenue" | "costOfSales" | "payroll"
   | "operatingExpenses" | "overhead" | "otherIncome" | "otherExpenses"
-  | "operatorFees" | "provisions" | "depreciation" | "amortization" | "interest" | "tax" | "ownerCashItems";
+  | "operatorFees" | "provisions" | "depreciation" | "amortization" | "interest" | "tax" | "ownerCashItems" | "ownerShareProfit";
 export type AccountLine = { code: string; label: string; group: AccountGroup; section: string; allowNegative?: boolean };
 export const ACCOUNT_LINES: AccountLine[] = [
   {code:"41101",label:"Room Revenue",group:"roomRevenue",section:"Revenue"},
@@ -88,16 +88,18 @@ export const ACCOUNT_LINES: AccountLine[] = [
   {code:"80801",label:"Income Taxes",group:"tax",section:"Income Taxes"},
   {code:"80901",label:"Capital Expenditure (cash movement; outside P&L)",group:"ownerCashItems",section:"Owner Cash Flow (di luar P&L)"},
   {code:"80902",label:"FF&E Replacement Cash Payment",group:"ownerCashItems",section:"Owner Cash Flow (di luar P&L)"},
-  {code:"80903",label:"Other Owner Cash Payment",group:"ownerCashItems",section:"Owner Cash Flow (di luar P&L)"}
+  {code:"80903",label:"Other Owner Cash Payment",group:"ownerCashItems",section:"Owner Cash Flow (di luar P&L)"},
+  // Separate editable reporting line; deliberately excluded from expense aggregation.
+  {code:"81001",label:"OWNER SHARE PROFIT (OSP)",group:"ownerShareProfit",section:"OTHER INCOME & EXPENSES — OWNER SHARE PROFIT"}
 ];
 export const GROUP_LABELS: Record<AccountGroup,string> = {
   roomRevenue:"Room Revenue",fbRevenue:"F&B Revenue",otherRevenue:"Other Operating Revenue",
   costOfSales:"Cost of Sales",payroll:"Payroll & Related Expenses",
   operatingExpenses:"Other Departmental Operating Expenses",overhead:"Undistributed / Overhead Expenses",
-  otherIncome:"Other Income",otherExpenses:"Other Expenses",operatorFees:"Operator Fees",
+  otherIncome:"Other Income",otherExpenses:"Other Expenses",operatorFees:"Operator Fees",ownerShareProfit:"Owner Share Profit (OSP)",
   provisions:"Provisions",depreciation:"Depreciation",amortization:"Amortization",interest:"Interest / Finance Cost",tax:"Income Tax",ownerCashItems:"Owner Cash Items (outside P&L)"
 };
-export const GROUP_ORDER: AccountGroup[] = ["roomRevenue","fbRevenue","otherRevenue","costOfSales","payroll","operatingExpenses","overhead","otherIncome","otherExpenses","operatorFees","provisions","depreciation","amortization","interest","tax","ownerCashItems"];
+export const GROUP_ORDER: AccountGroup[] = ["roomRevenue","fbRevenue","otherRevenue","costOfSales","payroll","operatingExpenses","overhead","otherIncome","otherExpenses","operatorFees","provisions","depreciation","amortization","interest","tax","ownerCashItems","ownerShareProfit"];
 export const ACCOUNT_SECTIONS = [...new Set(ACCOUNT_LINES.map(x=>x.section))];
 export const emptyAccounts = (): Record<string,AccountValue> => Object.fromEntries(ACCOUNT_LINES.map(x=>[x.code,{actual:"",budget:"",lastYear:"",ytdActual:"",ytdBudget:"",lastYearYtd:""}]));
 export const numeric = (value: unknown): number | null => {

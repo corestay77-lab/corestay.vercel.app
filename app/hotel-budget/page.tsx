@@ -1787,20 +1787,50 @@ export default function HotelBudgetPage() {
     if(sectionIndex===tabItems.length-2) window.scrollTo({top:0,behavior:"smooth"});
   };
   const goPreviousStep=()=>{setIssues([]);setMessage("");setActiveTab(tabItems[Math.max(sectionIndex-1,0)].id);};
-  const annualStatisticsForPreview=[
-    {label:"# OF DAYS",values:form.forecast.annual.map(row=>optional(row.days)),kind:"sum"},
-    {label:"# OF ROOMS",values:form.forecast.annual.map(row=>optional(row.rooms)),kind:"avg"},
-    {label:"ROOMS AVAILABLE",values:form.forecast.annual.map(row=>{const d=optional(row.days),rooms=optional(row.rooms);return d!==null&&rooms!==null?d*rooms:null;}),kind:"sum"},
-    {label:"OCCUPANCY (%)",values:form.forecast.annual.map(row=>optional(row.occupancy)),kind:"percent"},
-    {label:"OCCUPIED ROOMS",values:form.forecast.annual.map(row=>{const d=optional(row.days),rooms=optional(row.rooms),occ=optional(row.occupancy);return d!==null&&rooms!==null&&occ!==null?d*rooms*occ/100:null;}),kind:"sum"},
-    {label:"ROOM REVENUE - RP",values:form.forecast.annual.map(row=>calcAnnual(row).roomRevenue),kind:"sum"},
-    {label:"AVERAGE ROOM RATE (ARR) - RP",values:form.forecast.annual.map(row=>{const calc=calcAnnual(row),d=optional(row.days),rooms=optional(row.rooms),occ=optional(row.occupancy),paid=d!==null&&rooms!==null&&occ!==null?d*rooms*occ/100:null;return calc.roomRevenue!==null&&paid!==null&&paid>0?calc.roomRevenue/paid:optional(row.adr)??optional(form.statistics.averageSellingRate);}),kind:"avg"},
-    {label:"REVPAR - RP",values:form.forecast.annual.map(row=>{const calc=calcAnnual(row),d=optional(row.days),rooms=optional(row.rooms),available=d!==null&&rooms!==null?d*rooms:null;return calc.roomRevenue!==null&&available!==null&&available>0?calc.roomRevenue/available:null;}),kind:"avg"},
-    {label:"F&B REVENUE - RP",values:form.forecast.annual.map(row=>optional(row.fbRevenue)),kind:"sum"},
-    {label:"MOD REVENUE - RP",values:form.forecast.annual.map(row=>optional(row.otherRevenue)),kind:"sum"},
-    {label:"TOTAL REVENUE - RP",values:form.forecast.annual.map(row=>calcAnnual(row).revenue),kind:"sum"},
-    {label:"EXCHANGE RATE US $ TO RP",values:form.forecast.annual.map(()=>optional(form.statistics.exchangeRate)),kind:"avg"}
-  ];
+  const annualStatisticsForPreview=(()=>{
+    const years=form.forecast.annual.map(row=>{
+      const days=optional(row.days),rooms=optional(row.rooms),occupancy=optional(row.occupancy);
+      const roomsAvailable=days!==null&&rooms!==null?days*rooms:null;
+      const occupiedRooms=roomsAvailable!==null&&occupancy!==null?roomsAvailable*occupancy/100:null;
+      const calc=calcAnnual(row);
+      const roomRevenue=calc.roomRevenue;
+      const avgGuests=optional(form.statistics.fbAverageGuestsPerRoom);
+      const lengthOfStay=optional(form.statistics.fbLengthOfStay);
+      const arrivals=occupiedRooms!==null&&avgGuests!==null&&lengthOfStay!==null&&lengthOfStay>0?occupiedRooms*avgGuests/lengthOfStay:null;
+      const guestsInHouse=occupiedRooms!==null&&avgGuests!==null?occupiedRooms*avgGuests:null;
+      const arrRp=roomRevenue!==null&&occupiedRooms!==null&&occupiedRooms>0?roomRevenue/occupiedRooms:optional(row.adr)??optional(form.statistics.averageSellingRate);
+      const exchangeRate=optional(form.statistics.exchangeRate);
+      const arrUsd=arrRp!==null&&exchangeRate!==null&&exchangeRate>0?arrRp/exchangeRate:null;
+      const revpar=roomRevenue!==null&&roomsAvailable!==null&&roomsAvailable>0?roomRevenue/roomsAvailable:null;
+      return {days,rooms,arrivals,occupancy,roomsAvailable,occupiedRooms,guestsInHouse,avgGuests,lengthOfStay,arrRp,arrUsd,roomRevenue,fbRevenue:optional(row.fbRevenue),modRevenue:optional(row.otherRevenue),totalRevenue:calc.revenue,revpar,exchangeRate};
+    });
+    const sum=(values:(number|null)[])=>values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;
+    const avg=(values:(number|null)[])=>{const valid=values.filter((v):v is number=>v!==null);return valid.length?valid.reduce((total,v)=>total+v,0)/valid.length:null;};
+    const ratio=(numerator:number|null,denominator:number|null)=>numerator===null||denominator===null||denominator<=0?null:numerator/denominator;
+    const roomRevenueTotal=sum(years.map(y=>y.roomRevenue));
+    const occupiedTotal=sum(years.map(y=>y.occupiedRooms));
+    const availableTotal=sum(years.map(y=>y.roomsAvailable));
+    const rows=[
+      {label:"# OF DAYS",values:years.map(y=>y.days),kind:"sum",total:sum(years.map(y=>y.days))},
+      {label:"# OF ROOMS",values:years.map(y=>y.rooms),kind:"avg",total:avg(years.map(y=>y.rooms))},
+      {label:"# OF ARRIVALS",values:years.map(y=>y.arrivals),kind:"sum",total:sum(years.map(y=>y.arrivals))},
+      {label:"OCCUPANCY (%)",values:years.map(y=>y.occupancy),kind:"percent",total:occupiedTotal!==null&&availableTotal!==null&&availableTotal>0?occupiedTotal/availableTotal*100:null},
+      {label:"ROOMS AVAILABLE",values:years.map(y=>y.roomsAvailable),kind:"sum",total:sum(years.map(y=>y.roomsAvailable))},
+      {label:"OCCUPIED ROOMS",values:years.map(y=>y.occupiedRooms),kind:"sum",total:occupiedTotal},
+      {label:"TOTAL GUESTS IN HOUSE",values:years.map(y=>y.guestsInHouse),kind:"sum",total:sum(years.map(y=>y.guestsInHouse))},
+      {label:"AVERAGE GUEST / ROOM",values:years.map(y=>y.avgGuests),kind:"avg",total:avg(years.map(y=>y.avgGuests))},
+      {label:"LENGTH OF STAY",values:years.map(y=>y.lengthOfStay),kind:"avg",total:avg(years.map(y=>y.lengthOfStay))},
+      {label:"AVERAGE ROOM RATE (ARR) - RP",values:years.map(y=>y.arrRp),kind:"money",total:ratio(roomRevenueTotal,occupiedTotal)},
+      {label:"AVERAGE ROOM RATE (ARR) - USD",values:years.map(y=>y.arrUsd),kind:"usd",total:ratio(roomRevenueTotal,occupiedTotal)!==null&&optional(form.statistics.exchangeRate)!==null&&optional(form.statistics.exchangeRate)!>0?ratio(roomRevenueTotal,occupiedTotal)!/optional(form.statistics.exchangeRate)!:null},
+      {label:"ROOM REVENUE - RP",values:years.map(y=>y.roomRevenue),kind:"sum",total:roomRevenueTotal},
+      {label:"TOTAL F&B REVENUE - RP",values:years.map(y=>y.fbRevenue),kind:"sum",total:sum(years.map(y=>y.fbRevenue))},
+      {label:"TOTAL MOD",values:years.map(y=>y.modRevenue),kind:"sum",total:sum(years.map(y=>y.modRevenue))},
+      {label:"TOTAL REVENUE - RP",values:years.map(y=>y.totalRevenue),kind:"sum",total:sum(years.map(y=>y.totalRevenue))},
+      {label:"REVPAR - RP",values:years.map(y=>y.revpar),kind:"money",total:ratio(roomRevenueTotal,availableTotal)},
+      {label:"EXCHANGE RATE",values:years.map(y=>y.exchangeRate),kind:"rate",total:avg(years.map(y=>y.exchangeRate))}
+    ];
+    return rows;
+  })();
   const roomStats=[
     ["# OF ROOMS",optional(form.statistics.rooms)],["ROOM AVAILABLE",values.roomAvailable],
     ["OCCUPIED ROOMS",optional(form.statistics.complimentary)!==null&&optional(form.statistics.roomPaid)!==null?optional(form.statistics.complimentary)!+optional(form.statistics.roomPaid)!:null],["OCCUPANCY (%)",values.occupancy],["AVERAGE ROOM RATE (ARR) (RP)",values.adr],["REVPAR",values.revpar]
@@ -2402,7 +2432,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <p className="mb-3 text-xs text-slate-500">{tenYearMode==="manual"?"Isi hanya akun rincian dan tahun yang ingin dioverride. Kolom kosong tetap mengikuti proyeksi default.":tenYearMode==="driver"?"Tentukan laju pertumbuhan per driver; driver kosong mengikuti Simple Growth default.":"Semua akun rincian diproyeksikan dengan laju pertumbuhan tahunan yang sama. YEAR 1 tetap mengikuti 1 Year Consolidated; YEAR 2–10 dihitung berantai dari tahun sebelumnya. Nilai kosong tidak otomatis diubah menjadi nol."}</p>
               <div className="overflow-x-auto rounded-xl border border-slate-200"><table className="w-max min-w-full border-collapse text-[11px]">
                 <thead><tr className="bg-indigo-950 text-white"><th className="sticky left-0 z-10 min-w-[245px] bg-indigo-950 px-3 py-2.5 text-left">Description</th>{form.forecast.annual.map((row,i)=><th key={row.label} className="min-w-[125px] px-2 py-2.5 text-right">YEAR {i+1}<span className="block text-[9px] font-normal">{row.label}</span></th>)}<th className="min-w-[150px] bg-teal-700 px-3 py-2.5 text-right">TOTAL / AVG</th></tr></thead>
-                <tbody>{annualStatisticsForPreview.map((line,ri)=>{const valid=line.values.filter((v):v is number=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null;const show=(v:number|null)=>v===null||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.label==="# OF DAYS"||line.label==="ROOMS AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);return <tr key={line.label} className={ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{show(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-extrabold tabular-nums">{show(total)}</td></tr>;})}</tbody>
+                <tbody>{annualStatisticsForPreview.map((line,ri)=>{const valid=line.values.filter((v):v is number=>v!==null);const total="total" in line?line.total:(valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null);const show=(v:number|null)=>v===null||!Number.isFinite(v)?"—":line.kind==="percent"?fmt(v,1)+"%":line.kind==="usd"?"$"+fmt(v,2):line.kind==="rate"?fmt(v,2):["# OF DAYS","# OF ROOMS","# OF ARRIVALS","ROOMS AVAILABLE","OCCUPIED ROOMS","TOTAL GUESTS IN HOUSE"].includes(line.label)?fmt(v,0):["AVERAGE GUEST / ROOM","LENGTH OF STAY"].includes(line.label)?fmt(v,2):money(v);return <tr key={line.label} className={ri%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums">{show(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-3 py-2 text-right font-extrabold tabular-nums">{show(total)}</td></tr>;})}</tbody>
               </table></div>
             </div>
           <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">

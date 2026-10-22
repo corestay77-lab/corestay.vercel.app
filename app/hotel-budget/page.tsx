@@ -689,10 +689,32 @@ export default function HotelBudgetPage() {
          return Number.isFinite(rate)?firstYear*Math.pow(1+rate/100,yearIndex):null;
        });
        const baseYear1=line.base?sumPresent(line.base):null;
-      const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>baseYear1*growth(yearIndex));
+      // Project each percentage denominator from the same recalculated revenue driver as the row it represents.
+      // This keeps YEAR 2–10 percentages in sync with driver-based revenue and departmental income.
+      let baseType:"total"|"rooms"|"fnb"|"mod"|null=null;
+      if(line.base&&baseYear1!==null){
+        const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES (EXCL. 21%)")?.total??null;
+        const roomsBase=oneYearRows.find(r=>r.label==="ROOMS")?.total??null;
+        const fnbBase=oneYearRows.find(r=>r.label==="FOOD & BEVERAGE"&&r.kind==="money")?.total??null;
+        const modBase=oneYearRows.find(r=>r.label==="MINOR OPERATING DEPARTMENT"&&r.kind==="money")?.total??null;
+        if(totalBase!==null&&Math.abs(baseYear1-totalBase)<0.5)baseType="total";
+        else if(roomsBase!==null&&Math.abs(baseYear1-roomsBase)<0.5)baseType="rooms";
+        else if(fnbBase!==null&&Math.abs(baseYear1-fnbBase)<0.5)baseType="fnb";
+        else if(modBase!==null&&Math.abs(baseYear1-modBase)<0.5)baseType="mod";
+      }
+      const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>{
+        if(yearIndex===0)return baseYear1;
+        if(tenYearMode==="driver"&&baseType){
+          const label=baseType==="total"?"TOTAL REVENUES (EXCL. 21%)":baseType==="rooms"?"ROOMS":baseType==="fnb"?"FOOD & BEVERAGE":"MINOR OPERATING DEPARTMENT";
+          const occurrence=baseType==="fnb"||baseType==="mod"?0:0;
+          const projected=get(label,yearIndex,occurrence);
+          if(projected!==null)return projected;
+        }
+        return baseYear1*growth(yearIndex);
+      });
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
     });
-    const find=(label:string,occurrence=0)=>{let seen=0;for(let i=0;i<rows.length;i++){if(rows[i].label===label&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
+    const find=(label:string,occurrence=0)=>{let seen=0;const target=label.trim().toUpperCase();for(let i=0;i<rows.length;i++){if(rows[i].label.trim().toUpperCase()===target&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
     const get=(label:string,year:number,occurrence=0):number|null=>{const i=find(label,occurrence);return i<0?null:rows[i].values[year]??null;};
     const put=(label:string,year:number,value:number|null,occurrence=0)=>{const i=find(label,occurrence);if(i>=0)rows[i].values[year]=value;};
     if(tenYearMode==="manual") rows.forEach((line,index)=>{
@@ -706,20 +728,23 @@ export default function HotelBudgetPage() {
     for(let year=0;year<yearCount;year++){
       // Preserve YEAR 1 exactly as the current 1 Year Consolidated source; only recalculate projected years after manual overrides.
       if(year===0)continue;
-      const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPART",year,0)];
-      const revenue=sumPresent(revenueParts);put("TOTAL REVENUES",year,revenue);
-      const cos=sumPresent([get("FOOD & BEVERAGE",year,1),get("MINOR OPERATING DEPART",year,1)]);put("TOTAL COST OF SALES",year,cos);
-      const payroll=sumPresent([get("ROOM",year,0),get("FOOD & BEVERAGE",year,2),get("MINOR OPERATING DEPART",year,2)]);put("TOTAL PAYROLL & RELATED EXP.",year,payroll);
-      const deptOther=sumPresent([get("ROOM",year,1),get("FOOD & BEVERAGE",year,3),get("MINOR OPERATING DEPART",year,3)]);put("TOTAL OTHER EXPENSES",year,deptOther,0);
+      const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPARTMENT",year,0)];
+      const revenue=sumPresent(revenueParts);
+      // Match the exact consolidated statement labels; otherwise put() silently misses the row.
+      put("TOTAL REVENUES (EXCL. 21%)",year,revenue);
+      put("TOTAL REVENUES (INCL. 21%)",year,revenue===null?null:revenue*1.21);
+      const cos=sumPresent([get("Food & Beverage",year,1),get("Telephone & Facsimile",year,0),get("Minor Operating Department",year,1)]);put("TOTAL COST OF SALES",year,cos);
+      const payroll=sumPresent([get("ROOM DIVISION",year,0),get("FOOD & BEVERAGE",year,2),get("TELEPHONE",year,0),get("MINOR OPERATING DEPT.",year,0)]);put("TOTAL PAYROLL & RELATED EXP.",year,payroll);
+      const deptOther=sumPresent([get("ROOM DIVISION",year,1),get("FOOD & BEVERAGE",year,3),get("TELEPHONE & FACSIMILE",year,1),get("MINOR OPERATING DEPT.",year,1)]);put("TOTAL OTHER DEPARTMENT EXPENSES",year,deptOther);
       const deptOperating=sumPresent([cos,payroll,deptOther]);put("DEPART. OPERATING COST & EXP.",year,deptOperating);
-      const overheadPayroll=sumPresent([get("ADM. & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("ENGINEERING",year,0)]);put("TOTAL PAYROLL & RELATED",year,overheadPayroll);
-      const overheadOther=sumPresent([get("ADM. & GENERAL",year,1),get("SALES & MARKETING",year,1),get("HUMAN RESOURCES",year,1),get("ENGINEERING",year,1),get("ENERGY COST",year)]);put("TOTAL OTHER EXPENSES",year,overheadOther,1);
+      const overheadPayroll=sumPresent([get("ADMINISTRATION & GENERAL",year,0),get("SALES & MARKETING",year,0),get("HUMAN RESOURCES",year,0),get("POMEC & UTILITIES",year,0)]);put("TOTAL PAYROLL & RELATED",year,overheadPayroll);
+      const overheadOther=sumPresent([get("ADMINISTRATION & GENERAL",year,1),get("TOTAL SALES & MARKETING OTHER EXPENSES",year,0),get("HUMAN RESOURCES",year,1),get("POMEC & UTILITIES",year,1),get("ENERGY COST",year,0)]);put("TOTAL OTHER EXPENSES",year,overheadOther,1);
       const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
       const operatingCosts=revenue!==null?(deptOperating??0)+(overhead??0):null;put("TOTAL OPERATING COSTS",year,operatingCosts);
-      const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM",year,0),get("ROOM",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,2);
+      const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM DIVISION",year,0),get("ROOM DIVISION",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,0);
       const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2),get("FOOD & BEVERAGE",year,3)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,4);
       const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
-      const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);put("MINOR OPERATING DEPART",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null,4);
+      const modDeptRevenue=get("MINOR OPERATING DEPARTMENT",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPARTMENT",year,1),get("MINOR OPERATING DEPT.",year,0),get("MINOR OPERATING DEPT.",year,1)]);put("MINOR OPERATING DEPARTMENT",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null,2);
       const houseProfit=revenue!==null&&operatingCosts!==null?revenue-operatingCosts:null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% G O P",year,pct(gop,revenue));

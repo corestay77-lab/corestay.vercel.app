@@ -229,11 +229,12 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const otherIncomeLines=accountCodes.otherIncome.map(([code])=>accountMonthly(code));
   const otherExpenseLines=accountCodes.otherExpense.map(([code])=>accountMonthly(code));
   const operatorFeeLines=accountCodes.operatorFee.map(([code])=>accountMonthly(code));
-  const provisionLines=accountCodes.provision.map(([code])=>accountMonthly(code));
+  const provisionLines=accountCodes.provision.slice(0,2).map(([code])=>accountMonthly(code));
+  const ffeBase=accountMonthly("81203003");
   // Reclassify departmental operating-equipment provisions to the below-GOP F.F & E Replacement line.
   // Room Department rows mirror House Keeping rows, so count the source HK values only to avoid duplication.
   const equipmentReplacementKeys = ["hkChina","hkGlass","hkSilver","hkLinen","chinaware","glassware","silverware","linen"];
-  const ffeReplacement = provisionLines[2].map((base,index)=>{
+  const ffeReplacement = ffeBase.map((base,index)=>{
     const month=form.forecast.monthly[index];
     const details=[month?.roomDivisionDetails,month?.fbDetails,month?.modDetails];
     const entered=details.flatMap((group)=>Object.entries(group||{}))
@@ -784,7 +785,7 @@ export default function HotelBudgetPage() {
       const otherIncome=sumPresent([pnlLabel("81101001","Gain/Loss on Disposal Asset"),pnlLabel("81101002","Deferred Tax"),pnlLabel("81101003","Interest Income"),pnlLabel("81101004","Exchange Rates"),pnlLabel("81101999","Other - Other Income")].map(label=>get(label,year)));
       const otherExpense=sumPresent([pnlLabel("81201001","Loss and Breakage"),pnlLabel("81201002","Owners Expenses"),pnlLabel("81201003","Property Insurance"),pnlLabel("81201004","Property Tax"),pnlLabel("81201005","Property Rent / Land Assessment"),pnlLabel("81201006","Project & Building Renovation"),pnlLabel("81201007","Consultant Fee"),pnlLabel("81201999","Other - Other Expense")].map(label=>get(label,year)));
       const operatorFee=sumPresent([pnlLabel("81202001","Management Fee"),pnlLabel("81202002","Marketing Fee"),pnlLabel("81202003","Royalty Fee")].map(label=>get(label,year)));
-      const provision=sumPresent([pnlLabel("81203001","Provision for THR"),pnlLabel("81203002","Provision for Bonus"),pnlLabel("81203003","Provision for Replacement FFE")].map(label=>get(label,year)));
+      const provision=sumPresent([pnlLabel("81203001","Provision for THR"),pnlLabel("81203002","Provision for Bonus")].map(label=>get(label,year)));
       put("TOTAL OTHER INCOME",year,otherIncome);put("TOTAL OTHER EXPENSE",year,otherExpense);put("TOTAL OPERATOR FEE",year,operatorFee);put("TOTAL OTHER PROVISION",year,provision);
       const hasEbitdaInputs=[otherIncome,otherExpense,operatorFee,provision].some(v=>v!==null);
       const ebitda=gop!==null&&hasEbitdaInputs?gop+(otherIncome??0)-(otherExpense??0)-(operatorFee??0)-(provision??0):null;put("EBITDA",year,ebitda);

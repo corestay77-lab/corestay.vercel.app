@@ -146,8 +146,6 @@ export const calculateBudget = (form: any) => {
   const ownerCashItems=sumGroup(form?.accounts||{},"ownerCashItems","actual",customLines);
   const sumKnown=(values:(number|null)[])=>values.some(v=>v!==null)?values.reduce<number>((total,v)=>total+(v??0),0):null;
   const belowGopGroups=["otherExpenses","operatorFees","provisions","depreciation","amortization","interest"] as const;
-  const belowGopValues=belowGopGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
-  const belowGopExpenses=sumKnown(belowGopValues);
   const otherExpenseGroups=[...belowGopGroups,"tax"] as const;
   const otherExpenseValues=otherExpenseGroups.map(g=>sumGroup(form?.accounts||{},g,"actual",customLines));
   const otherExpenses=sumKnown(otherExpenseValues);

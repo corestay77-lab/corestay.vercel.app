@@ -2118,10 +2118,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 </table>
               </div>
             </section>
-            <div className="flex flex-col items-start justify-between gap-3 rounded-2xl border border-teal-200 bg-teal-50 p-4 sm:flex-row sm:items-center">
-              <div><h4 className="font-bold text-teal-950">Sinkronisasi &amp; Perhitungan Ulang</h4><p className="mt-1 text-sm leading-5 text-teal-800">Hitung ulang Monthly Forecast, 1 Year Consolidated, dan 10 Years Consolidated berdasarkan input terbaru. Data kosong tetap ditampilkan sebagai — dan perubahan manual tetap dipertahankan.</p></div>
-              <button type="button" onClick={()=>{setForecastRecalcKey(value=>value+1);setMessage("Perhitungan ulang forecast dijalankan berdasarkan data terbaru.");setIssues([]);}} className="inline-flex shrink-0 items-center justify-center gap-2 rounded-xl bg-teal-700 px-5 py-3 text-sm font-extrabold text-white shadow-sm transition hover:bg-teal-800 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2"><span aria-hidden="true">↻</span> Sinkronkan &amp; Hitung Ulang Forecast</button>
-            </div>
+
           </div>}
 
           {activeTab==="variance"&&<div className="space-y-5">

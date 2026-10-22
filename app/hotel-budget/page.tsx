@@ -2350,7 +2350,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             </div>
           <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-3">
-                <h3 className="text-base font-extrabold">10 YEARS CONSOLIDATED — ${form.yearStart}–${Number(form.yearStart)+9}</h3>
+                <h3 className="text-base font-extrabold">10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3>
                 <p className="mt-1 text-xs text-slate-500">Nama akun, urutan, kelompok, dan subtotal mengikuti 1 YEAR CONSOLIDATED. YEAR 1 memakai basis laporan 1 Year; YEAR 2–10 mengikuti metode proyeksi yang dipilih.</p>
               </div>
               {(() => {

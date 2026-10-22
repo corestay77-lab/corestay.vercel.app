@@ -202,14 +202,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // to every individual department line.
   // Subtotals add all entered amounts, even if other account lines are still blank.  // Missing source values remain blank and are never converted to zero in the report.
   const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
-  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null?revenue[i]!-(cost??0):null);
-  // Keep blank account rows blank, but allow available entered values to flow through all calculated subtotals.
-  // For derived profit calculations only, unentered cost/fee rows contribute 0 until a value is entered.
-  // Do not calculate downstream profit from incomplete cost groups: a blank is unknown, not zero.
+  // A blank total cost bucket is unknown, not zero. Calculate department income only when
+  // revenue and at least one valid departmental cost subtotal are available for that month.
+  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null&&cost!==null?revenue[i]!-cost:null);
+  // Keep blank account rows blank; partial entered values are subtotalled, but a wholly blank
+  // overhead group must not silently produce House Profit = Department Income.
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
   // House Profit follows the hotel consolidated statement: Department Income less Overhead Department.
-  // Keep the result blank until both components are available; missing values are not treated as zero.
-  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null?income-(overheadTotal[i]??0):null);
+  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null&&overheadTotal[i]!==null?income-overheadTotal[i]!:null);
   // GOP is reported before management/marketing fees, per the approved CoreStay accounting rule.
   const goi=houseProfit;
   const gop=goi;

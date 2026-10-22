@@ -2543,7 +2543,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             {key:"ownerInsurance",label:"OWNER INSURANCE",group:"OWNER EXPENSES"},
             {key:"maintenanceFee",label:"SERVICE CHARGE / MAINTENANCE FEE",group:"OWNER EXPENSES"},
             {key:"ownerOtherExpenses",label:"OTHER OWNER EXPENSES",group:"OWNER EXPENSES"},
-            {key:"capitalExpenditure",label:"CAPITAL EXPENDITURE",group:"OWNER EXPENSES"},
+            {key:"capitalExpenditure",label:"CAPITAL EXPENDITURE",group:"OTHER EXPENSES"},
             {key:"incentiveFee",label:"INCENTIVE FEE",group:"OWNER EXPENSES"}
           ] as const;
           const value=(i:number,key:string)=>optional(String(form.forecast.monthly[i]?.[key as keyof ForecastMonth]??""));

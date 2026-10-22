@@ -2325,7 +2325,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
     </div>
 
     {activeTab==="export"&&orchestrator==="passed"&&<section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
-      <div className="mb-3"><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-sky-700">CORESTAY · VALIDATED REPORT</p><h2 className="mt-1 text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {{form.yearStart}}</h2><p className="mt-1 text-sm text-slate-600">Laporan konsolidasi lengkap muncul setelah validasi selesai. Nilai mengikuti data input; data kosong tetap —.</p></div>
+      <div className="mb-3"><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-sky-700">CORESTAY · VALIDATED REPORT</p><h2 className="mt-1 text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h2><p className="mt-1 text-sm text-slate-600">Laporan konsolidasi lengkap muncul setelah validasi selesai. Nilai mengikuti data input; data kosong tetap —.</p></div>
       <section className="mt-7 print-one-year">
         <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
@@ -2416,7 +2416,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         </table></div>
       </section>
       <section className="mt-7 print-one-year">
-        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — ${form.yearStart}</h3>
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];

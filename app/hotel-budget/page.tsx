@@ -2155,6 +2155,33 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           </div>}
           {message&&<div className={"mt-4 rounded-xl border p-4 text-sm leading-6 "+(orchestrator==="passed"?"border-emerald-200 bg-emerald-50 text-emerald-900":orchestrator==="failed"?"border-rose-200 bg-rose-50 text-rose-900":"border-sky-200 bg-sky-50 text-sky-900")}>{message}{summary&&<p className="mt-2 font-semibold">{summary}</p>}</div>}
           {(issues.length>0||displayWarnings.length>0)&&<div className="mt-3 space-y-3">{issues.length>0&&<div className="rounded-xl border border-rose-200 bg-rose-50 p-4"><p className="font-bold text-rose-900">Temuan validasi — wajib ditangani</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-rose-800">{issues.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}{displayWarnings.length>0&&<div className="rounded-xl border border-amber-200 bg-amber-50 p-4"><p className="font-bold text-amber-900">Peringatan data</p><ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-amber-800">{displayWarnings.map((item,i)=><li key={i}>{item}</li>)}</ul></div>}</div>}
+          <section className="mt-5 rounded-2xl border border-sky-200 bg-gradient-to-br from-white via-sky-50/60 to-indigo-50/50 p-4 sm:p-5">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <div><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-sky-700">CORESTAY · MANAGEMENT INSIGHTS</p><h3 className="mt-1 text-lg font-extrabold text-slate-900">A. Analisis Profitabilitas</h3><p className="mt-1 max-w-3xl text-sm leading-5 text-slate-600">Evaluasi awal pendapatan dan kemampuan operasional menghasilkan laba berdasarkan kolom Budget pada Budget P&amp;L. Analisis ini terpisah dari status validasi matematis.</p></div>
+              <span className="rounded-full border border-sky-200 bg-white px-3 py-1 text-xs font-bold text-sky-800">Budget P&amp;L</span>
+            </div>
+            {(() => {
+              const rev=revenueBudget;
+              const costs=costBudget;
+              const gop=rev!==null&&costs!==null?rev-costs:null;
+              const margin=rev!==null&&rev>0&&gop!==null?gop/rev*100:null;
+              const payroll=sumGroup(form.accounts,"payroll","budget",allAccountLines);
+              const payrollPct=rev!==null&&rev>0&&payroll!==null?payroll/rev*100:null;
+              const fmt=(v:number|null)=>v===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(v);
+              const pct=(v:number|null)=>v===null?"—":v.toLocaleString("id-ID",{maximumFractionDigits:1,minimumFractionDigits:1})+"%";
+              const marginLabel=margin===null?"Belum dapat dinilai":margin<20?"Margin relatif rendah — perlu evaluasi":margin<35?"Margin moderat — tinjau peluang perbaikan":"Margin operasional relatif kuat";
+              const marginTone=margin===null?"border-slate-200 bg-slate-50 text-slate-700":margin<20?"border-amber-200 bg-amber-50 text-amber-900":margin<35?"border-sky-200 bg-sky-50 text-sky-900":"border-emerald-200 bg-emerald-50 text-emerald-900";
+              return <><div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">Total Revenue Budget</p><p className="mt-1 break-words text-lg font-extrabold tabular-nums text-slate-900">{fmt(rev)}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">Total Operating Costs Budget</p><p className="mt-1 break-words text-lg font-extrabold tabular-nums text-slate-900">{fmt(costs)}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">GOP Budget</p><p className={"mt-1 break-words text-lg font-extrabold tabular-nums "+(gop!==null&&gop<0?"text-rose-700":"text-slate-900")}>{fmt(gop)}</p></div>
+                <div className="rounded-xl border border-slate-200 bg-white p-3"><p className="text-xs font-semibold text-slate-500">GOP Margin</p><p className="mt-1 text-lg font-extrabold tabular-nums text-slate-900">{pct(margin)}</p></div>
+              </div>
+              <div className={"mt-3 rounded-xl border p-3 "+marginTone}><p className="font-bold">{marginLabel}</p><p className="mt-1 text-sm leading-5">{margin===null?"Margin belum dapat dihitung. Pastikan Total Revenue Budget dan biaya operasional memiliki data yang memadai.":margin<0?"Budget menunjukkan biaya operasional melebihi pendapatan. Periksa asumsi pendapatan, payroll, cost of sales, dan biaya departemen sebelum laporan disahkan.":margin<20?"GOP Margin berada di bawah indikator awal 20%. Tinjau produktivitas pendapatan dan biaya terbesar; ambang ini hanya indikator umum, bukan standar universal untuk semua tipe hotel.":margin<35?"GOP Margin menunjukkan ruang untuk evaluasi efisiensi lebih lanjut. Bandingkan dengan tipe hotel, kelas layanan, lokasi, dan kinerja historis sebelum menetapkan target.":"GOP Margin tampak relatif kuat berdasarkan indikator awal. Tetap periksa kewajaran asumsi pendapatan, biaya, dan kesesuaiannya dengan kinerja historis hotel."}</p></div>
+              <div className="mt-3 rounded-xl border border-slate-200 bg-white p-3"><p className="text-sm font-bold text-slate-800">Payroll Cost / Revenue</p><p className="mt-1 text-lg font-extrabold text-slate-900">{pct(payrollPct)}</p><p className="mt-1 text-sm leading-5 text-slate-600">{payrollPct===null?"Belum dapat dinilai karena data payroll atau pendapatan belum lengkap.": "Gunakan rasio ini sebagai sinyal awal dan tinjau bersama jumlah staf, tingkat layanan, serta produktivitas departemen. Tidak ada satu ambang yang cocok untuk seluruh hotel."}</p></div>
+              <p className="mt-3 text-xs leading-5 text-slate-500">Catatan: angka dihitung dari Budget P&amp;L yang terisi. Nilai kosong tetap dianggap belum tersedia, bukan nol. GOP adalah pendapatan operasional dikurangi Cost of Sales, Payroll, Other Departmental Operating Expenses, dan Undistributed / Overhead Expenses; biaya di bawah GOP tidak dimasukkan ke perhitungan ini.</p></>;
+            })()}
+          </section>
         </section>
 
         <aside className="space-y-4">

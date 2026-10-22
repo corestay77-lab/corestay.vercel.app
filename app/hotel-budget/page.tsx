@@ -1602,18 +1602,32 @@ export default function HotelBudgetPage() {
       ["Hotel",form.hotelName,"Period",form.yearStart+"–"+(Number(form.yearStart)+9)],
       ["Description",...form.forecast.annual.map((row,i)=>"YEAR "+(i+1)+" ("+row.label+")"),"TOTAL / AVG"]
     ];
+    const annualStatInputs = form.forecast.annual.map((row,index)=>{
+      const year=Number(row.label)||Number(form.yearStart)+index;
+      const days=optional(row.days)??optional(form.statistics.days)??(new Date(year,1,29).getMonth()===1?366:365);
+      const rooms=optional(row.rooms)??optional(form.statistics.rooms);
+      const occupancy=optional(row.occupancy)??optional(form.statistics.occupancy);
+      const adr=optional(row.adr)??optional(form.statistics.averageSellingRate);
+      const available=days!==null&&rooms!==null?days*rooms:null;
+      const occupied=days!==null&&rooms!==null&&occupancy!==null?days*rooms*occupancy/100:null;
+      const roomRevenue=days!==null&&rooms!==null&&occupancy!==null&&adr!==null?days*rooms*occupancy/100*adr:null;
+      const fbRevenue=optional(row.fbRevenue)??calculateFbStatisticsAnnual(form.statistics,year);
+      const modRevenue=optional(row.otherRevenue)??calculateModStatisticsAnnual(form.statistics);
+      const revenue=roomRevenue!==null||fbRevenue!==null||modRevenue!==null?(roomRevenue??0)+(fbRevenue??0)+(modRevenue??0):null;
+      return {days,rooms,occupancy,adr,available,occupied,roomRevenue,fbRevenue,modRevenue,revenue};
+    });
     const annualStatsRows=[
-      {label:"# OF DAYS",values:form.forecast.annual.map(row=>optional(row.days)),kind:"sum"},
-      {label:"# OF ROOMS",values:form.forecast.annual.map(row=>optional(row.rooms)),kind:"avg"},
-      {label:"ROOMS AVAILABLE",values:form.forecast.annual.map(row=>{const d=optional(row.days),rooms=optional(row.rooms);return d!==null&&rooms!==null?d*rooms:null;}),kind:"sum"},
-      {label:"OCCUPANCY (%)",values:form.forecast.annual.map(row=>optional(row.occupancy)),kind:"percent"},
-      {label:"OCCUPIED ROOMS",values:form.forecast.annual.map(row=>{const d=optional(row.days),rooms=optional(row.rooms),occ=optional(row.occupancy);return d!==null&&rooms!==null&&occ!==null?d*rooms*occ/100:null;}),kind:"sum"},
-      {label:"ROOM REVENUE - RP",values:form.forecast.annual.map(row=>calcAnnual(row).roomRevenue),kind:"sum"},
-      {label:"AVERAGE ROOM RATE (ARR) - RP",values:form.forecast.annual.map(row=>{const calc=calcAnnual(row),d=optional(row.days),rooms=optional(row.rooms),occ=optional(row.occupancy),paid=d!==null&&rooms!==null&&occ!==null?d*rooms*occ/100:null;return calc.roomRevenue!==null&&paid!==null&&paid>0?calc.roomRevenue/paid:optional(row.adr)??optional(form.statistics.averageSellingRate);}),kind:"avg"},
-      {label:"REVPAR - RP",values:form.forecast.annual.map(row=>{const calc=calcAnnual(row),d=optional(row.days),rooms=optional(row.rooms),available=d!==null&&rooms!==null?d*rooms:null;return calc.roomRevenue!==null&&available!==null&&available>0?calc.roomRevenue/available:null;}),kind:"avg"},
-      {label:"F&B REVENUE - RP",values:form.forecast.annual.map(row=>optional(row.fbRevenue)),kind:"sum"},
-      {label:"MOD REVENUE - RP",values:form.forecast.annual.map(row=>optional(row.otherRevenue)),kind:"sum"},
-      {label:"TOTAL REVENUE - RP",values:form.forecast.annual.map(row=>calcAnnual(row).revenue),kind:"sum"},
+      {label:"# OF DAYS",values:annualStatInputs.map(x=>x.days),kind:"sum"},
+      {label:"# OF ROOMS",values:annualStatInputs.map(x=>x.rooms),kind:"avg"},
+      {label:"ROOMS AVAILABLE",values:annualStatInputs.map(x=>x.available),kind:"sum"},
+      {label:"OCCUPANCY (%)",values:annualStatInputs.map(x=>x.occupancy),kind:"percent"},
+      {label:"OCCUPIED ROOMS",values:annualStatInputs.map(x=>x.occupied),kind:"sum"},
+      {label:"ROOM REVENUE - RP",values:annualStatInputs.map(x=>x.roomRevenue),kind:"sum"},
+      {label:"AVERAGE ROOM RATE (ARR) - RP",values:annualStatInputs.map(x=>x.roomRevenue!==null&&x.occupied!==null&&x.occupied>0?x.roomRevenue/x.occupied:x.adr),kind:"avg"},
+      {label:"REVPAR - RP",values:annualStatInputs.map(x=>x.roomRevenue!==null&&x.available!==null&&x.available>0?x.roomRevenue/x.available:null),kind:"avg"},
+      {label:"F&B REVENUE - RP",values:annualStatInputs.map(x=>x.fbRevenue),kind:"sum"},
+      {label:"MOD REVENUE - RP",values:annualStatInputs.map(x=>x.modRevenue),kind:"sum"},
+      {label:"TOTAL REVENUE - RP",values:annualStatInputs.map(x=>x.revenue),kind:"sum"},
       {label:"EXCHANGE RATE US $ TO RP",values:form.forecast.annual.map(()=>optional(form.statistics.exchangeRate)),kind:"avg"}
     ];
     annualStatsRows.forEach(line=>{const valid=line.values.filter((v:number|null)=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a:number,b:number)=>a+b,0):valid.reduce((a:number,b:number)=>a+b,0)/valid.length):null;annualStatisticsExport.push([line.label,...line.values,total]);});

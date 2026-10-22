@@ -2294,7 +2294,6 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 </div>
               </>;
             })()}
-          </div>
         </div>}
 
         <aside className="space-y-4">

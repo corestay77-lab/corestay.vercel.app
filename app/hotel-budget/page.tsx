@@ -614,13 +614,21 @@ export default function HotelBudgetPage() {
       const modDeptRevenue=get("MINOR OPERATING DEPARTMENT",year,0), modDeptCosts=sumPresent([get("Minor Operating Department",year,0),get("MINOR OPERATING DEPT.",year,0),get("MINOR OPERATING DEPT.",year,1)]);put("MINOR OPERATING DEPARTMENT",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null,1);
       const houseProfit=revenue!==null&&operatingCosts!==null?revenue-operatingCosts:null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
-      const nonOp=sumPresent([get("MANAGEMENT FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER NON-OPERATING EXPENSES",year,nonOp);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% GOP",year,pct(gop,revenue));
-      const ebitda=gop!==null&&(get("BASIC MANAGEMENT FEE",year)!==null||get("MANAGEMENT FEES",year)!==null||get("INSURANCE GENERAL",year)!==null)?gop-(get("BASIC MANAGEMENT FEE",year)??0)-(get("MANAGEMENT FEES",year)??0)-(get("INSURANCE GENERAL",year)??0):null;put("EBITDA (AFTER MANAGEMENT FEES, BEFORE DEPRECIATION)",year,ebitda);
-      const ownerCost=sumPresent([get("LAND LEASE / HOLD",year),get("INSURANCE",year),get("MAINTENANCE FEE (SERVICE CHARGE)",year)]);put("TOTAL OTHER EXPENSES",year,ownerCost);
-      const osp=gop!==null&&ownerCost!==null?gop-ownerCost:null;put("OWNER SHARE PROFIT (OSP)",year,osp);
-      const otherOwner=get("OTHER OWNER EXPENSES",year);put("TOTAL OWNER EXPENSES",year,otherOwner);put("NET OWNER SHARE PROFIT (NOSP)",year,osp!==null?osp-(otherOwner??0):null);
-      const rooms=optional(source.statistics.rooms),nosp=get("NET OWNER SHARE PROFIT (NOSP)",year);put("NET OWNER SHARE PROFIT / UNIT",year,nosp!==null&&rooms!==null&&rooms>0?nosp/rooms:null);
+      const otherIncome=sumPresent(["Gain/Loss on Disposal Asset","Deferred Tax","Interest Income","Exchange Rates","Other - Other Income"].map(label=>get(label,year)));
+      const otherExpense=sumPresent(["Loss and Breakage","Owners Expenses","Property Insurance","Property Tax","Property Rent / Land Assessment","Project & Building Renovation","Consultant Fee","Other - Other Expense"].map(label=>get(label,year)));
+      const operatorFee=sumPresent(["Management Fee","Marketing Fee","Royalty Fee"].map(label=>get(label,year)));
+      const provision=sumPresent(["Provision for THR","Provision for Bonus","Provision for Replacement FFE"].map(label=>get(label,year)));
+      put("TOTAL OTHER INCOME",year,otherIncome);put("TOTAL OTHER EXPENSE",year,otherExpense);put("TOTAL OPERATOR FEE",year,operatorFee);put("TOTAL OTHER PROVISION",year,provision);
+      const hasEbitdaInputs=[otherIncome,otherExpense,operatorFee,provision].some(v=>v!==null);
+      const ebitda=gop!==null&&hasEbitdaInputs?gop+(otherIncome??0)-(otherExpense??0)-(operatorFee??0)-(provision??0):null;put("EBITDA",year,ebitda);
+      const depreciation=sumPresent(["Depreciation of Building*","Depreciation of Equipment","Depreciation of Vehicle*","Depreciation of Fixed Asset Leased","Depreciation of General Building System","Depreciation of Machine","Depreciation of Furniture & Fixture"].map(label=>get(label,year)));
+      const amortization=sumPresent(["Amortization of Intangible Asset","Amortization of Other Asset","Amortization of Pre-Opening Expenses","Amortization SOFTWARE"].map(label=>get(label,year)));
+      put("TOTAL DEPRECIATION",year,depreciation);put("TOTAL AMORTIZATION",year,amortization);
+      const da=sumPresent([depreciation,amortization]);const ebit=ebitda!==null&&da!==null?ebitda-da:null;put("EBIT",year,ebit);
+      const interest=sumPresent(["Interest Bank Loan (IDR)","Interest Bank Loan (IDR) - Provision Cost","Interest Expense - Leased Assets"].map(label=>get(label,year)));put("TOTAL INTEREST EXPENSE",year,interest);
+      const ebt=ebit!==null&&interest!==null?ebit-interest:null;put("EBT",year,ebt);
+      const tax=get("Income Taxes",year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
     }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};

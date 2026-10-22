@@ -318,11 +318,11 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("GROSS OPERATING INCOME",goi,"sum",undefined,sumPresent(goi),revenue);
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
-  section("8 OTHER INCOME & EXPENSES");
-  section("811 OTHER INCOME*");
+  section("OTHER INCOME & EXPENSES");
+  section("OTHER INCOME");
   accountCodes.otherIncome.forEach(([code,label],i)=>add(pnlLabel(code,label),otherIncomeLines[i],"money",undefined,sumPresent(otherIncomeLines[i]),revenue));
   add("TOTAL OTHER INCOME",otherIncome,"sum",undefined,sumPresent(otherIncome),revenue);
-  section("812 OTHER EXPENSES");
+  section("OTHER EXPENSES");
   accountCodes.otherExpense.forEach(([code,label],i)=>add(pnlLabel(code,label),otherExpenseLines[i],"money",undefined,sumPresent(otherExpenseLines[i]),revenue));
   add("TOTAL OTHER EXPENSE",otherExpense,"sum",undefined,sumPresent(otherExpense),revenue);
   accountCodes.operatorFee.forEach(([code,label],i)=>add(pnlLabel(code,label),operatorFeeLines[i],"money",undefined,sumPresent(operatorFeeLines[i]),revenue));
@@ -330,19 +330,19 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   accountCodes.provision.forEach(([code,label],i)=>add(pnlLabel(code,label),provisionLines[i],"money",undefined,sumPresent(provisionLines[i]),revenue));
   add("TOTAL OTHER PROVISION",provisions,"sum",undefined,sumPresent(provisions),revenue);
   add("EBITDA",ebitda,"sum",undefined,sumPresent(ebitda),revenue);
-  section("82 DEPRECIATION & AMORTIZATION EXPENSES");
-  section("821 DEPRECIATION EXPENSES");
+  section("DEPRECIATION & AMORTIZATION EXPENSES");
+  section("DEPRECIATION EXPENSES");
   accountCodes.depreciation.forEach(([code,label],i)=>add(pnlLabel(code,label),depreciationLines[i],"money",undefined,sumPresent(depreciationLines[i]),revenue));
   add("TOTAL DEPRECIATION",depreciation,"sum",undefined,sumPresent(depreciation),revenue);
-  section("822 AMORTIZATION EXPENSES");
+  section("AMORTIZATION EXPENSES");
   accountCodes.amortization.forEach(([code,label],i)=>add(pnlLabel(code,label),amortizationLines[i],"money",undefined,sumPresent(amortizationLines[i]),revenue));
   add("TOTAL AMORTIZATION",amortization,"sum",undefined,sumPresent(amortization),revenue);
   add("EBIT",ebit,"sum",undefined,sumPresent(ebit),revenue);
-  section("83 INTEREST EXPENSE**");
+  section("INTEREST EXPENSE");
   accountCodes.interest.forEach(([code,label],i)=>add(pnlLabel(code,label),interestLines[i],"money",undefined,sumPresent(interestLines[i]),revenue));
   add("TOTAL INTEREST EXPENSE",interestExpense,"sum",undefined,sumPresent(interestExpense),revenue);
   add("EBT",ebt,"sum",undefined,sumPresent(ebt),revenue);
-  section("84 INCOME TAXES***");
+  section("INCOME TAXES");
   accountCodes.tax.forEach(([code,label],i)=>add(pnlLabel(code,label),taxLines[i],"money",undefined,sumPresent(taxLines[i]),revenue));
   add("EAT",eat,"sum",undefined,sumPresent(eat),revenue);
   return rows;
@@ -2192,7 +2192,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                   </thead>
                   <tbody>
                     {[...buildConsolidatedRows(consolidatedForm).filter(line=>!/(TELEPHONE|FACSIMILE)/i.test(line.label)).map(line=>({...line,label:({"OTHER DEPARTMENT EXPENSES":"OTHER EXPENSES","TOTAL OTHER DEPARTMENT EXPENSES":"TOTAL OTHER EXPENSES","TOTAL PAYROLL & RELATED EXPENSES":"TOTAL PAYROLL & RELATED EXP.","DEPARTMENT OPERATING COST & EXPENSES":"DEPART. OPERATING COST & EXP.","TOTAL DEPARTMENT INCOME":"TOTAL DEPTMENT INCOME","BASIC MANAGEMENT FEE":"LESS DEDUCTION","MANAGEMENT FEES":"MANAGEMENT & MARKETING FEES","OTHER OWNER EXPENSES":"OWNERS EXPENSE","NET OWNER SHARE PROFIT / UNIT":"NET OWNER SHARE PROFIT/UNIT"} as Record<string,string>)[line.label]??line.label}))].map((line,i)=>{
-                      if(line.kind==="section") { const sectionLabel=line.label.toUpperCase(); const sectionTone=sectionLabel.includes("8 OTHER INCOME & EXPENSES")?"border-t-4 border-b-2 border-indigo-500 bg-indigo-100 text-indigo-950":sectionLabel.includes("INCOME")?"border-t-2 border-emerald-300 bg-emerald-100 text-emerald-950":sectionLabel.includes("EXPENSE")||sectionLabel.includes("COST")?"border-t-2 border-rose-300 bg-rose-100 text-rose-950":sectionLabel.includes("PROFIT")||sectionLabel.includes("GOP")||sectionLabel.includes("EBIT")?"border-t-2 border-violet-300 bg-violet-100 text-violet-950":"border-t-2 border-sky-300 bg-sky-100 text-sky-950"; return <tr key={line.label}><th colSpan={27} className={`${sectionTone} px-3 py-2 text-left text-[10px] font-black tracking-wider`}>{line.label}</th></tr>; }
+                      if(line.kind==="section") { const sectionLabel=line.label.toUpperCase(); const sectionTone=sectionLabel.includes("OTHER INCOME & EXPENSES")?"border-t-4 border-b-2 border-indigo-500 bg-indigo-100 text-indigo-950":sectionLabel.includes("INCOME")?"border-t-2 border-emerald-300 bg-emerald-100 text-emerald-950":sectionLabel.includes("EXPENSE")||sectionLabel.includes("COST")?"border-t-2 border-rose-300 bg-rose-100 text-rose-950":sectionLabel.includes("PROFIT")||sectionLabel.includes("GOP")||sectionLabel.includes("EBIT")?"border-t-2 border-violet-300 bg-violet-100 text-violet-950":"border-t-2 border-sky-300 bg-sky-100 text-sky-950"; return <tr key={line.label}><th colSpan={27} className={`${sectionTone} px-3 py-2 text-left text-[10px] font-black tracking-wider`}>{line.label}</th></tr>; }
                       const isPercent=line.kind==="percent";
                       const displayValue=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isPercent?fmt(v,1)+"%":money(v);
                       const displayPct=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":fmt(v,1)+"%";

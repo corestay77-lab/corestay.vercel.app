@@ -153,7 +153,6 @@ export const calculateBudget = (form: any) => {
   const otherExpenses=sumKnown(otherExpenseValues);
   const gop=revenue!==null&&costs!==null?revenue-costs:null;
   const ebitdaInputs=[otherIncomeValue,otherExpenseValue,operatorFeeValue,provisionValue];
-  const ebitdaCosts=sumKnown([otherExpenseValue,operatorFeeValue,provisionValue]);
   const ebitda=gop!==null&&ebitdaInputs.some(v=>v!==null)?gop+(otherIncomeValue??0)-(otherExpenseValue??0)-(operatorFeeValue??0)-(provisionValue??0):null;
   const daCosts=sumKnown([depreciationValue,amortizationValue]);
   const ebit=ebitda!==null&&daCosts!==null?ebitda-daCosts:null;
@@ -177,7 +176,6 @@ export const calculateBudget = (form: any) => {
   const ytdGop=ytdRevenue!==null&&ytdCosts!==null?ytdRevenue-ytdCosts:null;
   const ytdGopMargin=ytdRevenue!==null&&ytdRevenue>0&&ytdGop!==null?ytdGop/ytdRevenue*100:null;
   const ytdEbitdaInputs=[ytdOtherIncomeValue,ytdOtherExpenseValue,ytdOperatorFeeValue,ytdProvisionValue];
-  const ytdEbitdaCosts=sumKnown([ytdOtherExpenseValue,ytdOperatorFeeValue,ytdProvisionValue]);
   const ytdEbitda=ytdGop!==null&&ytdEbitdaInputs.some(v=>v!==null)?ytdGop+(ytdOtherIncomeValue??0)-(ytdOtherExpenseValue??0)-(ytdOperatorFeeValue??0)-(ytdProvisionValue??0):null;
   const ytdDaCosts=sumKnown([ytdDepreciationValue,ytdAmortizationValue]);
   const ytdEbit=ytdEbitda!==null&&ytdDaCosts!==null?ytdEbitda-ytdDaCosts:null;

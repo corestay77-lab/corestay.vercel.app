@@ -2391,12 +2391,6 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
           const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
-          const renderDataRow = (label: string, values: (number | null)[], bases: (number | null)[], total: number | null, totalPct: number | null, key: string, kind = "money") => <tr key={key}>
-            <th className="border-b border-slate-200 bg-white px-2 py-1 text-left font-semibold">{label}</th>
-            {order.map((monthIndex,j) => <td key={monthIndex} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(values[monthIndex], kind)}</td>).flatMap((cell,j) => [cell, <td key={"pct-"+j} className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{values[order[j]] === null || values[order[j]] === undefined || bases[order[j]] === null || bases[order[j]] === undefined || bases[order[j]] === 0 ? "—" : fmt(rowPct(values[order[j]], bases[order[j]]) ?? null, 2) + "%"}</td> )}
-            <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(total, kind)}</td>
-            <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{totalPct === null ? "—" : fmt(totalPct, 2) + "%"}</td>
-          </tr>;
           return <div className="overflow-x-auto">
             <table className="w-full min-w-[2200px] border-collapse text-[8px]">
               <thead>

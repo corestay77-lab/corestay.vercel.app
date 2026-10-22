@@ -2237,7 +2237,29 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           ] as const;
           const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
-          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-1.5 text-left font-black">{label}</th></tr>;
+          const sourceRow = (label: string, occurrence = 0) => { let n = 0; for (const row of rows) if (row.kind !== "section" && row.label.toUpperCase() === label.toUpperCase() && n++ === occurrence) return row; return null; };
+          const reportTemplate: {label:string; source?:string; occurrence?:number; section?:boolean; tax?:boolean}[] = [
+            {label:"REVENUES",section:true},{label:"  ROOMS",source:"ROOMS"},{label:"  FOOD & BEVERAGE REVENUE",source:"FOOD & BEVERAGE"},{label:"  MINOR OPERATING DEPT.",source:"MINOR OPERATING DEPARTMENT"},
+            {label:"TOTAL REVENUES   ( Exl. 21 % )",source:"TOTAL REVENUES (EXCL. TAX)"},{label:"TOTAL REVENUES   ( Incl. 21 % )",source:"TOTAL REVENUES (EXCL. TAX)",tax:true},
+            {label:"COST OF SALES",section:true},{label:"  FOOD & BEVERAGE",source:"Food & Beverage"},{label:"  MINOR OPERATING DEPARTMENT",source:"Minor Operating Department"},{label:"TOTAL COST OF   SALES",source:"TOTAL COST OF SALES"},
+            {label:"PAYROLL &   RELATED EXPENSES",section:true},{label:"  ROOM",source:"ROOM DIVISION",occurrence:0},{label:"  FOOD & BEVERAGE",source:"FOOD & BEVERAGE",occurrence:1},{label:"  MINOR OPERATING DEPART",source:"MINOR OPERATING DEPT."},{label:"TOTAL PAYROLL   & RELATED EXP.",source:"TOTAL PAYROLL & RELATED EXPENSES"},
+            {label:"OTHER EXPENSES",section:true},{label:"  ROOM",source:"ROOM DIVISION",occurrence:1},{label:"  FOOD & BEVERAGE",source:"FOOD & BEVERAGE",occurrence:2},{label:"  MINOR OPERATING DEPARTMENT",source:"MINOR OPERATING DEPT.",occurrence:1},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OTHER DEPARTMENT EXPENSES"},
+            {label:"DEPART.   OPERATING COST & EXP.",source:"DEPARTMENT OPERATING COST & EXPENSES"},
+            {label:"DEPARTMENT   INCOME",section:true},{label:"  ROOM",source:"ROOM"},{label:"  FOOD & BEVERAGE",source:"FOOD & BEVERAGE",occurrence:3},{label:"  MINOR OPERATING DEPT",source:"MINOR OPERATING DEPARTMENT",occurrence:1},{label:"TOTAL DEPTMENT   INCOME",source:"TOTAL DEPARTMENT INCOME"},
+            {label:"OVERHEAD   DEPARTMENT",section:true},{label:"PAYROLL &   RELATED",section:true},{label:"  ADM. & GENERAL",source:"ADMINISTRATION & GENERAL",occurrence:0},{label:"  SALES & MARKETING",source:"SALES & MARKETING"},{label:"  HUMAN RESOURCES",source:"HUMAN RESOURCES"},{label:"  ENGINEERING",source:"POMEC & UTILITIES",occurrence:0},{label:"TOTAL PAYROLL   & RELATED",source:"TOTAL OVERHEAD PAYROLL"},
+            {label:"OTHER EXPENSES",section:true},{label:"  ADM. & GENERAL",source:"ADMINISTRATION & GENERAL",occurrence:1},{label:"  SALES & MARKETING",source:"TOTAL SALES & MARKETING OTHER EXPENSES"},{label:"  ENGINEERING",source:"POMEC & UTILITIES",occurrence:1},{label:"  ENERGY COST",source:"ENERGY COST"},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OVERHEAD OTHER EXPENSES"},
+            {label:"TOTAL OVERHEAD   DEPARTMENT",source:"TOTAL OVERHEAD DEPARTMENT"},{label:"GROSS   OPERATING INCOME",source:"GROSS OPERATING INCOME"},{label:"OTHER NON   OPERATING EXP",source:"TOTAL OTHER EXPENSE"},{label:"MANAGEMENT   & MARKETING FEES",source:"BASIC MANAGEMENT FEE"},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OTHER EXPENSE"},
+            {label:"GROSS   OPERATING PROFIT (GOP)",source:"GROSS OPERATING PROFIT (GOP)"},{label:"% G O P",source:"% GOP"},
+            {label:"OTHER EXPENSES",section:true},{label:"LAND LEASE   HOLD",source:"LAND LEASE HOLD"},{label:"PROPERTY   INSURANCE",source:"PROPERTY INSURANCE"},{label:"F.F & E   REPLACEMENT",source:"F.F & E REPLACEMENT"},{label:"CAPITAL   EXPENDITURE",source:"CAPITAL EXPENDITURE"},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OTHER EXPENSES"},
+            {label:"OWNER SHARE   PROFIT",source:"OWNER SHARE PROFIT (OSP)"},{label:"INCENTIVE FEE",source:"INCENTIVE Fee"},{label:"OTHER OWNER   EXPENSES",source:"OWNERS EXPENSE"},{label:"TOTAL OWNERS   EXPENSES",source:"TOTAL OWNER EXPENSES"},
+            {label:"NETT   OWNER PROFIT ( BEFORE TAX )",source:"NET OWNER SHARE PROFIT (NOSP)"},{label:"CUMMULATED OSP"}
+          ];
+          const reportRows = reportTemplate.map(item => {
+            const source = item.source ? sourceRow(item.source, item.occurrence ?? 0) : null;
+            const values = source?.values ?? Array.from({length:12},()=>null as number|null);
+            return {...item, values:item.tax?values.map(v=>v===null?null:v*1.21):values, total:item.tax?(source?.total===null||source?.total===undefined?null:source.total*1.21):(source?.total??null), base:source?.base, totalPct:source?.totalPct, kind:source?.kind};
+          });
+          const heading = (label: string, idx:number) => <tr key={"section-"+idx}><th colSpan={27} className="border-t-2 border-slate-300 bg-gradient-to-r from-sky-100 via-indigo-50 to-teal-50 px-2 py-1.5 text-left font-black tracking-wide text-slate-800">{label}</th></tr>;
           return <div className="overflow-x-auto">
             <table className="w-full min-w-[2200px] border-collapse text-[8px]">
               <thead>
@@ -2336,11 +2358,11 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
               <tbody>
                 {heading("STATISTICS")}
                 {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-2 py-1 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right">—</td></tr>)}
-                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
-                  <th className="border-b border-slate-200 px-2 py-1 text-left font-semibold">{line.label}</th>
-                  {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
-                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{display(line.total ?? null, "money")}</td>
-                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{line.totalPct === null || line.totalPct === undefined ? "—" : fmt(line.totalPct, 2) + "%"}</td>
+                {reportRows.map((line, idx) => line.section ? heading(line.label, idx) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
+                  <th className={"border-b border-slate-200 px-2 py-1 text-left font-semibold "+(/^(TOTAL|GROSS|NETT|OWNER SHARE|% G O P)/i.test(line.label.trim())?"text-slate-950":"text-slate-700")}>{line.label}</th>
+                  {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.label.trim()==="% G O P"?(line.values[i]===null?"—":fmt(line.values[i] as number,2)+"%"):display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1 text-right tabular-nums">{line.label.trim()==="% G O P"?"—":line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
+                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{line.label.trim()==="% G O P"?(line.total===null||line.total===undefined?"—":fmt(line.total,2)+"%"):display(line.total ?? null, "money")}</td>
+                  <td className="border-b border-slate-200 bg-sky-50 px-1 py-1 text-right font-bold tabular-nums">{line.label.trim()==="% G O P"?"—":line.totalPct === null || line.totalPct === undefined ? "—" : fmt(line.totalPct, 2) + "%"}</td>
                 </tr>)}
               </tbody>
             </table>

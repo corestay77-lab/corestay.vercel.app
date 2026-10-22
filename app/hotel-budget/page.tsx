@@ -2252,9 +2252,6 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
             {label:"OTHER EXPENSES",section:true},{label:"  ADM. & GENERAL",source:"ADMINISTRATION & GENERAL",occurrence:1},{label:"  SALES & MARKETING",source:"TOTAL SALES & MARKETING OTHER EXPENSES"},{label:"  ENGINEERING",source:"POMEC & UTILITIES",occurrence:1},{label:"  ENERGY COST",source:"ENERGY COST"},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OTHER EXPENSES",occurrence:1},
             {label:"TOTAL OVERHEAD   DEPARTMENT",source:"TOTAL OVERHEAD DEPARTMENT"},{label:"GROSS   OPERATING INCOME",source:"GROSS OPERATING INCOME"},{label:"OTHER NON   OPERATING EXP",source:"TOTAL OTHER EXPENSE"},{label:"MANAGEMENT   & MARKETING FEES",source:"BASIC MANAGEMENT FEE"},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OTHER EXPENSE"},
             {label:"GROSS   OPERATING PROFIT (GOP)",source:"GROSS OPERATING PROFIT (GOP)"},{label:"% G O P",source:"% GOP"},
-            {label:"OTHER EXPENSES",section:true},{label:"LAND LEASE   HOLD",source:"LAND LEASE HOLD"},{label:"PROPERTY   INSURANCE",source:"PROPERTY INSURANCE"},{label:"F.F & E   REPLACEMENT",source:"F.F & E REPLACEMENT"},{label:"CAPITAL   EXPENDITURE",source:"CAPITAL EXPENDITURE"},{label:"TOTAL OTHER   EXPENSES",source:"TOTAL OTHER EXPENSES"},
-            {label:"OWNER SHARE   PROFIT",source:"OWNER SHARE PROFIT (OSP)"},{label:"INCENTIVE FEE",source:"INCENTIVE Fee"},{label:"OTHER OWNER   EXPENSES",source:"OWNERS EXPENSE"},{label:"TOTAL OWNERS   EXPENSES",source:"TOTAL OWNER EXPENSES"},
-            {label:"NETT   OWNER PROFIT ( BEFORE TAX )",source:"NET OWNER SHARE PROFIT (NOSP)"},{label:"CUMMULATED OSP"}
           ];
           const reportRows = reportTemplate.map(item => {
             const source = item.source ? sourceRow(item.source, item.occurrence ?? 0) : null;

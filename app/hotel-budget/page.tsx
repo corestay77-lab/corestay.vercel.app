@@ -32,7 +32,7 @@ const FB_BUDGET_GROUPS = [{title:"REVENUES",total:"TOTAL F & B REVENUE",rows:[["
 const POMEC_LINES = [{key:"salaryWages",label:"SALARY & WAGES",group:"payroll"},{key:"incomeTax",label:"INCOME TAX",group:"payroll"},{key:"jamsostek",label:"JAMSOSTEK",group:"payroll"},{key:"insurance",label:"INSURANCE",group:"payroll"},{key:"thr",label:"THR (1 YEAR)",group:"payroll"},{key:"mealAllowances",label:"MEAL ALLOWANCES",group:"payroll"},{key:"medical",label:"MEDICAL / ASKES",group:"payroll"},{key:"otherPayroll",label:"OTHER PAYROLL COST",group:"payroll"},{key:"paintingDecoration",label:"PAINTING & DECORATION",group:"other"},{key:"engineeringSupplies",label:"ENGINEERING SUPPLIES & EQUIPMENT",group:"other"},{key:"bulbsLamp",label:"BULBS & LAMP",group:"other"},{key:"printingStationery",label:"PRINTING & STATIONERY",group:"other"},{key:"laundryUniform",label:"LAUNDRY UNIFORM",group:"other"},{key:"provisionUniform",label:"PROV. FOR UNIFORM",group:"other"},{key:"acMaintenance",label:"AC MAINTENANCE",group:"other"},{key:"buildingMaintenance",label:"BUILDING MAINTENANCE",group:"other"},{key:"electricityMaintenance",label:"ELECTRICITY MAINTENANCE",group:"other"},{key:"floorCovering",label:"FLOOR COVERING",group:"other"},{key:"furnitureFixtureRepair",label:"FURNITURE & FIXTURE REPAIRMENT",group:"other"},{key:"mechanicalElectricalMaintenance",label:"MECHANICAL & ELECTRICAL MAINT",group:"other"},{key:"kitchenEquipmentMaintenance",label:"KITCHEN EQUIPMENT MAINTENANCE",group:"other"},{key:"refrigeratorMaintenance",label:"REFRIGERATOR MAINTENANCE",group:"other"},{key:"automobileRepair",label:"AUTO MOBILE REPAIR & SERVICES",group:"other"},{key:"plumbingHeatingMaintenance",label:"PLUMBING/HEATING MAINTENANCE",group:"other"},{key:"removalWaste",label:"REMOVAL WASTE",group:"other"},{key:"others",label:"OTHERS",group:"other"},{key:"electricityConsumed",label:"ELECTRICITY CONSUMED",group:"energy"},{key:"waterConsumed",label:"WATER CONSUMED",group:"energy"},{key:"fuelDieselConsumed",label:"FUEL / DIESEL CONSUMED",group:"energy"}] as const;
 const pomecValue=(row:ForecastMonth,key:string)=>optional(row.pomecDetails?.[key]||"");
 const pomecTotal=(row:ForecastMonth,group:"payroll"|"other"|"energy")=>{const vals=POMEC_LINES.filter(x=>x.group===group&&!(group==="payroll"&&x.key==="incomeTax")).map(x=>pomecValue(row,x.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
-const smOtherTotal=(row:ForecastMonth)=>{const vals=Object.entries(row.smDetails??{}).filter(([key])=>key!=="operatingDays").map(([,raw])=>optional(raw));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
+const smOtherTotal=(row:ForecastMonth)=>{const vals=Object.entries(row.smDetails??{}).filter(([key])=>key!=="operatingDays"&&!key.toLowerCase().endsWith("percent")).map(([,raw])=>optional(raw));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
 const makeMonthly = (year:number):ForecastMonth[] => monthNames.map((label,i)=>({agDetails:{},hrdDetails:{},modDetails:{},fbDetails:{},roomDivisionDetails:{},pomecDetails:{},label:label+" "+year,occupancy:"",adr:"",fbRevenue:"",phoneRevenue:"",otherRevenue:"",fbCostOfSales:"",phoneCostOfSales:"",modCostOfSales:"",roomPayroll:"",fbPayroll:"",phonePayroll:"",modPayroll:"",roomOtherExpenses:"",fbOtherExpenses:"",phoneOtherExpenses:"",modOtherExpenses:"",agPayroll:"",smPayroll:"",hrdPayroll:"",pomecPayroll:"",agOtherExpenses:"",smOtherExpenses:"",hrdOtherExpenses:"",pomecOtherExpenses:"",energyCost:"",operatingCosts:"",basicManagementFee:"",otherManagementFee:"",insuranceGeneral:"",landLease:"",ownerInsurance:"",maintenanceFee:"",operatorSharePercent:"30",ownerOtherExpenses:"",capitalExpenditure:"",incentiveFee:""}));
 const makeAnnual = (year: number): ForecastYear[] => Array.from({length:10},(_,i)=>{const y=year+i;return {label:String(y),days:String(y%4===0&&(y%100!==0||y%400===0)?366:365),rooms:"",occupancy:"",adr:"",fbRevenue:"",otherRevenue:"",operatingCosts:""};});
 const makeBlank = (): BudgetForm => ({
@@ -229,7 +229,20 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const otherIncomeLines=accountCodes.otherIncome.map(([code])=>accountMonthly(code));
   const otherExpenseLines=accountCodes.otherExpense.map(([code])=>accountMonthly(code));
   const operatorFeeLines=accountCodes.operatorFee.map(([code])=>accountMonthly(code));
-  const provisionLines=accountCodes.provision.map(([code])=>accountMonthly(code));
+  const provisionLines=accountCodes.provision.slice(0,2).map(([code])=>accountMonthly(code));
+  const ffeBase=accountMonthly("81203003");
+  // Reclassify departmental operating-equipment provisions to the below-GOP F.F & E Replacement line.
+  // Room Department rows mirror House Keeping rows, so count the source HK values only to avoid duplication.
+  const equipmentReplacementKeys = ["hkChina","hkGlass","hkSilver","hkLinen","chinaware","glassware","silverware","linen"];
+  const ffeReplacement = ffeBase.map((base,index)=>{
+    const month=form.forecast.monthly[index];
+    const details=[month?.roomDivisionDetails,month?.fbDetails,month?.modDetails];
+    const entered=details.flatMap((group)=>Object.entries(group||{}))
+      .filter(([key,value])=>equipmentReplacementKeys.includes(key)&&String(value??"").trim()!==""&&Number.isFinite(Number(value)))
+      .reduce((sum,[,value])=>sum+Number(value),0);
+    const hasEquipment=details.some(group=>Object.entries(group||{}).some(([key,value])=>equipmentReplacementKeys.includes(key)&&String(value??"").trim()!==""&&Number.isFinite(Number(value))));
+    return base===null&&!hasEquipment?null:(base??0)+entered;
+  });
   const depreciationLines=accountCodes.depreciation.map(([code])=>accountMonthly(code));
   const amortizationLines=accountCodes.amortization.map(([code])=>accountMonthly(code));
   const interestLines=accountCodes.interest.map(([code])=>accountMonthly(code));
@@ -324,7 +337,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal),[]);
   const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
-  const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),provisionLines[2],monthly("capitalExpenditure")];
+  const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),ffeReplacement,monthly("capitalExpenditure")];
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
@@ -337,7 +350,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",provisionLines[2],"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   section("OWNER SHARE PROFIT");
@@ -403,7 +416,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",provisionLines[2],"money",undefined,sumPresent(provisionLines[2]),revenue);
+  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
   add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
@@ -772,7 +785,7 @@ export default function HotelBudgetPage() {
       const otherIncome=sumPresent([pnlLabel("81101001","Gain/Loss on Disposal Asset"),pnlLabel("81101002","Deferred Tax"),pnlLabel("81101003","Interest Income"),pnlLabel("81101004","Exchange Rates"),pnlLabel("81101999","Other - Other Income")].map(label=>get(label,year)));
       const otherExpense=sumPresent([pnlLabel("81201001","Loss and Breakage"),pnlLabel("81201002","Owners Expenses"),pnlLabel("81201003","Property Insurance"),pnlLabel("81201004","Property Tax"),pnlLabel("81201005","Property Rent / Land Assessment"),pnlLabel("81201006","Project & Building Renovation"),pnlLabel("81201007","Consultant Fee"),pnlLabel("81201999","Other - Other Expense")].map(label=>get(label,year)));
       const operatorFee=sumPresent([pnlLabel("81202001","Management Fee"),pnlLabel("81202002","Marketing Fee"),pnlLabel("81202003","Royalty Fee")].map(label=>get(label,year)));
-      const provision=sumPresent([pnlLabel("81203001","Provision for THR"),pnlLabel("81203002","Provision for Bonus"),pnlLabel("81203003","Provision for Replacement FFE")].map(label=>get(label,year)));
+      const provision=sumPresent([pnlLabel("81203001","Provision for THR"),pnlLabel("81203002","Provision for Bonus")].map(label=>get(label,year)));
       put("TOTAL OTHER INCOME",year,otherIncome);put("TOTAL OTHER EXPENSE",year,otherExpense);put("TOTAL OPERATOR FEE",year,operatorFee);put("TOTAL OTHER PROVISION",year,provision);
       const hasEbitdaInputs=[otherIncome,otherExpense,operatorFee,provision].some(v=>v!==null);
       const ebitda=gop!==null&&hasEbitdaInputs?gop+(otherIncome??0)-(otherExpense??0)-(operatorFee??0)-(provision??0):null;put("EBITDA",year,ebitda);
@@ -898,7 +911,7 @@ export default function HotelBudgetPage() {
       fbOther:budgetByLabel("operatingExpenses",label=>labelHas(label,"f&b department","food & beverage","food and beverage")),
       modOther:budgetByLabel("operatingExpenses",label=>labelHas(label,"other departments","minor operating","mod department")),
       pomecOther:budgetByLabel("overhead",label=>labelHas(label,"engineering","pomec","maintenance")),
-      energy:budgetByLabel("overhead",label=>labelHas(label,"energy cost","electricity","water consumed","fuel / diesel")),
+      energy:budgetByLabel("overhead",label=>labelHas(label,"energy cost","water consumed","fuel / diesel","other utilities")),
       smOther:budgetByLabel("overhead",label=>labelHas(label,"sales & marketing","sales and marketing")),
       agOther:budgetByLabel("overhead",label=>labelHas(label,"administrative & general","administration & general","a&g")),
       hrdOther:budgetByLabel("overhead",label=>labelHas(label,"human resources","hrd"))
@@ -1113,9 +1126,7 @@ export default function HotelBudgetPage() {
         const has=(details:Record<string,string>)=>Object.values(details).some(v=>String(v??"").trim()!=="");
         const payrollEmployees=prev.payrollEmployees||[];const masterPayrollExists=payrollEmployees.length>0;
         const payrollTotal=(dept:string)=>{
-          const aliases:Record<string,string[]>={FO:["FO"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],MOD:["MOD","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"]};
-          const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());
-          if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase())&&payrollHasInputs(e))?String(payrollDepartmentMonthly(dept).total):"";
+          if(masterPayrollExists)return payrollDepartmentHasInputs(dept)?String(payrollDepartmentMonthly(dept).total):"";
           const fallback:Record<string,number|null>={FO:forecastSource.payrollBudget.fo,HK:forecastSource.payrollBudget.hk,FB:forecastSource.payrollBudget.fb,MOD:forecastSource.payrollBudget.mod,AG:forecastSource.payrollBudget.ag,SM:forecastSource.payrollBudget.sm,HRD:forecastSource.payrollBudget.hrd,POMEC:forecastSource.payrollBudget.pomec};
           const value=fallback[dept];
           return value===null||value===undefined?"":String(Math.round(value*monthShare));
@@ -1256,7 +1267,7 @@ export default function HotelBudgetPage() {
     // PPh 21 is withheld/remitted from employee income; it is not an extra employer cost
     // unless a separate gross-up/tax-borne-by-company policy is explicitly configured.
     const basicTotal=basic*count,medicalTotal=medical*count,mealTotal=meal*count,thrTotal=Math.round(thr*count),bpjsCompanyTotal=Math.round(bpjsCompany*count),bpjsStaffTotal=Math.round(bpjsStaff*count),grossTotal=basicTotal+medicalTotal+mealTotal+thrTotal,insuranceTotal=insurance*count,otherTotal=other*count;const total=grossTotal+bpjsCompanyTotal+insuranceTotal+otherTotal;return {count,hasPtkp,basic:basicTotal,medical:medicalTotal,thr:thrTotal,meal:mealTotal,bpjsCompany:bpjsCompanyTotal,bpjsStaff:bpjsStaffTotal,gross:grossTotal,ptkp:ptkp*count,jobExpense:jobExpense/12*count,pkp:pkp/12*count,pkpAnnual:pkp*count,taxYear:taxYear*count,taxMonth:taxMonth*count,insurance:insuranceTotal,other:otherTotal,total};};
-  const payrollDepartmentAliases:Record<string,string[]>={FO:["FO"],HK:["HK"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPT.","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL","EXECUTIVE / GENERAL AFFAIR","FN","FINANCE","FINANCE / ACCOUNTING","FINANCE & ACCOUNTING","ACCOUNTING"],FN:["FN","FINANCE","FINANCE / ACCOUNTING","ACCOUNTING"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],HR:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC","SECURITY"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],ENG:["ENG","ENGINEERING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"],ROOM:["FO","HK"]};
+  const payrollDepartmentAliases:Record<string,string[]>={FO:["FO","FRONT OFFICE","FRONT OFFICE DEPARTMENT"],HK:["HK","HOUSEKEEPING","HOUSE KEEPING","HOUSEKEEPING DEPARTMENT","HOUSE KEEPING DEPARTMENT"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPT.","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL","EXECUTIVE / GENERAL AFFAIR","FN","FINANCE","FINANCE / ACCOUNTING","FINANCE & ACCOUNTING","ACCOUNTING"],FN:["FN","FINANCE","FINANCE / ACCOUNTING","ACCOUNTING"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],HR:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC","SECURITY"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],ENG:["ENG","ENGINEERING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"],ROOM:["FO","HK"]};
   const payrollDepartmentMatches=(employee:PayrollEmployee,department:string)=>{const normalize=(value:string)=>String(value||"").trim().toUpperCase().replace(/\s+/g," ");const wanted=(payrollDepartmentAliases[department.toUpperCase()]||[department]).map(normalize);return wanted.includes(normalize(employee.department));};
   const payrollDepartmentHasInputs=(department:string)=>(form.payrollEmployees||[]).some(e=>payrollDepartmentMatches(e,department)&&payrollHasInputs(e));
   const payrollDistributionAliases:Record<string,string[]>={FO:["FO","FRONT OFFICE"],HK:["HK","HOUSEKEEPING"],FB:["FB","F&B","F & B","FOOD & BEVERAGE","FOOD AND BEVERAGE","FOOD & BEVERAGE DEPARTMENT"],MOD:["MOD","MINOR OPERATED DEPT","MINOR OPERATED DEPT.","MINOR OPERATED DEPARTMENT","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL","EXECUTIVE / GENERAL AFFAIR","FN","FINANCE","FINANCE / ACCOUNTING","FINANCE & ACCOUNTING","ACCOUNTING"],HR:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],SEC:["SEC","SECURITY","ENG","ENGINEERING","SECURITY / ENGINEERING","SECURITY & ENGINEERING"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"]};
@@ -1278,10 +1289,10 @@ export default function HotelBudgetPage() {
           return entries.length?entries.reduce((total,[,value])=>total+Number(value),0):null;
         };
         const roomDetails=row.roomDivisionDetails||{};
-        const roomCosts=sumDetails(roomDetails,Object.keys(roomDetails).filter(key=>key!=="roomRevenue"&&!key.toLowerCase().includes("percent")&&!payrollInputKey(key)));
+        const roomCosts=sumDetails(roomDetails,Object.keys(roomDetails).filter(key=>key!=="roomRevenue"&&!key.toLowerCase().includes("percent")&&!payrollInputKey(key)&&!["hkChina","hkGlass","hkSilver","hkLinen","rdChina","rdGlass","rdSilver","rdLinen"].includes(key)));
         const fbRevenueDetails=sumDetails(row.fbDetails,["foodRevenue","beverageRevenue"]);
         const fbCosDetails=sumDetails(row.fbDetails,["foodCost","beverageCost"]);
-        const fbOtherDetails=sumDetails(row.fbDetails,["glassware","chinaware","silverware","linen","decoration","duesSubscription","extermDisinfectant","kitchenFuel","laundry","miscellaneous","spoilage","cleaningSupplies","guestSupplies","printingStationery","telephone","uniform","utensil","contractCleaning"]);
+        const fbOtherDetails=sumDetails(row.fbDetails,["decoration","duesSubscription","extermDisinfectant","kitchenFuel","laundry","miscellaneous","spoilage","cleaningSupplies","guestSupplies","printingStationery","telephone","uniform","utensil","contractCleaning"]);
         const modRevenueDetails=sumDetails(row.modDetails,["businessCenterRevenue","rentCarRevenue","laundryRevenue","spaRevenue","telephoneRevenue","sportRecreationRevenue","rentedSpaceRevenue","miscellaneousRevenue","otherRevenueDiscounts"]);
         const modCosDetails=sumDetails(row.modDetails,["laundryCost"]);
         const modOtherDetails=sumDetails(row.modDetails,["guestSupplies","paperSupplies","laundryValetSupplies","laundrySupplies","casual","cleaningSupplies","printingStationery","decoration","telephoneFax","laundryExpense","casualOther","laundryValetOther","cleaningOther","provisionUniform","pteb","uniform","otherExpenses"]);
@@ -2395,7 +2406,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan konsolidasi tahunan berdasarkan data dan rumus input yang sama. Kolom disusun DEC lalu JAN–NOV, masing-masing dengan nilai dan persentase, diikuti TOTAL / AVG.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const consolidatedRows = buildConsolidatedRows(form);
+          const consolidatedRows = buildConsolidatedRows(consolidatedForm);
           const otherIncomeExpenseStart = consolidatedRows.findIndex(line => line.kind === "section" && line.label === "8 OTHER INCOME & EXPENSES");
           const rows = otherIncomeExpenseStart >= 0 ? consolidatedRows.slice(0, otherIncomeExpenseStart) : consolidatedRows;
           const year = Number(form.yearStart);
@@ -2466,7 +2477,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs text-slate-500">Nama akun, urutan, kelompok, dan subtotal mengikuti 1 YEAR CONSOLIDATED. YEAR 1 memakai basis laporan 1 Year; YEAR 2–10 mengikuti metode proyeksi yang dipilih.</p>
               </div>
               {(() => {
-                const allRows = buildTenYearRows(form);
+                const allRows = buildTenYearRows(consolidatedForm);
                 const otherIncomeExpenseStart = allRows.findIndex(line => line.section && line.label === "8 OTHER INCOME & EXPENSES");
                 const rows = otherIncomeExpenseStart >= 0 ? allRows.slice(0, otherIncomeExpenseStart) : allRows;
                 const headingTone = (label:string) => label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950"
@@ -2637,7 +2648,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(form);
+          const rows = buildConsolidatedRows(consolidatedForm);
           const year = Number(form.yearStart);
           const roomCount = optional(form.statistics.rooms);
           const monthlyStats = order.map(i => {
@@ -2726,7 +2737,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(form);
+          const rows = buildConsolidatedRows(consolidatedForm);
           const year = Number(form.yearStart);
           const roomCount = optional(form.statistics.rooms);
           const monthlyStats = order.map(i => {

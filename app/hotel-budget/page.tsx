@@ -2466,7 +2466,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs text-slate-500">Nama akun, urutan, kelompok, dan subtotal mengikuti 1 YEAR CONSOLIDATED. YEAR 1 memakai basis laporan 1 Year; YEAR 2–10 mengikuti metode proyeksi yang dipilih.</p>
               </div>
               {(() => {
-                const allRows = buildTenYearRows(form);
+                const allRows = buildTenYearRows(consolidatedForm);
                 const otherIncomeExpenseStart = allRows.findIndex(line => line.section && line.label === "8 OTHER INCOME & EXPENSES");
                 const rows = otherIncomeExpenseStart >= 0 ? allRows.slice(0, otherIncomeExpenseStart) : allRows;
                 const headingTone = (label:string) => label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950"

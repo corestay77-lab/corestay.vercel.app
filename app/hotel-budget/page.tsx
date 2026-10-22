@@ -1594,7 +1594,10 @@ export default function HotelBudgetPage() {
       consolidatedMonthly.push(vals);
     });
     const consolidatedAnnual:any[][]=[["CORESTAY ADVISORY — 10 YEARS CONSOLIDATED",...Array(22).fill("")],["Hotel",form.hotelName,"Period",form.yearStart+"–"+(Number(form.yearStart)+9),"Currency",currency],["Account / Description",...form.forecast.annual.flatMap((row,i)=>["YEAR "+(i+1)+" VALUE","YEAR "+(i+1)+" %"]),"TOTAL / AVERAGE VALUE","TOTAL / AVERAGE %"]];
-    buildTenYearRows(consolidatedForm).forEach(line=>{
+    const annualConsolidatedRows=buildTenYearRows(consolidatedForm);
+    const annualOtherIncomeExpenseStart=annualConsolidatedRows.findIndex(line=>line.section&&line.label==="8 OTHER INCOME & EXPENSES");
+    const annualVisibleRows=annualOtherIncomeExpenseStart>=0?annualConsolidatedRows.slice(0,annualOtherIncomeExpenseStart):annualConsolidatedRows;
+    annualVisibleRows.forEach(line=>{
       if(line.section){consolidatedAnnual.push([line.label,...Array(22).fill("")]);return;}
       const vals:any[]=[line.label];
       line.values.forEach((v,i)=>{const base=line.base?.[i]??null;vals.push(v,base!==null&&base!==0&&v!==null?v/base*100:null);});
@@ -2341,7 +2344,9 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
                 <p className="mt-1 text-xs text-slate-500">Nama akun, urutan, kelompok, dan subtotal mengikuti 1 YEAR CONSOLIDATED. YEAR 1 memakai basis laporan 1 Year; YEAR 2–10 mengikuti metode proyeksi yang dipilih.</p>
               </div>
               {(() => {
-                const rows = buildTenYearRows(form);
+                const allRows = buildTenYearRows(form);
+                const otherIncomeExpenseStart = allRows.findIndex(line => line.section && line.label === "8 OTHER INCOME & EXPENSES");
+                const rows = otherIncomeExpenseStart >= 0 ? allRows.slice(0, otherIncomeExpenseStart) : allRows;
                 const headingTone = (label:string) => label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950"
                   : label === "COST OF SALES" ? "border-amber-300 bg-amber-100 text-amber-950"
                   : label.includes("PAYROLL") ? "border-violet-300 bg-violet-100 text-violet-950"

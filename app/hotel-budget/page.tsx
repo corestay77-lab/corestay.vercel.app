@@ -654,9 +654,8 @@ export default function HotelBudgetPage() {
     const payrollSection=sectionIndex("PAYROLL & RELATED EXPENSES");
     const departmentOtherSection=sectionIndex("OTHER EXPENSES",payrollSection+1);
     const departmentIncomeSection=sectionIndex("DEPARTMENT INCOME");
-    const overheadSection=sectionIndex("OVERHEAD DEPARTMENT");
-    const overheadPayrollSection=sectionIndex("PAYROLL & RELATED",overheadSection+1);
-    const overheadOtherSection=sectionIndex("OTHER EXPENSES",overheadPayrollSection+1);
+    const overheadPayrollSection=sectionIndex("OVERHEAD DEPARTMENT — PAYROLL & RELATED");
+    const overheadOtherSection=sectionIndex("OVERHEAD DEPARTMENT — OTHER EXPENSES");
     const houseProfitIndex=oneYearRows.findIndex(line=>line.label==="HOUSE PROFIT");
     const rows:R[]=oneYearRows.map((line,index)=>{
        if(line.kind==="section")return {label:line.label,section:true,values:[],total:null,totalPct:null,kind:"section"};

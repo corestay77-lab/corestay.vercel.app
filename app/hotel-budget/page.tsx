@@ -1705,13 +1705,12 @@ export default function HotelBudgetPage() {
       ["ACCOUNT / DESCRIPTION","Dec",...monthNames.slice(0,11),"TOTAL"]
     ];
     const overheadExportRows=buildConsolidatedRows(form);
-    const overheadStart=overheadExportRows.findIndex(row=>row.label==="OVERHEAD DEPARTMENT");
-    const overheadGop=overheadExportRows.findIndex((row,index)=>index>overheadStart&&row.label==="% G O P");
+    const overheadGop=overheadExportRows.findIndex(row=>row.label==="% G O P");
     const ownerStart=overheadExportRows.findIndex((row,index)=>index>overheadGop&&row.kind==="section"&&row.label==="OTHER EXPENSES");
     const ownerEnd=overheadExportRows.findIndex((row,index)=>index>ownerStart&&row.label==="TOTAL OWNER EXPENSES");
     const overheadOrder=[11,0,1,2,3,4,5,6,7,8,9,10];
-    const selectedRows=overheadStart>=0&&overheadGop>=overheadStart&&ownerStart>overheadGop&&ownerEnd>ownerStart
-      ?[...overheadExportRows.slice(overheadStart,overheadGop+1),...overheadExportRows.slice(ownerStart,ownerEnd+1)]
+    const selectedRows=ownerStart>=0&&ownerEnd>ownerStart
+      ?overheadExportRows.slice(ownerStart,ownerEnd+1)
       :[];
     selectedRows.forEach(row=>{
       ownerExpenseRows.push([row.label,...(row.kind==="section"?Array(12).fill(null):overheadOrder.map(i=>row.values[i]??null)),row.kind==="section"?null:(row.total??null)]);
@@ -1976,17 +1975,16 @@ export default function HotelBudgetPage() {
                 {selectedDepartment==="owner"&&<section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
   <div className="bg-rose-900 px-4 py-3 text-white">
     <h4 className="text-sm font-extrabold">OVERHEAD DEPARTMENT</h4>
-    <p className="mt-1 text-[11px] text-rose-100">Ringkasan OVERHEAD DEPARTMENT, GOP, dan rincian biaya pemilik per bulan. Nilai ditarik otomatis dari forecast; data yang belum diisi tetap ditampilkan sebagai —.</p>
+    <p className="mt-1 text-[11px] text-rose-100">Rincian biaya pemilik per bulan. Nilai ditarik otomatis dari forecast; data yang belum diisi tetap ditampilkan sebagai —.</p>
   </div>
   {(() => {
     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
     const reportRows=buildConsolidatedRows(form);
-    const start=reportRows.findIndex(row=>row.label==="OVERHEAD DEPARTMENT");
-    const gopIndex=reportRows.findIndex((row,index)=>index>start&&row.label==="% G O P");
+    const gopIndex=reportRows.findIndex(row=>row.label==="% G O P");
     const ownerStart=reportRows.findIndex((row,index)=>index>gopIndex&&row.kind==="section"&&row.label==="OTHER EXPENSES");
     const ownerEnd=reportRows.findIndex((row,index)=>index>ownerStart&&row.label==="TOTAL OWNER EXPENSES");
-    const rows=start>=0&&gopIndex>=start&&ownerStart>gopIndex&&ownerEnd>ownerStart
-      ?[...reportRows.slice(start,gopIndex+1),...reportRows.slice(ownerStart,ownerEnd+1)]
+    const rows=ownerStart>=0&&ownerEnd>ownerStart
+      ?reportRows.slice(ownerStart,ownerEnd+1)
       :[];
     const amount=(n:number|null|undefined,kind:string)=>n===null||n===undefined||!Number.isFinite(n)?"—":kind==="percent"?new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n)+"%":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
     const sectionTone=(label:string)=>label==="OVERHEAD DEPARTMENT"?"bg-rose-900 text-white":label==="PAYROLL & RELATED"?"bg-sky-100 text-sky-950":label==="OTHER EXPENSES"?"bg-amber-100 text-amber-950":label==="LESS DEDUCTION :"?"bg-violet-100 text-violet-950":label==="OTHER NON OPERATING EXPENSES"?"bg-indigo-100 text-indigo-950":"bg-slate-100 text-slate-900";

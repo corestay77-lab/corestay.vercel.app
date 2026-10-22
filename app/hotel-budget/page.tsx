@@ -353,7 +353,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("ROOMS",roomRevenue,"money",undefined,roomRevenueTotal,revenue);
   add("FOOD & BEVERAGE",fb,"money","fbRevenue",sumPresent(fb),revenue);
   add("MINOR OPERATING DEPART",other,"money","otherRevenue",sumPresent(other),revenue);
-  add("TOTAL REVENUES (EXL. 21%)",revenue,"sum",undefined,revenueTotal,revenue);
+  add("TOTAL REVENUES",revenue,"sum",undefined,revenueTotal,revenue);
   section("COST OF SALES");
   add("FOOD & BEVERAGE",monthly("fbCostOfSales"),"money","fbCostOfSales",undefined,fb);
   add("MINOR OPERATING DEPART",monthly("modCostOfSales"),"money","modCostOfSales",undefined,other);

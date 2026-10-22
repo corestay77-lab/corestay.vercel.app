@@ -1701,79 +1701,19 @@ export default function HotelBudgetPage() {
     detailSources.forEach(dept=>{const keys=Array.from(new Set(form.forecast.monthly.flatMap(row=>Object.keys(((row as any)[dept.key]||{}) as Record<string,string>))));keys.forEach(key=>{const vals=form.forecast.monthly.map(row=>optional((((row as any)[dept.key]||{}) as Record<string,string>)[key]||""));const total=vals.some(v=>v!==null)?vals.reduce<number>((sum,v)=>sum+(Number(v??0)||0),0):null;const readable=key.replace(/([A-Z])/g," $1").replace(/^./,c=>c.toUpperCase()).replace(/\bthr\b/i,"THR");departmentExpenseRows.push([dept.name,readable,...vals,total]);});});
     add("Department Expenses",departmentExpenseRows,[28,38,...Array(12).fill(15),18],"wide");
     const ownerExpenseRows:any[][]=[
-      ["OTHER INCOME & EXPENSES — OWNER SHARE PROFIT"],
-      ["ACCOUNT CODE / DESCRIPTION","Dec",...monthNames.slice(0,11),"TOTAL"]
+      ["OVERHEAD DEPARTMENT — OPERATING SUMMARY"],
+      ["ACCOUNT / DESCRIPTION","Dec",...monthNames.slice(0,11),"TOTAL"]
     ];
-    const ownerOrder=[11,0,1,2,3,4,5,6,7,8,9,10];
-    const ownerRows=[
-      {code:"81101001",key:"pnl_81101001",label:"Gain/Loss on Disposal Asset",group:"OTHER INCOME"},
-      {code:"81101002",key:"pnl_81101002",label:"Deferred Tax",group:"OTHER INCOME"},
-      {code:"81101003",key:"pnl_81101003",label:"Interest Income",group:"OTHER INCOME"},
-      {code:"81101004",key:"pnl_81101004",label:"Exchange Rates",group:"OTHER INCOME"},
-      {code:"81101999",key:"pnl_81101999",label:"Other - Other Income",group:"OTHER INCOME"},
-      {code:"81201001",key:"pnl_81201001",label:"Loss and Breakage",group:"OTHER EXPENSE"},
-      {code:"81201002",key:"pnl_81201002",label:"Owners Expenses",group:"OTHER EXPENSE"},
-      {code:"81201003",key:"pnl_81201003",label:"Property Insurance",group:"OTHER EXPENSE"},
-      {code:"81201004",key:"pnl_81201004",label:"Property Tax",group:"OTHER EXPENSE"},
-      {code:"81201005",key:"pnl_81201005",label:"Property Rent / Land Assessment",group:"OTHER EXPENSE"},
-      {code:"81201006",key:"pnl_81201006",label:"Project & Building Renovation",group:"OTHER EXPENSE"},
-      {code:"81201007",key:"pnl_81201007",label:"Consultant Fee",group:"OTHER EXPENSE"},
-      {code:"81201999",key:"pnl_81201999",label:"Other - Other Expense",group:"OTHER EXPENSE"},
-      {code:"81202001",key:"pnl_81202001",label:"Management Fee",group:"OPERATOR FEE"},
-      {code:"81202002",key:"pnl_81202002",label:"Marketing Fee",group:"OPERATOR FEE"},
-      {code:"81202003",key:"pnl_81202003",label:"Royalty Fee",group:"OPERATOR FEE"},
-      {code:"81203001",key:"pnl_81203001",label:"Provision for THR",group:"OTHER PROVISION"},
-      {code:"81203002",key:"pnl_81203002",label:"Provision for Bonus",group:"OTHER PROVISION"},
-      {code:"81203003",key:"pnl_81203003",label:"Provision for Replacement FFE",group:"OTHER PROVISION"},
-      {code:"82101001",key:"pnl_82101001",label:"Depreciation of Building*",group:"DEPRECIATION"},
-      {code:"82101002",key:"pnl_82101002",label:"Depreciation of Equipment",group:"DEPRECIATION"},
-      {code:"82101003",key:"pnl_82101003",label:"Depreciation of Vehicle*",group:"DEPRECIATION"},
-      {code:"82101004",key:"pnl_82101004",label:"Depreciation of Fixed Asset Leased",group:"DEPRECIATION"},
-      {code:"82101005",key:"pnl_82101005",label:"Depreciation of General Building System",group:"DEPRECIATION"},
-      {code:"82101999",key:"pnl_82101999",label:"Depreciation of Machine",group:"DEPRECIATION"},
-      {code:"82101006",key:"pnl_82101006",label:"Depreciation of Furniture & Fixture",group:"DEPRECIATION"},
-      {code:"82201001",key:"pnl_82201001",label:"Amortization of Software",group:"AMORTIZATION"},
-      {code:"82201002",key:"pnl_82201002",label:"Amortization of Goodwill",group:"AMORTIZATION"},
-      {code:"82201003",key:"pnl_82201003",label:"Amortization of License",group:"AMORTIZATION"},
-      {code:"82201004",key:"pnl_82201004",label:"Amortization of Building Rights on Land",group:"AMORTIZATION"},
-      {code:"82201999",key:"pnl_82201999",label:"Amortization of Other Intangible Asset",group:"AMORTIZATION"},
-      {code:"82202001",key:"pnl_82202001",label:"Amortization of Pre Opening Expenses",group:"AMORTIZATION"},
-      {code:"83101001",key:"pnl_83101001",label:"Interest Bank Loan (IDR)",group:"INTEREST"},
-      {code:"83101002",key:"pnl_83101002",label:"Interest Bank Loan (IDR) - Provision Cost",group:"INTEREST"},
-      {code:"83101003",key:"pnl_83101003",label:"Interest Expense - Leased Assets",group:"INTEREST"},
-      {code:"84101001",key:"pnl_84101001",label:"Income Taxes",group:"INCOME TAX"}
-    ] as const;
-    const ownerValue=(i:number,key:string)=>optional(String((form.forecast.monthly[i] as unknown as Record<string,string>)[key]??""));
-    const ownerAnnual=(fn:(i:number)=>number|null)=>ownerOrder.some(i=>fn(i)!==null)?ownerOrder.reduce<number>((n,i)=>n+(fn(i)??0),0):null;
-    const ownerTotal=(items:readonly {key:string}[],i:number)=>{const vals=items.map(item=>ownerValue(i,item.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
-    const ownerGroup=(group:string)=>ownerRows.filter(item=>item.group===group);
-    const ownerExportSection=(code:string,label:string,items:readonly {code:string;key:string;label:string;group:string}[],group:string)=>{
-      ownerExpenseRows.push([code+" "+label,...Array(13).fill(null)]);
-      items.forEach(item=>ownerExpenseRows.push([item.code+" "+itemLabel("owner",item.key,item.label),...ownerOrder.map(i=>ownerValue(i,item.key)),ownerAnnual(i=>ownerValue(i,item.key))]));
-      ownerExpenseRows.push(["TOTAL "+label,...ownerOrder.map(i=>ownerTotal(items,i)),ownerAnnual(i=>ownerTotal(items,i))]);
-    };
-    const exportHeader=(code:string,label:string)=>ownerExpenseRows.push([code+" "+label,...Array(13).fill(null)]);
-    exportHeader("8","OTHER INCOME & EXPENSES");
-    exportHeader("81","Other Income & Expense");
-    exportHeader("811","Other Income*");
-    ownerExportSection("81101","Other Income",ownerGroup("OTHER INCOME"),"OTHER INCOME");
-    exportHeader("812","Other Expenses");
-    ownerExportSection("81201","Other Expense",ownerGroup("OTHER EXPENSE"),"OTHER EXPENSE");
-    ownerExportSection("81202","Operator Fee",ownerGroup("OPERATOR FEE"),"OPERATOR FEE");
-    ownerExportSection("81203","Other Provision",ownerGroup("OTHER PROVISION"),"OTHER PROVISION");
-    exportHeader("82","Depreciation & Amortization Expenses");
-    exportHeader("821","Depreciation Expenses");
-    ownerExportSection("82101","Depreciation of Building*",ownerGroup("DEPRECIATION"),"DEPRECIATION");
-    exportHeader("822","Amortization Expenses");
-    ownerExportSection("82201","Amortization of Intangible Asset",ownerRows.filter(item=>item.group==="AMORTIZATION"&&item.code!=="82202001"),"AMORTIZATION");
-    ownerExportSection("82202","Amortization Of Other Asset",ownerRows.filter(item=>item.code==="82202001"),"AMORTIZATION");
-    exportHeader("83","Interest Expense**");
-    exportHeader("831","Interest Expense*");
-    ownerExportSection("83101","Interest Expense",ownerGroup("INTEREST"),"INTEREST");
-    exportHeader("84","Income Taxes***");
-    exportHeader("841","Income Taxes**");
-    ownerExportSection("84101","Income Taxes*",ownerGroup("INCOME TAX"),"INCOME TAX");
-    add("Owner Expenses",ownerExpenseRows,[38,...Array(12).fill(16),18],"wide");
+    const overheadExportRows=buildConsolidatedRows(form);
+    const overheadStart=overheadExportRows.findIndex(row=>row.label==="OVERHEAD DEPARTMENT");
+    const overheadEnd=overheadExportRows.findIndex((row,index)=>index>overheadStart&&row.label==="% GOP");
+    const overheadOrder=[11,0,1,2,3,4,5,6,7,8,9,10];
+    if(overheadStart>=0&&overheadEnd>=overheadStart){
+      overheadExportRows.slice(overheadStart,overheadEnd+1).forEach(row=>{
+        ownerExpenseRows.push([row.label,...(row.kind==="section"?Array(12).fill(null):overheadOrder.map(i=>row.values[i]??null)),row.kind==="section"?null:(row.total??null)]);
+      });
+    }
+    add("Overhead Department",ownerExpenseRows,[38,...Array(12).fill(16),18],"wide");
 
     const payrollRows:any[][]=[["MASTER PAYROLL — DETAIL KARYAWAN & BIAYA"],["Department","Position","Headcount","Basic Salary / Month","Medical / Month","Meal / Month","THR / Month","BPJS Company / Month","PPh / Month","Insurance / Month","Other / Month","Monthly Total","Annual Total"]];
     (form.payrollEmployees||[]).forEach(emp=>{const c=payrollCalc(emp);const active=payrollHasInputs(emp);payrollRows.push([emp.department||"—",emp.position||"—",active?c.count:"—",active?c.basic:"—",active?c.medical:"—",active?c.meal:"—",active?c.thr:"—",active?c.bpjsCompany:"—",active&&c.hasPtkp?c.taxMonth:"—",active?c.insurance:"—",active?c.other:"—",active?c.total:"—",active?c.total*12:"—"]);});
@@ -2032,84 +1972,26 @@ export default function HotelBudgetPage() {
 </div>
                 {selectedDepartment==="owner"&&<section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
   <div className="bg-rose-900 px-4 py-3 text-white">
-    <h4 className="text-sm font-extrabold">OTHER INCOME & EXPENSES — OWNER SHARE PROFIT</h4>
-    
+    <h4 className="text-sm font-extrabold">OVERHEAD DEPARTMENT</h4>
+    <p className="mt-1 text-[11px] text-rose-100">Ringkasan operasional bulanan dari data forecast dan biaya departemen. Nilai dihitung otomatis; item akun OWNER SHARE PROFIT sebelumnya tidak ditampilkan di bagian ini.</p>
   </div>
   {(() => {
     const order=[11,0,1,2,3,4,5,6,7,8,9,10];
-    const rows=[
-      {code:"81101001",key:"pnl_81101001",label:"Gain/Loss on Disposal Asset",group:"OTHER INCOME"},
-      {code:"81101002",key:"pnl_81101002",label:"Deferred Tax",group:"OTHER INCOME"},
-      {code:"81101003",key:"pnl_81101003",label:"Interest Income",group:"OTHER INCOME"},
-      {code:"81101004",key:"pnl_81101004",label:"Exchange Rates",group:"OTHER INCOME"},
-      {code:"81101999",key:"pnl_81101999",label:"Other - Other Income",group:"OTHER INCOME"},
-      {code:"81201001",key:"pnl_81201001",label:"Loss and Breakage",group:"OTHER EXPENSE"},
-      {code:"81201002",key:"pnl_81201002",label:"Owners Expenses",group:"OTHER EXPENSE"},
-      {code:"81201003",key:"pnl_81201003",label:"Property Insurance",group:"OTHER EXPENSE"},
-      {code:"81201004",key:"pnl_81201004",label:"Property Tax",group:"OTHER EXPENSE"},
-      {code:"81201005",key:"pnl_81201005",label:"Property Rent / Land Assessment",group:"OTHER EXPENSE"},
-      {code:"81201006",key:"pnl_81201006",label:"Project & Building Renovation",group:"OTHER EXPENSE"},
-      {code:"81201007",key:"pnl_81201007",label:"Consultant Fee",group:"OTHER EXPENSE"},
-      {code:"81201999",key:"pnl_81201999",label:"Other - Other Expense",group:"OTHER EXPENSE"},
-      {code:"81202001",key:"pnl_81202001",label:"Management Fee",group:"OPERATOR FEE"},
-      {code:"81202002",key:"pnl_81202002",label:"Marketing Fee",group:"OPERATOR FEE"},
-      {code:"81202003",key:"pnl_81202003",label:"Royalty Fee",group:"OPERATOR FEE"},
-      {code:"81203001",key:"pnl_81203001",label:"Provision for THR",group:"OTHER PROVISION"},
-      {code:"81203002",key:"pnl_81203002",label:"Provision for Bonus",group:"OTHER PROVISION"},
-      {code:"81203003",key:"pnl_81203003",label:"Provision for Replacement FFE",group:"OTHER PROVISION"},
-      {code:"82101001",key:"pnl_82101001",label:"Depreciation of Building*",group:"DEPRECIATION"},
-      {code:"82101002",key:"pnl_82101002",label:"Depreciation of Equipment",group:"DEPRECIATION"},
-      {code:"82101003",key:"pnl_82101003",label:"Depreciation of Vehicle*",group:"DEPRECIATION"},
-      {code:"82101004",key:"pnl_82101004",label:"Depreciation of Fixed Asset Leased",group:"DEPRECIATION"},
-      {code:"82101005",key:"pnl_82101005",label:"Depreciation of General Building System",group:"DEPRECIATION"},
-      {code:"82101999",key:"pnl_82101999",label:"Depreciation of Machine",group:"DEPRECIATION"},
-      {code:"82101006",key:"pnl_82101006",label:"Depreciation of Furniture & Fixture",group:"DEPRECIATION"},
-      {code:"82201001",key:"pnl_82201001",label:"Amortization of Software",group:"AMORTIZATION"},
-      {code:"82201002",key:"pnl_82201002",label:"Amortization of Goodwill",group:"AMORTIZATION"},
-      {code:"82201003",key:"pnl_82201003",label:"Amortization of License",group:"AMORTIZATION"},
-      {code:"82201004",key:"pnl_82201004",label:"Amortization of Building Rights on Land",group:"AMORTIZATION"},
-      {code:"82201999",key:"pnl_82201999",label:"Amortization of Other Intangible Asset",group:"AMORTIZATION"},
-      {code:"82202001",key:"pnl_82202001",label:"Amortization of Pre Opening Expenses",group:"AMORTIZATION"},
-      {code:"83101001",key:"pnl_83101001",label:"Interest Bank Loan (IDR)",group:"INTEREST"},
-      {code:"83101002",key:"pnl_83101002",label:"Interest Bank Loan (IDR) - Provision Cost",group:"INTEREST"},
-      {code:"83101003",key:"pnl_83101003",label:"Interest Expense - Leased Assets",group:"INTEREST"},
-      {code:"84101001",key:"pnl_84101001",label:"Income Taxes",group:"INCOME TAX"}
-    ] as const;
-    const value=(i:number,key:string)=>optional(String((form.forecast.monthly[i] as unknown as Record<string,string>)[key]??""));
-    const amount=(n:number|null)=>n===null?"—":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
-    const setValue=(i:number,key:string,v:string)=>setForm(prev=>({...prev,forecast:{...prev.forecast,monthly:prev.forecast.monthly.map((row,j)=>j===i?({...row,[key]:v}):row)}}));
-    const total=(items:readonly {key:string}[],i:number)=>{const vals=items.map(row=>value(i,row.key));return vals.some(v=>v!==null)?vals.reduce<number>((n,v)=>n+(v??0),0):null;};
-    const annual=(items:readonly {key:string}[])=>order.some(i=>total(items,i)!==null)?order.reduce<number>((n,i)=>n+(total(items,i)??0),0):null;
-    const groups=[
-      {code:"812",label:"Other Expenses",tone:"bg-rose-50 text-rose-900"},
-      {code:"81201",label:"Other Expense",tone:"bg-rose-50 text-rose-900",items:rows.filter(r=>r.group==="OTHER EXPENSE"),subtotal:"TOTAL OTHER EXPENSE"},
-      {code:"81202",label:"Operator Fee",tone:"bg-rose-50 text-rose-900",items:rows.filter(r=>r.group==="OPERATOR FEE"),subtotal:"TOTAL OPERATOR FEE"},
-      {code:"81203",label:"Other Provision",tone:"bg-rose-50 text-rose-900",items:rows.filter(r=>r.group==="OTHER PROVISION"),subtotal:"TOTAL OTHER PROVISION"},
-      {code:"82",label:"Depreciation & Amortization Expenses",tone:"bg-violet-100 text-violet-950"},
-      {code:"821",label:"Depreciation Expenses",tone:"bg-violet-50 text-violet-900"},
-      {code:"82101",label:"Depreciation of Building*",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.group==="DEPRECIATION"),subtotal:"TOTAL DEPRECIATION"},
-      {code:"822",label:"Amortization Expenses",tone:"bg-violet-50 text-violet-900"},
-      {code:"82201",label:"Amortization of Intangible Asset",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.group==="AMORTIZATION"&&r.code!=="82202001"),subtotal:"TOTAL AMORTIZATION — INTANGIBLE"},
-      {code:"82202",label:"Amortization Of Other Asset",tone:"bg-violet-50 text-violet-900",items:rows.filter(r=>r.code==="82202001"),subtotal:"TOTAL AMORTIZATION — OTHER ASSET"},
-      {code:"83",label:"Interest Expense**",tone:"bg-amber-100 text-amber-950"},
-      {code:"831",label:"Interest Expense*",tone:"bg-amber-50 text-amber-900"},
-      {code:"83101",label:"Interest Expense",tone:"bg-amber-50 text-amber-900",items:rows.filter(r=>r.group==="INTEREST"),subtotal:"TOTAL INTEREST EXPENSE"},
-      {code:"84",label:"Income Taxes***",tone:"bg-slate-200 text-slate-900"},
-      {code:"841",label:"Income Taxes**",tone:"bg-slate-100 text-slate-900"},
-      {code:"84101",label:"Income Taxes*",tone:"bg-slate-100 text-slate-900",items:rows.filter(r=>r.group==="INCOME TAX"),subtotal:"TOTAL INCOME TAX"}
-    ] as const;
-    const ownerCostControl=(item:{key:string;label:string})=><details className="relative inline-block align-middle"><summary className="inline-flex cursor-pointer list-none items-center gap-1 whitespace-nowrap rounded border border-sky-200 bg-sky-50 px-2 py-1 text-[10px] font-bold text-sky-700 hover:bg-sky-100">Atur biaya <span aria-hidden="true">⌄</span></summary><div className="absolute left-0 top-full z-30 mt-1 flex min-w-48 flex-col gap-2 rounded-lg border border-slate-200 bg-white p-2 shadow-lg"><label className="flex items-center justify-between gap-2 text-[10px] font-semibold text-slate-600">% Revenue<input aria-label={item.label+" asumsi persentase revenue"} type="number" min="0" step="0.01" placeholder="%" className="w-20 rounded border border-slate-200 px-1.5 py-1 text-right text-xs font-semibold text-slate-700" value={String((form.forecast.monthly[0] as unknown as Record<string,string>)[item.key+"Percent"]??"")} onChange={e=>setValue(0,item.key+"Percent",e.target.value)}/></label><button type="button" className="rounded border border-sky-200 bg-sky-50 px-2 py-1.5 text-left text-[10px] font-bold text-sky-700 hover:bg-sky-100" title="Isi biaya berdasarkan persentase revenue untuk 12 bulan" onClick={()=>{const raw=String((form.forecast.monthly[0] as unknown as Record<string,string>)[item.key+"Percent"]??"");const percent=Number(raw);if(!raw.trim()||!Number.isFinite(percent)||percent<0){setMessage("Masukkan asumsi persentase biaya yang valid terlebih dahulu.");return;}const year=Number(form.yearStart)||new Date().getFullYear();form.forecast.monthly.forEach((month,monthIndex)=>{const revenue=calcMonthly(month,year,monthIndex,form.statistics.rooms).revenue;if(revenue!==null&&Number.isFinite(revenue))setValue(monthIndex,item.key,String(Math.round(revenue*percent/100)));});}}>Isi berdasarkan % Revenue (12 bln)</button><button type="button" className="rounded border border-slate-200 bg-slate-50 px-2 py-1.5 text-left text-[10px] font-bold text-slate-700 hover:bg-slate-100" title="Isi item ini ke 12 bulan sesuai jumlah hari kalender" onClick={()=>fillCostAcrossYear(setValue,item.key,item.label)}>Isi 12 bulan sesuai hari kalender</button></div></details>;
-    const rowTotal=(items:readonly {key:string}[],i:number)=>total(items,i);
-    return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[26rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
-      {rows.filter(r=>r.group==="OTHER INCOME").map(item=><tr key={item.key} className="border-t border-slate-100"><td className="sticky left-0 z-[1] min-w-[26rem] bg-white px-3 py-2 text-xs"><div className="flex flex-wrap items-center gap-1"><span>{itemLabel("owner",item.key,item.label)}</span>{editLabelButton("owner",item.key,item.label)}{ownerCostControl(item)}</div></td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={item.label+" "+form.forecast.monthly[i].label} inputMode="numeric" placeholder="—" className="w-28 rounded-md border border-slate-200 px-2 py-1.5 text-right text-xs tabular-nums focus:border-rose-400 focus:outline-none" value={String((form.forecast.monthly[i] as unknown as Record<string,string>)[item.key]??"")} onChange={e=>setValue(i,item.key,e.target.value.replace(/[^0-9-]/g,"").replace(/(?!^)-/g,""))}/></td>)}<td className="px-3 py-2 text-right text-xs font-extrabold tabular-nums">{amount(order.some(i=>value(i,item.key)!==null)?order.reduce<number>((n,i)=>n+(value(i,item.key)??0),0):null)}</td></tr>)}
-      <tr className="bg-emerald-100 font-black"><td className="sticky left-0 z-[1] bg-emerald-100 px-3 py-2 text-xs">TOTAL OTHER INCOME</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{amount(total(rows.filter(r=>r.group==="OTHER INCOME"),i))}</td>)}<td className="px-3 py-2 text-right text-xs tabular-nums">{amount(annual(rows.filter(r=>r.group==="OTHER INCOME")))}</td></tr>
-      {groups.map((group,index)=><Fragment key={group.code}>
-        <tr><td colSpan={14} className={`${group.tone} px-3 py-2 text-xs font-black`}>{group.label}</td></tr>
-        {"items" in group&&group.items?.map(item=><tr key={item.key} className="border-t border-slate-100"><td className="sticky left-0 z-[1] min-w-[26rem] bg-white px-3 py-2 text-xs"><div className="flex flex-wrap items-center gap-1"><span>{itemLabel("owner",item.key,item.label)}</span>{editLabelButton("owner",item.key,item.label)}{ownerCostControl(item)}</div></td>{order.map(i=><td key={i} className="px-2 py-1.5"><input aria-label={item.label+" "+form.forecast.monthly[i].label} inputMode="numeric" placeholder="—" className="w-28 rounded-md border border-slate-200 px-2 py-1.5 text-right text-xs tabular-nums focus:border-rose-400 focus:outline-none" value={String((form.forecast.monthly[i] as unknown as Record<string,string>)[item.key]??"")} onChange={e=>setValue(i,item.key,e.target.value.replace(/[^0-9-]/g,"").replace(/(?!^)-/g,""))}/></td>)}<td className="px-3 py-2 text-right text-xs font-extrabold tabular-nums">{amount(order.some(i=>value(i,item.key)!==null)?order.reduce<number>((n,i)=>n+(value(i,item.key)??0),0):null)}</td></tr>)}
-        {"items" in group&&group.items?.length>0&&<tr className="bg-rose-100 font-black"><td className="sticky left-0 z-[1] bg-rose-100 px-3 py-2 text-xs">{group.subtotal}</td>{order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{amount(rowTotal(group.items,i))}</td>)}<td className="px-3 py-2 text-right text-xs tabular-nums">{amount(annual(group.items))}</td></tr>}
-      </Fragment>)}
-      <tr className="bg-violet-100 font-black"><td className="sticky left-0 z-[1] bg-violet-100 px-3 py-2 text-xs">EBITDA / EBIT / EBT / EAT dihitung otomatis di konsolidasi</td><td colSpan={13} className="px-3 py-2 text-xs text-violet-900">Tidak perlu input subtotal manual.</td></tr>
-      </tbody></table></div>;
+    const reportRows=buildConsolidatedRows(form);
+    const start=reportRows.findIndex(row=>row.label==="OVERHEAD DEPARTMENT");
+    const end=reportRows.findIndex((row,index)=>index>start&&row.label==="% GOP");
+    const rows=start>=0&&end>=start?reportRows.slice(start,end+1):[];
+    const amount=(n:number|null|undefined,kind:string)=>n===null||n===undefined||!Number.isFinite(n)?"—":kind==="percent"?new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n)+"%":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
+    const sectionTone=(label:string)=>label==="OVERHEAD DEPARTMENT"?"bg-rose-900 text-white":label==="PAYROLL & RELATED"?"bg-sky-100 text-sky-950":label==="OTHER EXPENSES"?"bg-amber-100 text-amber-950":label==="LESS DEDUCTION :"?"bg-violet-100 text-violet-950":label==="OTHER NON OPERATING EXPENSES"?"bg-indigo-100 text-indigo-950":"bg-slate-100 text-slate-900";
+    return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[22rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
+      {rows.map((row,index)=>row.kind==="section"
+        ? <tr key={row.label+"-"+index}><td colSpan={14} className={sectionTone(row.label)+" px-3 py-2 text-xs font-black"}>{row.label}</td></tr>
+        : <tr key={row.label+"-"+index} className={(row.label.startsWith("TOTAL ")||["TOTAL OVERHEAD DEPARTMENT","HOUSE PROFIT","GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","% GOP"].includes(row.label)?"bg-emerald-50 font-extrabold ":"")+"border-t border-slate-100"}>
+          <td className="sticky left-0 z-[1] min-w-[22rem] bg-inherit px-3 py-2 text-xs">{row.label}</td>
+          {order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{amount(row.values[i],row.kind)}</td>)}
+          <td className="px-3 py-2 text-right text-xs tabular-nums">{amount(row.total,row.kind)}</td>
+        </tr>)}
+    </tbody></table></div>;
   })()}
 </section>}
                 {selectedDepartment==="room"&&<div className="space-y-3"><div><h4 className="font-extrabold text-slate-800">ROOM DIVISION</h4><p className="mt-1 text-xs text-slate-500">Format laporan: ROOM DEPARTMENT, FRONT OFFICE &amp; RESERVATION, HOUSE KEEPING; subtotal biaya, total biaya departemen, dan departmental profit. Periode: Dec, Jan–Nov, TOTAL, %.</p></div>

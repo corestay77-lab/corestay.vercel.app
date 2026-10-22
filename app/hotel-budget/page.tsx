@@ -714,7 +714,7 @@ export default function HotelBudgetPage() {
       });
       return {label:line.label,values,total:null,base,totalPct:null,kind:line.kind,inputKey:line.inputKey};
     });
-    const find=(label:string,occurrence=0)=>{let seen=0;const target=label.trim().replace(/\\s+/g," ").toLocaleUpperCase();for(let i=0;i<rows.length;i++){if(rows[i].label.trim().replace(/\\s+/g," ").toLocaleUpperCase()===target&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
+    const find=(label:string,occurrence=0)=>{let seen=0;const target=label.trim().toUpperCase();for(let i=0;i<rows.length;i++){if(rows[i].label.trim().toUpperCase()===target&&!rows[i].section){if(seen===occurrence)return i;seen++;}}return -1;};
     const get=(label:string,year:number,occurrence=0):number|null=>{const i=find(label,occurrence);return i<0?null:rows[i].values[year]??null;};
     const put=(label:string,year:number,value:number|null,occurrence=0)=>{const i=find(label,occurrence);if(i>=0)rows[i].values[year]=value;};
     if(tenYearMode==="manual") rows.forEach((line,index)=>{

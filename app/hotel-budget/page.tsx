@@ -357,7 +357,6 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   section("COST OF SALES");
   add("FOOD & BEVERAGE",monthly("fbCostOfSales"),"money","fbCostOfSales",undefined,fb);
   add("MINOR OPERATING DEPART",monthly("modCostOfSales"),"money","modCostOfSales",undefined,other);
-  add("MINOR OPERATING DEPART",monthly("modCostOfSales"),"money","modCostOfSales",undefined,other);
   add("TOTAL COST OF SALES",costParts.map(c=>c.cos),"sum",undefined,sumPresent(costParts.map(c=>c.cos)),revenue);
   section("PAYROLL & RELATED EXPENSES");
   add("ROOM",monthly("roomPayroll"),"money","roomPayroll",undefined,roomRevenue);
@@ -720,7 +719,8 @@ export default function HotelBudgetPage() {
       const interest=sumPresent([pnlLabel("83101001","Interest Bank Loan (IDR)"),pnlLabel("83101002","Interest Bank Loan (IDR) - Provision Cost"),pnlLabel("83101003","Interest Expense - Leased Assets")].map(label=>get(label,year)));put("TOTAL INTEREST EXPENSE",year,interest);
       const ebt=ebit!==null&&interest!==null?ebit-interest:null;put("EBT",year,ebt);
       const tax=get(pnlLabel("84101001","Income Taxes"),year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
-      const ownerOtherExpenses=completeSum([get("LAND LEASE HOLD",year),get("PROPERTY INSURANCE",year),get("F.F & E REPLACEMENT",year),get("CAPITAL EXPENDITURE",year)]);put("TOTAL OTHER EXPENSES",year,ownerOtherExpenses,2);
+      const nonOperatingExpenseTotal=sumPresent([get("MANAGEMENT & MARKETING FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER EXPENSES",year,nonOperatingExpenseTotal,2);
+      const ownerOtherExpenses=completeSum([get("LAND LEASE HOLD",year),get("PROPERTY INSURANCE",year),get("F.F & E REPLACEMENT",year),get("CAPITAL EXPENDITURE",year)]);put("TOTAL OTHER EXPENSES",year,ownerOtherExpenses,3);
       const ospValue=gop!==null?gop-(ownerOtherExpenses??0):null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
       const ownerExpenses=completeSum([get("INCENTIVE Fee",year),get("OWNERS EXPENSE",year)]);put("TOTAL OWNER EXPENSES",year,ownerExpenses);
       const nospValue=ospValue!==null?ospValue-(ownerExpenses??0):null;put("NETT OWNER PROFIT (BEFORE TAX)",year,nospValue);

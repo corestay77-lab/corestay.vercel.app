@@ -578,6 +578,7 @@ export default function HotelBudgetPage() {
     const growth=(yearIndex:number)=>Math.pow(1+annualGrowthPct/100,yearIndex);
     const sumPresent=(items:(number|null)[])=>items.some(v=>v!==null)?items.reduce<number>((sum,v)=>sum+(v??0),0):null;
     const averagePresent=(items:(number|null)[])=>{const valid=items.filter((v):v is number=>v!==null);return valid.length?valid.reduce((sum,v)=>sum+v,0)/valid.length:null;};
+     const completeSum=(items:(number|null)[])=>items.length&&items.every(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((sum,v)=>sum+(v as number),0):null;
     const pct=(value:number|null,base:number|null)=>value===null||base===null||base===0?null:value/base*100;
     const yearCount=Math.max(10,source.forecast.annual.length);
     const rows:R[]=oneYearRows.map((line,index)=>{
@@ -650,6 +651,11 @@ export default function HotelBudgetPage() {
       const interest=sumPresent([pnlLabel("83101001","Interest Bank Loan (IDR)"),pnlLabel("83101002","Interest Bank Loan (IDR) - Provision Cost"),pnlLabel("83101003","Interest Expense - Leased Assets")].map(label=>get(label,year)));put("TOTAL INTEREST EXPENSE",year,interest);
       const ebt=ebit!==null&&interest!==null?ebit-interest:null;put("EBT",year,ebt);
       const tax=get(pnlLabel("84101001","Income Taxes"),year);put("EAT",year,ebt!==null&&tax!==null?ebt-tax:null);
+      const ownerOtherExpenses=completeSum([get("LAND LEASE HOLD",year),get("PROPERTY INSURANCE",year),get("F.F & E REPLACEMENT",year),get("CAPITAL EXPENDITURE",year)]);put("TOTAL OTHER EXPENSES",year,ownerOtherExpenses);
+      const ospValue=gop!==null&&ownerOtherExpenses!==null?gop-ownerOtherExpenses:null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
+      const ownerExpenses=completeSum([get("INCENTIVE Fee",year),get("OWNERS EXPENSE",year)]);put("TOTAL OWNER EXPENSES",year,ownerExpenses);
+      const nospValue=ospValue!==null&&ownerExpenses!==null?ospValue-ownerExpenses:null;put("NET OWNER SHARE PROFIT (NOSP)",year,nospValue);
+      const roomUnits=optional(source.statistics.rooms);put("NET OWNER SHARE PROFIT/UNIT",year,nospValue!==null&&roomUnits!==null&&roomUnits>0?nospValue/roomUnits:null);
     }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};

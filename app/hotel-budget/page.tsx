@@ -322,7 +322,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("BASIC MANAGEMENT FEE",monthly("basicManagementFee"),"money","basicManagementFee",sumPresent(monthly("basicManagementFee")),revenue);
   add("GROSS OPERATING INCOME",goi,"sum",undefined,sumPresent(goi),revenue);
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
-  add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
+  add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal),[]);
   const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
   const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),provisionLines[2],monthly("capitalExpenditure")];
   // Keep owner-profit calculations unknown when every related input is blank.
@@ -399,7 +399,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("INSURANCE GENERAL",monthly("insuranceGeneral"),"money","insuranceGeneral",sumPresent(monthly("insuranceGeneral")),revenue);
   add("TOTAL OTHER EXPENSES",monthNames.map((_,i)=>completeSum([monthly("otherManagementFee")[i]??null,monthly("insuranceGeneral")[i]??null])),"sum",undefined,sumPresent(monthNames.map((_,i)=>completeSum([monthly("otherManagementFee")[i]??null,monthly("insuranceGeneral")[i]??null]))),revenue);
   add("GROSS OPERATING PROFIT (GOP)",gop,"sum",undefined,sumPresent(gop),revenue);
-  add("% G O P",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
+  add("% G O P",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal),[]);
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
   add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);

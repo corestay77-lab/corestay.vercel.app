@@ -2334,6 +2334,54 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
         })()}
       </section>
 
+
+            <section className="mt-7 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+              <div className="mb-3">
+                <h3 className="text-base font-extrabold">10 YEARS CONSOLIDATED — ${form.yearStart}–${Number(form.yearStart)+9}</h3>
+                <p className="mt-1 text-xs text-slate-500">Nama akun, urutan, kelompok, dan subtotal mengikuti 1 YEAR CONSOLIDATED. YEAR 1 memakai basis laporan 1 Year; YEAR 2–10 mengikuti metode proyeksi yang dipilih.</p>
+              </div>
+              {(() => {
+                const rows = buildTenYearRows(form);
+                const headingTone = (label:string) => label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950"
+                  : label === "COST OF SALES" ? "border-amber-300 bg-amber-100 text-amber-950"
+                  : label.includes("PAYROLL") ? "border-violet-300 bg-violet-100 text-violet-950"
+                  : label === "OTHER EXPENSES" ? "border-orange-300 bg-orange-100 text-orange-950"
+                  : label === "DEPARTMENT INCOME" ? "border-teal-300 bg-teal-100 text-teal-950"
+                  : label.includes("OVERHEAD DEPARTMENT") ? "border-indigo-300 bg-indigo-100 text-indigo-950"
+                  : label === "OTHER NON OPERATING EXPENSES" ? "border-rose-300 bg-rose-100 text-rose-950"
+                  : "border-slate-300 bg-slate-100 text-slate-900";
+                const displayYear = (v:number|null|undefined) => v===null||v===undefined||!Number.isFinite(v) ? "—" : fmt(v,0);
+                return <div className="overflow-x-auto rounded-xl border border-slate-200">
+                  <table className="w-max min-w-full border-collapse text-[10px]">
+                    <thead>
+                      <tr className="bg-sky-950 text-white">
+                        <th rowSpan={2} className="sticky left-0 z-10 min-w-[235px] bg-sky-950 px-2 py-2 text-left">CONSOLIDATED</th>
+                        {form.forecast.annual.slice(0,10).map((year,i)=><th key={year.label+"-"+i} colSpan={2} className="min-w-[110px] px-2 py-2 text-center">YEAR {i+1}<span className="block text-[8px] font-normal">{year.label}</span></th>)}
+                        <th colSpan={2} className="bg-teal-800 px-2 py-2 text-center">TOTAL / AVG</th>
+                      </tr>
+                      <tr className="bg-slate-700 text-white">
+                        {form.forecast.annual.slice(0,10).map((year,i)=><Fragment key={year.label+"-sub-"+i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}
+                        <th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {rows.map((line,idx) => line.section
+                        ? <tr key={"section-"+idx}><th colSpan={23} className={"border-t-2 px-2 py-2 text-left font-black "+headingTone(line.label)}>{line.label}</th></tr>
+                        : <tr key={line.label+"-"+idx} className={["TOTAL OTHER EXPENSES","TOTAL OWNER EXPENSES"].includes(line.label) ? "bg-orange-50 font-bold" : ["OWNER SHARE PROFIT (OSP)","NET OWNER SHARE PROFIT (NOSP)","NET OWNER SHARE PROFIT/UNIT"].includes(line.label) ? "bg-teal-50 font-bold" : ["GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","HOUSE PROFIT"].includes(line.label) ? "bg-indigo-50 font-bold" : (idx%2 ? "bg-slate-50" : "bg-white")}>
+                          <th className="sticky left-0 z-[1] border-b border-slate-200 bg-inherit px-2 py-1.5 text-left font-semibold">{line.label}</th>
+                          {line.values.slice(0,10).map((v,i)=><Fragment key={i}>
+                            <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{displayYear(v)}</td>
+                            <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{v===null||v===undefined||line.base?.[i]===null||line.base?.[i]===undefined||line.base[i]===0?"—":fmt(v/line.base[i]*100,2)+"%"}</td>
+                          </Fragment>)}
+                          <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{displayYear(line.total)}</td>
+                          <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,2)+"%"}</td>
+                        </tr>)}
+                    </tbody>
+                  </table>
+                </div>;
+              })()}
+            </section>
+
             <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
               <div className="mb-4 flex flex-wrap items-start justify-between gap-4"><div><h3 className="text-base font-extrabold">Asumsi Pertumbuhan Tahunan — 10 Years Consolidated</h3><p className="mt-1 max-w-3xl text-xs leading-5 text-slate-500">Simple Growth menjadi metode default dengan asumsi {annualGrowthPct}% per tahun. Manual Override hanya mengubah akun rincian dan tahun yang diisi; subtotal, GOP, profit, dan margin dihitung ulang.</p></div><div className="w-full max-w-[250px]"><label className="mb-1 block text-xs font-bold text-slate-700">Metode proyeksi</label><select value={tenYearMode} onChange={e=>setTenYearMode(e.target.value as "growth"|"manual"|"driver")} className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold"><option value="growth">Simple Growth</option><option value="driver">Driver-Based</option><option value="manual">Manual Override</option></select></div></div>
               {tenYearMode==="growth"&&<div className="mb-4 max-w-[250px]"><label className="mb-1 block text-xs font-bold text-slate-700">Pertumbuhan % / tahun</label><input type="number" step="0.1" value={annualGrowthPct} onChange={e=>setAnnualGrowthPct(Math.max(-100,Math.min(100,Number(e.target.value)||0)))} className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"/></div>}

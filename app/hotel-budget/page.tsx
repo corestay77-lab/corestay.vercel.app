@@ -325,12 +325,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   add("% GOP",gop.map((v,i)=>pct(v,revenue[i])),"percent",undefined,pct(sumPresent(gop),revenueTotal));
   const completeSum=(items:(number|null)[])=>items.some(v=>v!==null&&v!==undefined&&Number.isFinite(v))?items.reduce<number>((n,v)=>n+(v!==null&&v!==undefined&&Number.isFinite(v)?v:0),0):null;
   const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),provisionLines[2],monthly("capitalExpenditure")];
+  // Keep owner-profit calculations unknown when every related input is blank.
+  // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
-  const osp=gop.map((v,i)=>v!==null?v-(ownerOtherExpenseTotal[i]??0):null);
+  const osp=gop.map((v,i)=>v!==null&&ownerOtherExpenseTotal[i]!==null?v-ownerOtherExpenseTotal[i]!:null);
   const ownersExpense=monthNames.map((_,i)=>completeSum([monthly("maintenanceFee")[i]??null,monthly("ownerOtherExpenses")[i]??null]));
   const incentiveFee=monthly("incentiveFee");
   const totalOwnerExpenses=monthNames.map((_,i)=>completeSum([incentiveFee[i]??null,ownersExpense[i]??null]));
-  const nosp=monthNames.map((_,i)=>osp[i]!==null?(osp[i] as number)-(totalOwnerExpenses[i]??0):null);
+  const nosp=monthNames.map((_,i)=>osp[i]!==null&&totalOwnerExpenses[i]!==null?osp[i]!-totalOwnerExpenses[i]!:null);
   const roomUnits=optional(form.statistics.rooms);
   section("OTHER EXPENSES");
   add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);

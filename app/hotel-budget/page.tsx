@@ -711,10 +711,10 @@ export default function HotelBudgetPage() {
       // This keeps YEAR 2–10 percentages in sync with driver-based revenue and departmental income.
       let baseType:"total"|"rooms"|"fnb"|"mod"|null=null;
       if(line.base&&baseYear1!==null){
-        const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES (EXCL. 21%)")?.total??null;
+        const totalBase=oneYearRows.find(r=>r.label==="TOTAL REVENUES")?.total??null;
         const roomsBase=oneYearRows.find(r=>r.label==="ROOMS")?.total??null;
         const fnbBase=oneYearRows.find(r=>r.label==="FOOD & BEVERAGE"&&r.kind==="money")?.total??null;
-        const modBase=oneYearRows.find(r=>r.label==="MINOR OPERATING DEPARTMENT"&&r.kind==="money")?.total??null;
+        const modBase=oneYearRows.find(r=>r.label==="MINOR OPERATING DEPART"&&r.kind==="money")?.total??null;
         if(totalBase!==null&&Math.abs(baseYear1-totalBase)<0.5)baseType="total";
         else if(roomsBase!==null&&Math.abs(baseYear1-roomsBase)<0.5)baseType="rooms";
         else if(fnbBase!==null&&Math.abs(baseYear1-fnbBase)<0.5)baseType="fnb";
@@ -723,7 +723,7 @@ export default function HotelBudgetPage() {
       const base=baseYear1===null?undefined:Array.from({length:yearCount},(_,yearIndex)=>{
         if(yearIndex===0)return baseYear1;
         if(tenYearMode==="driver"&&baseType){
-          const label=baseType==="total"?"TOTAL REVENUES (EXCL. 21%)":baseType==="rooms"?"ROOMS":baseType==="fnb"?"FOOD & BEVERAGE":"MINOR OPERATING DEPARTMENT";
+          const label=baseType==="total"?"TOTAL REVENUES":baseType==="rooms"?"ROOMS":baseType==="fnb"?"FOOD & BEVERAGE":"MINOR OPERATING DEPART";
           const occurrence=baseType==="fnb"||baseType==="mod"?0:0;
           const projected=get(label,yearIndex,occurrence);
           if(projected!==null)return projected;

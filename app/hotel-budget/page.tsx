@@ -2859,6 +2859,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           const rows=[
             {key:"otherManagementFee",label:"MANAGEMENT & MARKETING FEES",group:"OTHER EXPENSES"},
             {key:"insuranceGeneral",label:"GENERAL INSURANCE",group:"OTHER EXPENSES"},
+            {key:"pnl_81203003",label:"F.F & E REPLACEMENT",group:"OTHER EXPENSES"},
             {key:"landLease",label:"LAND LEASE / HOLD",group:"OWNER EXPENSES"},
             {key:"ownerInsurance",label:"OWNER INSURANCE",group:"OWNER EXPENSES"},
             {key:"maintenanceFee",label:"SERVICE CHARGE / MAINTENANCE FEE",group:"OWNER EXPENSES"},

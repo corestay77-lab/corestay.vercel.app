@@ -215,6 +215,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const gop=goi;
   // Detailed below-GOP accounts are read from the monthly Owner P&L input table.
   const pnlLabel=(code:string,label:string)=>form.itemLabelOverrides?.["owner:pnl_"+code]?.trim()||label;
+  const ownerLabel=(key:string,label:string)=>form.itemLabelOverrides?.["owner:"+key]?.trim()||label;
   const accountMonthly=(code:string):(number|null)[]=>form.forecast.monthly.map(month=>optional(String((month as unknown as Record<string,string>)["pnl_"+code]??"")));
   const accountCodes={
     otherIncome:[["81101001","Gain/Loss on Disposal Asset"],["81101002","Deferred Tax"],["81101003","Interest Income"],["81101004","Exchange Rates"],["81101999","Other - Other Income"]],
@@ -336,16 +337,16 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const nosp=monthNames.map((_,i)=>osp[i]!==null&&totalOwnerExpenses[i]!==null?osp[i]!-totalOwnerExpenses[i]!:null);
   const roomUnits=optional(form.statistics.rooms);
   section("OTHER EXPENSES");
-  add("LAND LEASE HOLD",monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
-  add("PROPERTY INSURANCE",monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
-  add("F.F & E REPLACEMENT",ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
-  add("CAPITAL EXPENDITURE",monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
+  add(ownerLabel("landLease","LAND LEASE HOLD"),monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
+  add(ownerLabel("ownerInsurance","PROPERTY INSURANCE"),monthly("ownerInsurance"),"money","ownerInsurance",sumPresent(monthly("ownerInsurance")),revenue);
+  add(ownerLabel("pnl_81203003","F.F & E REPLACEMENT"),ffeReplacement,"money",undefined,sumPresent(ffeReplacement),revenue);
+  add(ownerLabel("capitalExpenditure","CAPITAL EXPENDITURE"),monthly("capitalExpenditure"),"money","capitalExpenditure",sumPresent(monthly("capitalExpenditure")),revenue);
   add("TOTAL OTHER EXPENSES",ownerOtherExpenseTotal,"sum",undefined,sumPresent(ownerOtherExpenseTotal),revenue);
   section("OWNER SHARE PROFIT");
   add("OWNER SHARE PROFIT (OSP)",osp,"sum",undefined,sumPresent(osp),revenue);
   section("OWNER EXPENSES");
-  add("INCENTIVE Fee",incentiveFee,"money","incentiveFee",sumPresent(incentiveFee),revenue);
-  add("OWNERS EXPENSE",ownersExpense,"sum",undefined,sumPresent(ownersExpense),revenue);
+  add(ownerLabel("incentiveFee","INCENTIVE Fee"),incentiveFee,"money","incentiveFee",sumPresent(incentiveFee),revenue);
+  add(ownerLabel("maintenanceFee","OWNERS EXPENSE"),ownersExpense,"sum",undefined,sumPresent(ownersExpense),revenue);
   add("TOTAL OWNER EXPENSES",totalOwnerExpenses,"sum",undefined,sumPresent(totalOwnerExpenses),revenue);
   section("NET OWNER SHARE PROFIT");
   add("NETT OWNER PROFIT (BEFORE TAX)",nosp,"sum",undefined,sumPresent(nosp),revenue);
@@ -1992,11 +1993,17 @@ export default function HotelBudgetPage() {
     return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[22rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
       {rows.map((row,index)=>row.kind==="section"
         ? <tr key={row.label+"-"+index}><td colSpan={14} className={sectionTone(row.label)+" px-3 py-2 text-xs font-black"}>{row.label}</td></tr>
-        : <tr key={row.label+"-"+index} className={(row.label.startsWith("TOTAL ")||["TOTAL OVERHEAD DEPARTMENT","HOUSE PROFIT","GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","% GOP"].includes(row.label)?"bg-emerald-50 font-extrabold ":"")+"border-t border-slate-100"}>
-          <td className="sticky left-0 z-[1] min-w-[22rem] bg-inherit px-3 py-2 text-xs">{row.label}</td>
-          {order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{amount(row.values[i],row.kind)}</td>)}
-          <td className="px-3 py-2 text-right text-xs tabular-nums">{amount(row.total,row.kind)}</td>
-        </tr>)}
+        : (() => {
+          const inputKey = row.inputKey ? String(row.inputKey) : row.label === "F.F & E REPLACEMENT" ? "pnl_81203003" : null;
+          const editable = inputKey !== null && row.kind === "money";
+          const editableLabelKey = row.label === "F.F & E REPLACEMENT" ? "pnl_81203003" : inputKey;
+          const defaultLabel = row.label;
+          return <tr key={row.label+"-"+index} className={(row.label.startsWith("TOTAL ")||["TOTAL OVERHEAD DEPARTMENT","HOUSE PROFIT","GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","% GOP"].includes(row.label)?"bg-emerald-50 font-extrabold ":"")+"border-t border-slate-100"}>
+            <td className="sticky left-0 z-[1] min-w-[22rem] bg-inherit px-3 py-2 text-xs">{editableLabelKey ? <input aria-label={"Edit nama "+defaultLabel} className="w-full min-w-[210px] rounded border border-slate-200 bg-white px-2 py-1 text-xs font-medium" value={itemLabel("owner",editableLabelKey,defaultLabel)} onChange={e=>setForm(prev=>({...prev,itemLabelOverrides:{...(prev.itemLabelOverrides||{}),["owner:"+editableLabelKey]:e.target.value}}))}/> : row.label}</td>
+            {order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{editable ? <input aria-label={itemLabel("owner",editableLabelKey||inputKey||"",defaultLabel)+" "+monthNames[i]} inputMode="decimal" className="w-24 rounded border border-slate-200 bg-white px-2 py-1 text-right text-xs tabular-nums" value={String((form.forecast.monthly[i] as (ForecastMonth & Record<string,string>)|undefined)?.[inputKey!]??"")} onChange={e=>updateMonth(i,inputKey as keyof Omit<ForecastMonth,"label">,e.target.value.replace(/[^0-9.,-]/g,""))}/> : amount(row.values[i],row.kind)}</td>)}
+            <td className="px-3 py-2 text-right text-xs tabular-nums">{amount(row.total,row.kind)}</td>
+          </tr>;
+        })())}
     </tbody></table></div>;
   })()}
 </section>}

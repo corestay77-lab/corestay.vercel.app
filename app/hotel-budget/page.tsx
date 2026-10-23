@@ -197,18 +197,14 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
       mod:mo!==null?mo-(mc??0)-(mp??0)-(mx??0):null
     };
   });
-  // Department income can be derived from total revenue less the three
-  // departmental cost buckets even when the costs have not been allocated
-  // to every individual department line.
-  // Subtotals add all entered amounts, even if other account lines are still blank.  // Missing source values remain blank and are never converted to zero in the report.
+  // Departmental income is calculated per department from its own revenue less its own entered operating costs.
+  // Blank cost inputs remain visually blank; for derived profit only, missing cost lines contribute zero.
   const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
-  // A blank total cost bucket is unknown, not zero. Calculate department income only when
-  // revenue and at least one valid departmental cost subtotal are available for that month.
-  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null?revenue[i]!-(cost??0):null);
-  // Keep blank account rows blank; partial entered values are subtotalled, but a wholly blank
-  // overhead group must not silently produce House Profit = Department Income.
+  const deptIncomeTotal=deptIncome.map(d=>sumPresent([d.room,d.fb,d.mod]));
+  // Overhead is the sum of entered overhead payroll and other expenses; blank source rows stay blank.
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
-  // House Profit follows the hotel consolidated statement: Department Income less Overhead Department.
+  // House Profit = Total Department Income less Total Overhead Department.
+  // When a revenue subtotal exists, blank overhead buckets contribute zero to this derived calculation only.
   const houseProfit=deptIncomeTotal.map((income,i)=>income!==null?income-(overheadTotal[i]??0):null);
   // GOP is reported before management/marketing fees, per the approved CoreStay accounting rule.
   const goi=houseProfit;
@@ -768,11 +764,15 @@ export default function HotelBudgetPage() {
       const overheadOther=sumPresent([get("ADM. & GENERAL",year,1),get("SALES & MARKETING",year,1),get("HUMAN RESOURCES",year,1),get("ENGINEERING",year,1),get("ENERGY COST",year,0)]);put("TOTAL OTHER EXPENSES",year,overheadOther,1);
       const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
       const operatingCosts=deptOperating!==null&&overhead!==null?deptOperating+overhead:null;put("TOTAL OPERATING COSTS",year,operatingCosts);
-      const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM",year,0),get("ROOM",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,2);
-      const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2),get("FOOD & BEVERAGE",year,3)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,4);
-      const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
-      const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);put("MINOR OPERATING DEPART",year,modDeptRevenue!==null?modDeptRevenue-(modDeptCosts??0):null,4);
-      const deptIncome=revenue!==null?revenue-(deptOperating??0):null;put("TOTAL DEPTMENT INCOME",year,deptIncome);const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;put("HOUSE PROFIT",year,houseProfit);
+      const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM",year,0),get("ROOM",year,1)]);
+      const roomDeptIncome=roomDeptRevenue!==null?roomDeptRevenue-(roomDeptCosts??0):null;put("ROOM",year,roomDeptIncome,2);
+      const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2),get("FOOD & BEVERAGE",year,3)]);
+      const fbDeptIncome=fbDeptRevenue!==null?fbDeptRevenue-(fbDeptCosts??0):null;put("FOOD & BEVERAGE",year,fbDeptIncome,4);
+      const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null?phoneDeptRevenue-(phoneDeptCosts??0):null,1);
+      const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);
+      const modDeptIncome=modDeptRevenue!==null?modDeptRevenue-(modDeptCosts??0):null;put("MINOR OPERATING DEPART",year,modDeptIncome,4);
+      const deptIncome=sumPresent([roomDeptIncome,fbDeptIncome,modDeptIncome]);put("TOTAL DEPTMENT INCOME",year,deptIncome);
+      const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% G O P",year,pct(gop,revenue));
       const otherIncome=sumPresent([pnlLabel("81101001","Gain/Loss on Disposal Asset"),pnlLabel("81101002","Deferred Tax"),pnlLabel("81101003","Interest Income"),pnlLabel("81101004","Exchange Rates"),pnlLabel("81101999","Other - Other Income")].map(label=>get(label,year)));

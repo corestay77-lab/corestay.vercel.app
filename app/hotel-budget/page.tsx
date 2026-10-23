@@ -667,7 +667,17 @@ export default function HotelBudgetPage() {
     const houseProfitIndex=oneYearRows.findIndex(line=>line.label==="HOUSE PROFIT");
     const rows:R[]=oneYearRows.map((line,index)=>{
        if(line.kind==="section")return {label:line.label,section:true,values:[],total:null,totalPct:null,kind:"section"};
-       const firstYear=line.total===undefined?null:line.total;
+       let firstYear=line.total===undefined?null:line.total;
+       // TOTAL DEPTMENT INCOME is a derived subtotal: if revenue exists, missing cost groups
+       // must not suppress the income figure. Blank expense rows remain blank in the report.
+       if(line.label.trim().toUpperCase()==="TOTAL DEPTMENT INCOME"){
+         const revenueRow=oneYearRows.find(r=>r.label.trim().toUpperCase()==="TOTAL REVENUES");
+         const revenueValue=revenueRow?.total??null;
+         const costRows=oneYearRows.filter(r=>["TOTAL COST OF SALES","TOTAL PAYROLL & RELATED EXP.","TOTAL OTHER DEPARTMENT EXPENSES"].includes(r.label.trim().toUpperCase()));
+         const enteredCosts=costRows.map(r=>r.total).filter((v):v is number=>v!==null&&v!==undefined&&Number.isFinite(v));
+         const costValue=enteredCosts.length?enteredCosts.reduce((sum,v)=>sum+v,0):0;
+         firstYear=revenueValue===null?null:revenueValue-costValue;
+       }
        const values=Array.from({length:yearCount},(_,yearIndex)=>{
          if(firstYear===null)return null;
          if(line.kind==="percent")return firstYear;

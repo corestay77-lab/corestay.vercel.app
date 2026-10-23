@@ -2059,39 +2059,6 @@ export default function HotelBudgetPage() {
 {[{id:"room",label:"Room Division",sub:"Room Dept · Front Office · House Keeping",color:"border-sky-200 bg-sky-50 text-sky-900"},{id:"fb",label:"Food & Beverage",sub:"Revenue · Cost of Sales · Payroll · Expenses",color:"border-amber-200 bg-amber-50 text-amber-900"},{id:"mod",label:"Minor Operating Dept.",sub:"Pendapatan dan biaya departemen",color:"border-violet-200 bg-violet-50 text-violet-900"},{id:"ag",label:"Administration & General",sub:"Payroll dan biaya umum",color:"border-indigo-200 bg-indigo-50 text-indigo-900"},{id:"sm",label:"Sales & Marketing",sub:"Payroll dan biaya pemasaran",color:"border-pink-200 bg-pink-50 text-pink-900"},{id:"hrd",label:"Human Resources",sub:"Payroll dan biaya SDM",color:"border-emerald-200 bg-emerald-50 text-emerald-900"},{id:"pomec",label:"POMEC & Utilities",sub:"Maintenance dan energi",color:"border-orange-200 bg-orange-50 text-orange-900"},{id:"owner",label:"Other Expenses / Owner Share Profit",sub:"Other Expenses · Owner Expenses · Profit",color:"border-rose-200 bg-rose-50 text-rose-900"}].map(item=><button key={item.id} type="button" onClick={()=>setSelectedDepartment(item.id)} aria-pressed={selectedDepartment===item.id} className={"rounded-xl border p-3 text-left transition hover:shadow-sm "+item.color+(selectedDepartment===item.id?" ring-2 ring-slate-400 ring-offset-1 shadow-sm":" opacity-80")}><span className="block text-sm font-extrabold">{item.label}</span><span className="mt-1 block text-[11px] leading-4 opacity-80">{item.sub}</span></button>)}
 </div>
 </div>
-                {selectedDepartment==="owner"&&<section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
-  <div className="bg-rose-900 px-4 py-3 text-white">
-    <h4 className="text-sm font-extrabold">OVERHEAD DEPARTMENT</h4>
-    <p className="mt-1 text-[11px] text-rose-100">Rincian biaya pemilik per bulan. Nilai ditarik otomatis dari forecast; data yang belum diisi tetap ditampilkan sebagai —.</p>
-  </div>
-  {(() => {
-    const order=[11,0,1,2,3,4,5,6,7,8,9,10];
-    const reportRows=buildConsolidatedRows(form);
-    const gopIndex=reportRows.findIndex(row=>row.label==="% G O P");
-    const ownerStart=reportRows.findIndex((row,index)=>index>gopIndex&&row.kind==="section"&&row.label==="OTHER EXPENSES");
-    const ownerEnd=reportRows.findIndex((row,index)=>index>ownerStart&&row.label==="TOTAL OWNER EXPENSES");
-    const rows=ownerStart>=0&&ownerEnd>ownerStart
-      ?reportRows.slice(ownerStart,ownerEnd+1)
-      :[];
-    const amount=(n:number|null|undefined,kind:string)=>n===null||n===undefined||!Number.isFinite(n)?"—":kind==="percent"?new Intl.NumberFormat("id-ID",{maximumFractionDigits:2}).format(n)+"%":new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(n);
-    const sectionTone=(label:string)=>label==="OVERHEAD DEPARTMENT"?"bg-rose-900 text-white":label==="PAYROLL & RELATED"?"bg-sky-100 text-sky-950":label==="OTHER EXPENSES"?"bg-amber-100 text-amber-950":label==="LESS DEDUCTION :"?"bg-violet-100 text-violet-950":label==="OTHER NON OPERATING EXPENSES"?"bg-indigo-100 text-indigo-950":"bg-slate-100 text-slate-900";
-    return <div className="overflow-x-auto"><table className="min-w-max border-collapse"><thead><tr className="bg-rose-50"><th className="sticky left-0 z-10 min-w-[22rem] bg-rose-50 px-3 py-3 text-left text-xs">ACCOUNT / DESCRIPTION</th>{order.map(i=><th key={i} className="min-w-28 px-2 py-3 text-right text-xs">{i===11?"Dec":monthNames[i].slice(0,3)}</th>)}<th className="min-w-32 px-3 py-3 text-right text-xs">TOTAL</th></tr></thead><tbody>
-      {rows.map((row,index)=>row.kind==="section"
-        ? <tr key={row.label+"-"+index}><td colSpan={14} className={sectionTone(row.label)+" px-3 py-2 text-xs font-black"}>{row.label}</td></tr>
-        : (() => {
-          const inputKey = row.inputKey ? String(row.inputKey) : null;
-          const editable = inputKey !== null && row.kind === "money";
-          const editableLabelKey = row.labelKey || inputKey;
-          const defaultLabel = row.label;
-          return <tr key={row.label+"-"+index} className={(row.label.startsWith("TOTAL ")||["TOTAL OVERHEAD DEPARTMENT","HOUSE PROFIT","GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","% GOP"].includes(row.label)?"bg-emerald-50 font-extrabold ":"")+"border-t border-slate-100"}>
-            <td className="sticky left-0 z-[1] min-w-[22rem] bg-inherit px-3 py-2 text-xs">{editableLabelKey ? <input aria-label={"Edit nama "+defaultLabel} className="w-full min-w-[210px] rounded border border-slate-200 bg-white px-2 py-1 text-xs font-medium" value={itemLabel("owner",editableLabelKey,defaultLabel)} onChange={e=>setForm(prev=>({...prev,itemLabelOverrides:{...(prev.itemLabelOverrides||{}),["owner:"+editableLabelKey]:e.target.value}}))}/> : row.label}</td>
-            {order.map(i=><td key={i} className="px-2 py-2 text-right text-xs tabular-nums">{editable ? <input aria-label={itemLabel("owner",editableLabelKey||inputKey||"",defaultLabel)+" "+monthNames[i]} inputMode="decimal" className="w-24 rounded border border-slate-200 bg-white px-2 py-1 text-right text-xs tabular-nums" value={String((form.forecast.monthly[i] as (ForecastMonth & Record<string,string>)|undefined)?.[inputKey!]??"")} onChange={e=>updateMonth(i,inputKey as keyof Omit<ForecastMonth,"label">,e.target.value.replace(/[^0-9.,-]/g,""))}/> : amount(row.values[i],row.kind)}</td>)}
-            <td className="px-3 py-2 text-right text-xs tabular-nums">{amount(row.total,row.kind)}</td>
-          </tr>;
-        })())}
-    </tbody></table></div>;
-  })()}
-</section>}
       {selectedDepartment==="owner"&&<section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
         <h4 className="bg-rose-900 px-4 py-3 text-sm font-extrabold text-white">RINCIAN OTHER EXPENSES & OWNER EXPENSES</h4>
         <p className="px-4 py-2 text-xs text-slate-600">Rincian biaya owner mengikuti input bulanan. Urutan periode: Dec, Jan–Nov. Kolom kosong ditampilkan sebagai —.</p>

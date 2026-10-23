@@ -757,6 +757,19 @@ export default function HotelBudgetPage() {
       // Blank cost groups are treated as zero for this subtotal calculation only; their source rows remain blank.
       const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPART",year,0)];
       const revenue=sumPresent(revenueParts);
+      // Preserve all Year 1 rows from the existing 1-Year Consolidated source, while fixing only the missing subtotal chain.
+      if(year===0){
+        const deptOperating=get("DEPART. OPERATING COST & EXP.",year);
+        const overhead=get("TOTAL OVERHEAD DEPARTMENT",year);
+        const deptIncome=revenue!==null?revenue-(deptOperating??0):null;
+        put("TOTAL DEPTMENT INCOME",year,deptIncome);
+        const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;
+        put("HOUSE PROFIT",year,houseProfit);
+        put("GROSS OPERATING INCOME",year,houseProfit);
+        put("GROSS OPERATING PROFIT (GOP)",year,houseProfit);
+        put("% G O P",year,pct(houseProfit,revenue));
+        continue;
+      }
       // Match the exact consolidated statement labels; otherwise put() silently misses the row.
       put("TOTAL REVENUES",year,revenue);
       put("TOTAL REVENUES (INCL. 21%)",year,revenue===null?null:revenue*1.21);

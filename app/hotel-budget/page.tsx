@@ -209,7 +209,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // overhead group must not silently produce House Profit = Department Income.
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
   // House Profit follows the hotel consolidated statement: Department Income less Overhead Department.
-  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null&&overheadTotal[i]!==null?income-overheadTotal[i]!:null);
+  const houseProfit=deptIncomeTotal.map((income,i)=>income!==null?income-(overheadTotal[i]??0):null);
   // GOP is reported before management/marketing fees, per the approved CoreStay accounting rule.
   const goi=houseProfit;
   const gop=goi;

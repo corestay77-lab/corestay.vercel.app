@@ -2618,67 +2618,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
       </div>
     </div>
 
-    {activeTab==="export"&&orchestrator==="passed"&&<section className="mt-6 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm print:hidden">
-      <div className="mb-3"><p className="text-[10px] font-extrabold uppercase tracking-[.16em] text-sky-700">CORESTAY · VALIDATED REPORT</p><h2 className="mt-1 text-lg font-extrabold text-slate-900">1 YEAR CONSOLIDATED — {form.yearStart}</h2><p className="mt-1 text-sm text-slate-600">Laporan konsolidasi lengkap muncul setelah validasi selesai. Nilai mengikuti data input; data kosong tetap —.</p></div>
-      <section className="mt-7 print-one-year">
-        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
-        <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
-        {(() => {
-          const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(consolidatedForm);
-          const year = Number(form.yearStart);
-          const roomCount = optional(form.statistics.rooms);
-          const monthlyStats = order.map(i => {
-            const month = form.forecast.monthly[i];
-            const days = new Date(year, i + 1, 0).getDate();
-            const occupancy = optional(month.occupancy) ?? optional(form.statistics.occupancy);
-            const adr = optional(month.adr) ?? optional(form.statistics.averageSellingRate);
-            const calc = calcMonthly(month, year, i, form.statistics.rooms);
-            const roomAvailable = roomCount !== null ? roomCount * days : null;
-            const occupied = roomAvailable !== null && occupancy !== null ? roomAvailable * occupancy / 100 : null;
-            const arr = calc.roomRevenue !== null && occupied !== null && occupied > 0 ? calc.roomRevenue / occupied : adr;
-            const revpar = calc.roomRevenue !== null && roomAvailable !== null && roomAvailable > 0 ? calc.roomRevenue / roomAvailable : arr !== null && occupancy !== null ? arr * occupancy / 100 : null;
-            return { days, rooms: roomCount, roomAvailable, occupied, occupancy, arr, revpar, exchangeRate: optional(form.statistics.exchangeRate), sellingRate: null as number | null, roomRevenue: calc.roomRevenue };
-          });
-          const sum = (values: (number | null)[]) => values.some(v => v !== null) ? values.reduce<number>((n,v) => n + (v ?? 0), 0) : null;
-          const avg = (values: (number | null)[]) => { const valid = values.filter((v): v is number => v !== null); return valid.length ? valid.reduce((a,b) => a+b,0) / valid.length : null; };
-          const ratio = (num: number | null, den: number | null) => num === null || den === null || den === 0 ? null : num / den;
-          const statRows = [
-            { label: "# OF DAYS", values: monthlyStats.map(x => x.days), total: sum(monthlyStats.map(x => x.days)), kind: "count" },
-            { label: "# OF ROOMS", values: monthlyStats.map(x => x.rooms), total: avg(monthlyStats.map(x => x.rooms)), kind: "count" },
-            { label: "ROOM AVAILABLE", values: monthlyStats.map(x => x.roomAvailable), total: sum(monthlyStats.map(x => x.roomAvailable)), kind: "count" },
-            { label: "OCCUPIED ROOMS", values: monthlyStats.map(x => x.occupied), total: sum(monthlyStats.map(x => x.occupied)), kind: "count" },
-            { label: "OCCUPANCY (%)", values: monthlyStats.map(x => x.occupancy), total: (sum(monthlyStats.map(x => x.occupied)) === null || sum(monthlyStats.map(x => x.roomAvailable)) === null ? null : ratio(sum(monthlyStats.map(x => x.occupied)), sum(monthlyStats.map(x => x.roomAvailable)))! * 100), kind: "percent" },
-            { label: "AVERAGE ROOM RATE (ARR)", values: monthlyStats.map(x => x.arr), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.occupied))), kind: "money" },
-            { label: "REVPAR", values: monthlyStats.map(x => x.revpar), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.roomAvailable))), kind: "money" },
-            { label: "EXCHANGE RATE US $ TO RP", values: monthlyStats.map(x => x.exchangeRate), total: avg(monthlyStats.map(x => x.exchangeRate)), kind: "rate" },
-            { label: "AVERAGE SELLING RATE (RP)", values: monthlyStats.map(x => x.sellingRate), total: avg(monthlyStats.map(x => x.sellingRate)), kind: "money" }
-          ] as const;
-          const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
-          const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
-          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-2 text-left font-black">{label}</th></tr>;
-          return <div className="overflow-x-auto">
-            <table className="w-full min-w-[1300px] border-collapse text-[8px]">
-              <thead>
-                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[130px] px-0.5 py-0.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-2 py-1.5 text-center">TOTAL / AVG</th></tr>
-                <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
-              </thead>
-              <tbody>
-                {heading("STATISTICS")}
-                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-1 py-0.5 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-0.5 py-0.5 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right">—</td></tr>)}
-                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
-                  <th className="border-b border-slate-200 px-2 py-2 text-left font-semibold">{line.label}</th>
-                  {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
-                  <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{display(line.total ?? null, "money")}</td>
-                  <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{line.totalPct === null || line.totalPct === undefined ? "—" : fmt(line.totalPct, 2) + "%"}</td>
-                </tr>)}
-              </tbody>
-            </table>
-          </div>;
-        })()}
-      </section>
-
-    </section>}
+    }
     {previewOpen&&<div className="print-preview-overlay fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
 <div className="report-brand-header mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#17365D] via-[#245B8C] to-[#6554B7] px-5 py-5 text-white print:rounded-none"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-2xl">🏨</div><div><p className="text-[10px] font-extrabold uppercase tracking-[.22em] text-sky-100">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">HOTEL BUDGET &amp; FINANCIAL REPORT</h2><p className="mt-1 text-xs text-blue-100">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"} · {form.yearStart}</p></div></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">Confidential</p><p className="mt-1 text-xs text-white/90">Management Report</p><button type="button" onClick={()=>setPreviewOpen(false)} className="mt-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white print:hidden" aria-label="Tutup preview">Tutup ✕</button></div></div>
 

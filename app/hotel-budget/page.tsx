@@ -822,6 +822,31 @@ export default function HotelBudgetPage() {
       const nospValue=ospValue!==null&&ownerExpenses!==null?ospValue-ownerExpenses:null;put("NETT OWNER PROFIT (BEFORE TAX)",year,nospValue);
       const roomUnits=optional(source.statistics.rooms);put("NET OWNER SHARE PROFIT/UNIT",year,nospValue!==null&&roomUnits!==null&&roomUnits>0?nospValue/roomUnits:null);
     }
+    // Final integrity pass: recompute the derived subtotal chain from the actual
+    // projected row values after all row-specific projection and duplicate-label updates.
+    // Missing cost buckets count as zero for these derived totals only; source account rows stay null.
+    for(let year=0;year<yearCount;year++){
+      const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPART",year,0)];
+      const revenueValue=sumPresent(revenueParts);
+      if(revenueValue===null)continue;
+      put("TOTAL REVENUES",year,revenueValue);
+      const cosValue=get("TOTAL COST OF SALES",year);
+      const payrollValue=get("TOTAL PAYROLL & RELATED EXP.",year);
+      const deptOtherValue=get("TOTAL OTHER EXPENSES",year,0);
+      const deptOperatingValue=sumPresent([cosValue,payrollValue,deptOtherValue])??0;
+      put("DEPART. OPERATING COST & EXP.",year,[cosValue,payrollValue,deptOtherValue].some(v=>v!==null)?deptOperatingValue:null);
+      const deptIncomeValue=revenueValue-deptOperatingValue;
+      put("TOTAL DEPTMENT INCOME",year,deptIncomeValue);
+      const overheadPayrollValue=get("TOTAL PAYROLL & RELATED",year,0);
+      const overheadOtherValue=get("TOTAL OTHER EXPENSES",year,1);
+      const overheadValue=sumPresent([overheadPayrollValue,overheadOtherValue])??0;
+      put("TOTAL OVERHEAD DEPARTMENT",year,[overheadPayrollValue,overheadOtherValue].some(v=>v!==null)?overheadValue:null);
+      const houseProfitValue=deptIncomeValue-overheadValue;
+      put("HOUSE PROFIT",year,houseProfitValue);
+      put("GROSS OPERATING INCOME",year,houseProfitValue);
+      put("GROSS OPERATING PROFIT (GOP)",year,houseProfitValue);
+      put("% G O P",year,pct(houseProfitValue,revenueValue));
+    }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};
       const total=line.kind==="percent"?averagePresent(line.values):sumPresent(line.values);

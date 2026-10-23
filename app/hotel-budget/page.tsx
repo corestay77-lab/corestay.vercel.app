@@ -793,7 +793,13 @@ export default function HotelBudgetPage() {
       const overheadOther=sumPresent([get("ADM. & GENERAL",year,1),get("SALES & MARKETING",year,1),get("HUMAN RESOURCES",year,1),get("ENGINEERING",year,1),get("ENERGY COST",year,0)]);put("TOTAL OTHER EXPENSES",year,overheadOther,1);
       const overhead=sumPresent([overheadPayroll,overheadOther]);put("TOTAL OVERHEAD DEPARTMENT",year,overhead);
       const operatingCosts=deptOperating!==null&&overhead!==null?deptOperating+overhead:null;put("TOTAL OPERATING COSTS",year,operatingCosts);
-      const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM",year,0),get("ROOM",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,2);
+      const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM",year,0),get("ROOM",year,1)]);
+      const roomIncomeIndex=find("ROOM",2);
+      const roomYear1Income=roomIncomeIndex>=0?rows[roomIncomeIndex].values[0]??null:null;
+      const calculatedRoomIncome=roomDeptRevenue!==null?roomDeptRevenue-(roomDeptCosts??0):null;
+      // If projected room revenue is absent, keep ROOM Department Income populated from Year 1 using the selected growth assumption.
+      const projectedRoomIncome=calculatedRoomIncome!==null?calculatedRoomIncome:(roomYear1Income!==null?roomYear1Income*growth(year):null);
+      put("ROOM",year,projectedRoomIncome,2);
       const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2),get("FOOD & BEVERAGE",year,3)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,4);
       const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
       const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);

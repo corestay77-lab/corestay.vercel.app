@@ -2683,7 +2683,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 <div className="report-brand-header mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#17365D] via-[#245B8C] to-[#6554B7] px-5 py-5 text-white print:rounded-none"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-2xl">🏨</div><div><p className="text-[10px] font-extrabold uppercase tracking-[.22em] text-sky-100">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">HOTEL BUDGET &amp; FINANCIAL REPORT</h2><p className="mt-1 text-xs text-blue-100">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"} · {form.yearStart}</p></div></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">Confidential</p><p className="mt-1 text-xs text-white/90">Management Report</p><button type="button" onClick={()=>setPreviewOpen(false)} className="mt-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white print:hidden" aria-label="Tutup preview">Tutup ✕</button></div></div>
 
 <section className="mt-7 print-statistics">
-        <h3 className="mb-1 text-sm font-extrabold">1A. LAPORAN STATISTIK BULANAN — {form.yearStart}</h3>
+        <h3 className="mb-1 text-sm font-extrabold">1. LAPORAN STATISTIK 1 YEAR — {form.yearStart}</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Tampilan, susunan baris, kolom bulanan, dan YEAR TOTAL / AVG mengikuti LAPORAN STATISTIK pada tahap sebelumnya. Nilai dan formula menggunakan sumber yang sama; data kosong tetap —.</p>
         <div className="overflow-x-auto">
                 <table className="w-max min-w-[1956px] table-fixed border-collapse text-[11px]">
@@ -2761,7 +2761,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
       </section>
 
 <section className="mt-7 break-before-page print-ten-year-statistics">
-        <h3 className="mb-1 text-sm font-extrabold">1B. RINGKASAN STATISTIK 10 TAHUN — {form.yearStart}–{Number(form.yearStart)+9}</h3>
+        <h3 className="mb-1 text-sm font-extrabold">3. LAPORAN STATISTIK 10 TAHUN — {form.yearStart}–{Number(form.yearStart)+9}</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Ringkasan statistik tahunan dengan struktur kolom yang sama: YEAR 1–10 dan TOTAL / AVG. Menggunakan sumber forecast yang sama, tanpa mengubah input atau rumus forecast.</p>
         <div className="overflow-x-auto"><table className="w-max min-w-[1500px] border-collapse text-[9px]">
           <thead><tr className="bg-indigo-900 text-white"><th className="sticky left-0 z-10 min-w-[240px] bg-indigo-900 px-3 py-2 text-left">Description</th>{form.forecast.annual.map((row,i)=><th key={row.label} className="min-w-[112px] px-2 py-2 text-right">YEAR {i+1}<span className="block text-[8px] font-normal">{row.label}</span></th>)}<th className="min-w-[150px] bg-teal-700 px-2 py-2 text-right">TOTAL / AVG</th></tr></thead>
@@ -2858,7 +2858,7 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
       </section>
 
 <section className="mt-7 break-before-page print-payroll-master">
-        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-indigo-950 to-sky-800 px-3 py-2 text-sm font-extrabold text-white">6A. LAPORAN PAYROLL — MASTER PAYROLL (STEP 2)</h3>
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-indigo-950 to-sky-800 px-3 py-2 text-sm font-extrabold text-white">6. MASTER PAYROLL &amp; EXPENSES — STEP 2</h3>
         <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan ini bersumber langsung dari Master Payroll. Nilai bulanan mengikuti perhitungan payroll pada form, sedangkan nilai tahunan merupakan estimasi 12 bulan. Perubahan data karyawan hanya dilakukan melalui Master Payroll.</p>
         <h4 className="mb-2 text-[11px] font-black">A. RINCIAN KARYAWAN &amp; BIAYA PAYROLL</h4>
         <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">

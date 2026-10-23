@@ -187,8 +187,8 @@ def main():
         lines.append(f"- **{c['status']} — {c['name']}**: {c['detail']}")
     lines += ["", "## Review AI", "", review, "",
               "> Skrip tidak menekan Simpan, Reset, atau Validasi Akhir. Gunakan akun/lingkungan uji, bukan data operasional produksi.", ""]
-    REPORT.write_text("\\n".join(lines), encoding="utf-8")
-    print(f"\\nLaporan: {REPORT}\\nScreenshot: {SHOT}\\n\\n{review}")
+    REPORT.write_text("\n".join(lines), encoding="utf-8")
+    print(f"\nLaporan: {REPORT}\nScreenshot: {SHOT}\n\n{review}")
     return 1 if any(c["status"] == "FAIL" for c in checks) else 0
 
 if __name__ == "__main__":

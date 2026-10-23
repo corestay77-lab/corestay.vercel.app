@@ -1133,13 +1133,18 @@ export default function HotelBudgetPage() {
         const has=(details:Record<string,string>)=>Object.values(details).some(v=>String(v??"").trim()!=="");
         const payrollEmployees=prev.payrollEmployees||[];const masterPayrollExists=payrollEmployees.length>0;
         const payrollTotal=(dept:string)=>{
-          const aliases:Record<string,string[]>={FO:["FO"],HRD:["HR","HRD","HUMAN RESOURCE","HUMAN RESOURCES","HUMAN RESOURCES DEPARTMENT"],MOD:["MOD","MINOR OPERATING DEPT","MINOR OPERATING DEPARTMENT"],AG:["AG","A&G","ADMINISTRATION & GENERAL","ADMINISTRATION AND GENERAL"],SM:["SM","S&M","SALES & MARKETING","SALES AND MARKETING"],POMEC:["POMEC","POMEC & UTILITIES","POMEC & UTILITIES MAINTENANCE DAN ENERGI","POMEC & UTILITIES MAINTENANCE AND ENERGY"]};
-          const wanted=(aliases[dept]||[dept]).map(v=>v.toLowerCase());
-          if(masterPayrollExists)return payrollEmployees.some(e=>wanted.includes(e.department.toLowerCase())&&payrollHasInputs(e))?String(payrollDepartmentMonthly(dept).total):"";
+          // Use the same normalized department matcher as Step 3, and consolidate
+          // Security/Engineering into POMEC without counting any employee twice.
+          const sourceDepartments=dept==="POMEC"?["POMEC","SEC","ENG"]:[dept];
+          if(masterPayrollExists){
+            const matchingEmployees=payrollEmployees.filter(e=>sourceDepartments.some(sourceDept=>payrollDepartmentMatches(e,sourceDept))&&payrollHasInputs(e));
+            if(!matchingEmployees.length)return "";
+            return String(sourceDepartments.reduce((sum,sourceDept)=>sum+payrollDepartmentMonthly(sourceDept).total,0));
+          }
           const fallback:Record<string,number|null>={FO:forecastSource.payrollBudget.fo,HK:forecastSource.payrollBudget.hk,FB:forecastSource.payrollBudget.fb,MOD:forecastSource.payrollBudget.mod,AG:forecastSource.payrollBudget.ag,SM:forecastSource.payrollBudget.sm,HRD:forecastSource.payrollBudget.hrd,POMEC:forecastSource.payrollBudget.pomec};
           const value=fallback[dept];
           return value===null||value===undefined?"":String(Math.round(value*monthShare));
-        };
+        };;
         const foPayroll=payrollTotal("FO"),hkPayroll=payrollTotal("HK");
         const roomPayroll=(foPayroll!==""||hkPayroll!=="")?String(Number(foPayroll||0)+Number(hkPayroll||0)):"";
         const fbDetail=has(fbDetails),modDetail=has(modDetails),roomDetail=has(roomDivisionDetails),agDetail=has(agDetails),smDetail=has(smDetails),hrdDetail=has(hrdDetails),pomecDetail=has(pomecDetails);

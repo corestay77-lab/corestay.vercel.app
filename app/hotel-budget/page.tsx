@@ -2092,7 +2092,7 @@ export default function HotelBudgetPage() {
     </tbody></table></div>;
   })()}
 </section>}
-      <section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
+      {selectedDepartment==="owner"&&<section className="mt-5 overflow-hidden rounded-xl border border-rose-200 bg-white">
         <h4 className="bg-rose-900 px-4 py-3 text-sm font-extrabold text-white">RINCIAN OTHER EXPENSES & OWNER EXPENSES</h4>
         <p className="px-4 py-2 text-xs text-slate-600">Rincian biaya owner mengikuti input bulanan. Urutan periode: Dec, Jan–Nov. Kolom kosong ditampilkan sebagai —.</p>
         {(() => {
@@ -2130,7 +2130,7 @@ export default function HotelBudgetPage() {
             </tbody>
           </table></div>;
         })()}
-      </section>
+      </section>}
 
                 {selectedDepartment==="room"&&<div className="space-y-3"><div><h4 className="font-extrabold text-slate-800">ROOM DIVISION</h4><p className="mt-1 text-xs text-slate-500">Format laporan: ROOM DEPARTMENT, FRONT OFFICE &amp; RESERVATION, HOUSE KEEPING; subtotal biaya, total biaya departemen, dan departmental profit. Periode: Dec, Jan–Nov, TOTAL, %.</p></div>
 {(() => {

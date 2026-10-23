@@ -2680,11 +2680,275 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 
     </section>}
     {previewOpen&&<div className="print-preview-overlay fixed inset-0 z-[200] flex items-start justify-center overflow-y-auto bg-slate-950/60 p-3 pt-6 sm:p-8" role="dialog" aria-modal="true" aria-label="Preview laporan"><article className="print-report my-auto w-full max-w-5xl overflow-hidden rounded-2xl bg-white p-5 shadow-2xl sm:p-8">
-      <div className="min-h-[55vh]" aria-label="Area isi laporan kosong"></div>
-      <div className="mt-6 flex flex-wrap justify-end gap-3 print:hidden">
-        <button type="button" onClick={()=>setPreviewOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold">Kembali ke form</button>
-        <button type="button" onClick={()=>window.print()} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Print / Save PDF</button>
-      </div>
+<div className="report-brand-header mb-5 flex items-center justify-between gap-4 rounded-2xl bg-gradient-to-r from-[#17365D] via-[#245B8C] to-[#6554B7] px-5 py-5 text-white print:rounded-none"><div className="flex items-center gap-3"><div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/15 text-2xl">🏨</div><div><p className="text-[10px] font-extrabold uppercase tracking-[.22em] text-sky-100">CORESTAY ADVISORY</p><h2 className="mt-1 text-xl font-black sm:text-2xl">HOTEL BUDGET &amp; FINANCIAL REPORT</h2><p className="mt-1 text-xs text-blue-100">{form.hotelName||"Nama hotel belum diisi"} · {form.period||"Periode belum diisi"} · {form.yearStart}</p></div></div><div className="text-right"><p className="text-[10px] font-bold uppercase tracking-widest text-sky-100">Confidential</p><p className="mt-1 text-xs text-white/90">Management Report</p><button type="button" onClick={()=>setPreviewOpen(false)} className="mt-2 rounded-full bg-white/15 px-3 py-1.5 text-sm font-bold text-white print:hidden" aria-label="Tutup preview">Tutup ✕</button></div></div>
+
+<section className="mt-7 print-statistics">
+        <h3 className="mb-1 text-sm font-extrabold">1A. LAPORAN STATISTIK BULANAN — {form.yearStart}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Tampilan, susunan baris, kolom bulanan, dan YEAR TOTAL / AVG mengikuti LAPORAN STATISTIK pada tahap sebelumnya. Nilai dan formula menggunakan sumber yang sama; data kosong tetap —.</p>
+        <div className="overflow-x-auto">
+                <table className="w-max min-w-[1956px] table-fixed border-collapse text-[11px]">
+                  <thead><tr className="bg-slate-100 text-slate-700"><th className="sticky left-0 z-10 w-[240px] min-w-[240px] max-w-[240px] bg-slate-100 px-3 py-2 text-left">Description</th>{[11,0,1,2,3,4,5,6,7,8,9,10].map(i=><th key={form.forecast.monthly[i].label} className="w-[128px] min-w-[128px] max-w-[128px] px-3 py-2 text-right whitespace-nowrap">{i===11?"DES":monthNames[i].slice(0,3).toUpperCase()}</th>)}<th className="w-[180px] min-w-[180px] max-w-[180px] bg-sky-100 px-3 py-2 text-right whitespace-nowrap">YEAR TOTAL / AVG</th></tr></thead>
+                  <tbody>{buildStatisticsSheetRows(form,{hidden:hiddenFbSections,labels:fbMenuLabels}).map((line,i)=>{
+                    if(line.kind==="section") return <tr key={line.label}><th colSpan={14} className="border-t-2 border-slate-300 bg-sky-100 px-3 py-3 text-left text-xs font-black tracking-wider text-slate-800">{line.label}</th></tr>;
+                    const isPercent=line.kind==="percent";
+                    const isCount=/# OF ROOMS|DAYS|ROOMS AVAILABLE|OCCUPIED ROOMS|ROOM PAID|COMPLIMENTARY|GUESTS IN HOUSE|ARRIVALS|COVERS|TOTAL PAX|INVENTORY YEAR/i.test(line.label);
+                    const isRate=/EXCHANGE RATE/i.test(line.label);
+                    const isUsd=/\bUSD\b|\(USD\)|- USD/i.test(line.label);
+                    const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());
+                     const display=(v:number|null|undefined)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):isPercent?fmt(v,1)+"%":isCount?fmt(v,0):isUsd?"$"+fmt(v,2):isRate?fmt(v,2):money(v);
+                    return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] w-[240px] min-w-[240px] max-w-[240px] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold whitespace-normal break-words">{line.label}</th>{[line.values[11],...line.values.slice(0,11)].map((v,j)=><td key={j} className="w-[128px] min-w-[128px] max-w-[128px] border-t border-slate-200 px-3 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="w-[180px] min-w-[180px] max-w-[180px] border-t border-slate-200 bg-sky-50 px-3 py-2 text-right font-extrabold tabular-nums whitespace-nowrap">{display(line.total)}</td></tr>;
+                  })}</tbody>
+                </table>
+        </div>
+      </section>
+
+<section className="mt-7 print-one-year">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
+        {(() => {
+          const order = [11,0,1,2,3,4,5,6,7,8,9,10];
+          const rows = buildConsolidatedRows(consolidatedForm);
+          const year = Number(form.yearStart);
+          const roomCount = optional(form.statistics.rooms);
+          const monthlyStats = order.map(i => {
+            const month = form.forecast.monthly[i];
+            const days = new Date(year, i + 1, 0).getDate();
+            const occupancy = optional(month.occupancy) ?? optional(form.statistics.occupancy);
+            const adr = optional(month.adr) ?? optional(form.statistics.averageSellingRate);
+            const calc = calcMonthly(month, year, i, form.statistics.rooms);
+            const roomAvailable = roomCount !== null ? roomCount * days : null;
+            const occupied = roomAvailable !== null && occupancy !== null ? roomAvailable * occupancy / 100 : null;
+            const arr = calc.roomRevenue !== null && occupied !== null && occupied > 0 ? calc.roomRevenue / occupied : adr;
+            const revpar = calc.roomRevenue !== null && roomAvailable !== null && roomAvailable > 0 ? calc.roomRevenue / roomAvailable : arr !== null && occupancy !== null ? arr * occupancy / 100 : null;
+            return { days, rooms: roomCount, roomAvailable, occupied, occupancy, arr, revpar, exchangeRate: optional(form.statistics.exchangeRate), sellingRate: null as number | null, roomRevenue: calc.roomRevenue };
+          });
+          const sum = (values: (number | null)[]) => values.some(v => v !== null) ? values.reduce<number>((n,v) => n + (v ?? 0), 0) : null;
+          const avg = (values: (number | null)[]) => { const valid = values.filter((v): v is number => v !== null); return valid.length ? valid.reduce((a,b) => a+b,0) / valid.length : null; };
+          const ratio = (num: number | null, den: number | null) => num === null || den === null || den === 0 ? null : num / den;
+          const statRows = [
+            { label: "# OF DAYS", values: monthlyStats.map(x => x.days), total: sum(monthlyStats.map(x => x.days)), kind: "count" },
+            { label: "# OF ROOMS", values: monthlyStats.map(x => x.rooms), total: avg(monthlyStats.map(x => x.rooms)), kind: "count" },
+            { label: "ROOM AVAILABLE", values: monthlyStats.map(x => x.roomAvailable), total: sum(monthlyStats.map(x => x.roomAvailable)), kind: "count" },
+            { label: "OCCUPIED ROOMS", values: monthlyStats.map(x => x.occupied), total: sum(monthlyStats.map(x => x.occupied)), kind: "count" },
+            { label: "OCCUPANCY (%)", values: monthlyStats.map(x => x.occupancy), total: (sum(monthlyStats.map(x => x.occupied)) === null || sum(monthlyStats.map(x => x.roomAvailable)) === null ? null : ratio(sum(monthlyStats.map(x => x.occupied)), sum(monthlyStats.map(x => x.roomAvailable)))! * 100), kind: "percent" },
+            { label: "AVERAGE ROOM RATE (ARR)", values: monthlyStats.map(x => x.arr), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.occupied))), kind: "money" },
+            { label: "REVPAR", values: monthlyStats.map(x => x.revpar), total: ratio(sum(monthlyStats.map(x => x.roomRevenue)), sum(monthlyStats.map(x => x.roomAvailable))), kind: "money" },
+            { label: "EXCHANGE RATE US $ TO RP", values: monthlyStats.map(x => x.exchangeRate), total: avg(monthlyStats.map(x => x.exchangeRate)), kind: "rate" },
+            { label: "AVERAGE SELLING RATE (RP)", values: monthlyStats.map(x => x.sellingRate), total: avg(monthlyStats.map(x => x.sellingRate)), kind: "money" }
+          ] as const;
+          const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
+          const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
+          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-2 text-left font-black">{label}</th></tr>;
+          return <div className="overflow-x-auto">
+            <table className="w-full min-w-[1300px] border-collapse text-[8px]">
+              <thead>
+                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[130px] px-0.5 py-0.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-2 py-1.5 text-center">TOTAL / AVG</th></tr>
+                <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
+              </thead>
+              <tbody>
+                {heading("STATISTICS")}
+                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-1 py-0.5 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-0.5 py-0.5 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right">—</td></tr>)}
+                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
+                  <th className="border-b border-slate-200 px-2 py-2 text-left font-semibold">{line.label}</th>
+                  {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
+                  <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{display(line.total ?? null, "money")}</td>
+                  <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{line.totalPct === null || line.totalPct === undefined ? "—" : fmt(line.totalPct, 2) + "%"}</td>
+                </tr>)}
+              </tbody>
+            </table>
+          </div>;
+        })()}
+      </section>
+
+<section className="mt-7 break-before-page print-ten-year-statistics">
+        <h3 className="mb-1 text-sm font-extrabold">1B. RINGKASAN STATISTIK 10 TAHUN — {form.yearStart}–{Number(form.yearStart)+9}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Ringkasan statistik tahunan dengan struktur kolom yang sama: YEAR 1–10 dan TOTAL / AVG. Menggunakan sumber forecast yang sama, tanpa mengubah input atau rumus forecast.</p>
+        <div className="overflow-x-auto"><table className="w-max min-w-[1500px] border-collapse text-[9px]">
+          <thead><tr className="bg-indigo-900 text-white"><th className="sticky left-0 z-10 min-w-[240px] bg-indigo-900 px-3 py-2 text-left">Description</th>{form.forecast.annual.map((row,i)=><th key={row.label} className="min-w-[112px] px-2 py-2 text-right">YEAR {i+1}<span className="block text-[8px] font-normal">{row.label}</span></th>)}<th className="min-w-[150px] bg-teal-700 px-2 py-2 text-right">TOTAL / AVG</th></tr></thead>
+          <tbody>{annualStatisticsForPreview.map((line,i)=>{const valid=line.values.filter((v):v is number=>v!==null);const total=valid.length?(line.kind==="sum"?valid.reduce((a,b)=>a+b,0):valid.reduce((a,b)=>a+b,0)/valid.length):null;const isGuestRoomOrStay=/^(AVERAGE GUEST \/ ROOM|LENGTH OF STAY)$/i.test(line.label.trim());const display=(v:number|null)=>v===null||v===undefined||!Number.isFinite(v)?"—":isGuestRoomOrStay?new Intl.NumberFormat("id-ID",{minimumFractionDigits:2,maximumFractionDigits:2}).format(v):line.kind==="percent"?fmt(v,1)+"%":line.label==="# OF DAYS"||line.label==="ROOMS AVAILABLE"||line.label==="OCCUPIED ROOMS"?fmt(v,0):money(v);return <tr key={line.label} className={i%2?"bg-slate-50":"bg-white"}><th className="sticky left-0 z-[1] border-t border-slate-200 bg-inherit px-3 py-2 text-left font-semibold">{line.label}</th>{line.values.map((v,j)=><td key={j} className="border-t border-slate-200 px-2 py-2 text-right tabular-nums whitespace-nowrap">{display(v)}</td>)}<td className="border-t border-slate-200 bg-teal-50 px-2 py-2 text-right font-extrabold tabular-nums">{display(total)}</td></tr>;})}</tbody>
+        </table></div>
+      </section>
+
+
+      <section className="mt-7 break-before-page print-ten-year-consolidated">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-indigo-950 to-violet-800 px-3 py-2 text-sm font-extrabold text-white">4. 10 YEARS CONSOLIDATED — {form.yearStart}–{Number(form.yearStart)+9}</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Nama akun, urutan, kelompok, dan subtotal mengikuti konsolidasi 1 tahun. YEAR 1 memakai basis 1 Year Consolidated; YEAR 2–10 mengikuti metode proyeksi yang aktif. Tampilan ini hanya membaca hasil forecast, tidak mengubah asumsi atau rumus.</p>
+        {(() => {
+          const allRows = buildTenYearRows(consolidatedForm);
+          const otherIncomeExpenseStart = allRows.findIndex(line => line.section && line.label === "8 OTHER INCOME & EXPENSES");
+          const rows = otherIncomeExpenseStart >= 0 ? allRows.slice(0, otherIncomeExpenseStart) : allRows;
+          const headingTone = (label:string) => label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950"
+            : label === "COST OF SALES" ? "border-amber-300 bg-amber-100 text-amber-950"
+            : label.includes("PAYROLL") ? "border-violet-300 bg-violet-100 text-violet-950"
+            : label === "OTHER EXPENSES" ? "border-orange-300 bg-orange-100 text-orange-950"
+            : label === "DEPARTMENT INCOME" ? "border-teal-300 bg-teal-100 text-teal-950"
+            : label.includes("OVERHEAD DEPARTMENT") ? "border-indigo-300 bg-indigo-100 text-indigo-950"
+            : label === "OTHER NON OPERATING EXPENSES" ? "border-rose-300 bg-rose-100 text-rose-950"
+            : "border-slate-300 bg-slate-100 text-slate-900";
+          const displayYear = (v:number|null|undefined) => v===null||v===undefined||!Number.isFinite(v) ? "—" : fmt(v,0);
+          return <div className="overflow-x-auto">
+            <table className="w-max min-w-full border-collapse text-[9px]">
+              <thead>
+                <tr className="bg-indigo-950 text-white">
+                  <th rowSpan={2} className="sticky left-0 z-10 min-w-[225px] bg-indigo-950 px-2 py-2 text-left">CONSOLIDATED</th>
+                  {form.forecast.annual.slice(0,10).map((year,i)=><th key={year.label+"-"+i} colSpan={2} className="min-w-[105px] px-2 py-2 text-center">YEAR {i+1}<span className="block text-[8px] font-normal">{year.label}</span></th>)}
+                  <th colSpan={2} className="bg-teal-800 px-2 py-2 text-center">TOTAL / AVG</th>
+                </tr>
+                <tr className="bg-slate-700 text-white">
+                  {form.forecast.annual.slice(0,10).map((year,i)=><Fragment key={year.label+"-sub-"+i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}
+                  <th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {rows.map((line,idx) => line.section
+                  ? <tr key={"section-"+idx}><th colSpan={23} className={"border-t-2 px-2 py-2 text-left font-black "+headingTone(line.label)}>{line.label}</th></tr>
+                  : <tr key={line.label+"-"+idx} className={["TOTAL OTHER EXPENSES","TOTAL OWNER EXPENSES"].includes(line.label) ? "bg-orange-50 font-bold" : ["OWNER SHARE PROFIT (OSP)","NET OWNER SHARE PROFIT (NOSP)","NET OWNER SHARE PROFIT/UNIT"].includes(line.label) ? "bg-teal-50 font-bold" : ["GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","HOUSE PROFIT"].includes(line.label) ? "bg-indigo-50 font-bold" : (idx%2 ? "bg-slate-50" : "bg-white")}>
+                    <th className="sticky left-0 z-[1] border-b border-slate-200 bg-inherit px-2 py-1.5 text-left font-semibold">{line.label}</th>
+                    {line.values.slice(0,10).map((v,i)=><Fragment key={i}>
+                      <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{displayYear(v)}</td>
+                      <td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{v===null||v===undefined||line.base?.[i]===null||line.base?.[i]===undefined||line.base[i]===0?"—":fmt(v/line.base[i]*100,2)+"%"}</td>
+                    </Fragment>)}
+                    <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{displayYear(line.total)}</td>
+                    <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{line.totalPct===null||line.totalPct===undefined?"—":fmt(line.totalPct,2)+"%"}</td>
+                  </tr>)}
+              </tbody>
+            </table>
+          </div>;
+        })()}
+      </section>
+
+
+<section className="mt-7 break-before-page print-department-details">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-cyan-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">5. DETAIL ANGGARAN SEMUA DEPARTEMEN</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Seluruh rincian mengikuti bagian DEPARTMENT EXPENSES pada tahap input: Room Division, Food & Beverage, Minor Operating Department, Administration & General, Sales & Marketing, Human Resources, serta POMEC & Utilities. PAYROLL & RELATED mengambil nilai dari Master Payroll dan tidak diedit dari laporan ini. Kolom kosong ditampilkan sebagai —.</p>
+        {([
+          {id:"room",title:"ROOM DIVISION — ROOM DEPT / FRONT OFFICE / HOUSE KEEPING",source:"roomDivisionDetails",groups:[
+            {title:"ROOM DEPARTMENT",rows:[["roomRevenue","ROOM REVENUE"]]},
+            {title:"FRONT OFFICE & RESERVATION — PAYROLL & RELATED",rows:[["foSalary","SALARY & WAGES"],["foIncomeTax","INCOME TAX"],["foJamsostek","JAMSOSTEK"],["foInsurance","INSURANCE"],["foBonus","PROV. FOR BONUS"],["foMeal","MEAL ALLOWANCES"],["foMedical","MEDICAL / ASKES"],["foOtherPayroll","OTHER PAYROLL COST"]]},
+            {title:"FRONT OFFICE & RESERVATION — OTHER EXPENSES",rows:[["foDecoration","DECORATION"],["foDues","DUES & SUBSCRIPTION"],["foEntertainment","ENTERTAINMENT"],["foWelcomeDrink","WELCOME DRINK"],["foLaundry","LAUNDRY - UNIFORM"],["foMisc","MISCELLANEOUS"],["foPostage","POSTAGE"],["foReservation","RESERVATION EXPENSES"],["foGuestSupplies","GUEST SUPPLIES"],["foCleaning","CLEANING SUPPLIES"],["foPrinting","PRINTING & STATIONERY"],["foUniform","UNIFORM"]]},
+            {title:"HOUSE KEEPING — PAYROLL & RELATED",rows:[["hkSalary","SALARY & WAGES"],["hkIncomeTax","INCOME TAX"],["hkJamsostek","JAMSOSTEK"],["hkInsurance","INSURANCE"],["hkThr","THR"],["hkMeal","MEAL ALLOWANCES"],["hkMedical","MEDICAL / ASKES"],["hkOtherPayroll","OTHER PAYROLL COST"]]},
+            {title:"HOUSE KEEPING — PROV. OPERATING EQUIPMENT",rows:[["hkChina","CHINAWARE"],["hkGlass","GLASSWARE"],["hkSilver","SILVERWARE"],["hkLinen","LINEN"]]},
+            {title:"HOUSE KEEPING — OTHER EXPENSES",rows:[["hkDecoration","DECORATION"],["hkWelcomeDrink","WELCOME DRINK"],["hkCable","CABLE VISION"],["hkLaundry","LAUNDRY LINEN"],["hkGuestSupplies","GUEST SUPPLIES"],["hkCleaning","CLEANING SUPPLIES"],["hkAmenities","ROOM AMENITIES"],["hkPrinting","PRINTING & STATIONERY"],["hkUniform","UNIFORM"],["hkInternet","INTERNET PROVIDER"],["hkPest","PEST CONTROL"]]}
+          ]},          {id:"fb",title:"FOOD & BEVERAGE — REVENUE / COST OF SALES / PAYROLL / EXPENSES",source:"fbDetails",groups:[{title:"REVENUES",rows:[["foodRevenue","FOOD REVENUE"],["beverageRevenue","BEVERAGE REVENUE"]]},{title:"COST OF SALES",rows:[["foodCost","FOOD COST OF SALES"],["beverageCost","BEVERAGE COST OF SALES"]]},{title:"PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["thr","THR"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"PROV. OPERATING EQUIPMENT",rows:[["glassware","GLASSWARE"],["chinaware","CHINAWARE"],["silverware","SILVERWARE"],["linen","LINEN"]]},{title:"OTHER EXPENSES",rows:[["decoration","DECORATION"],["duesSubscription","DUES & SUBSCRIPTION"],["extermDisinfectant","EXTERM / DISINFECTANT"],["kitchenFuel","KITCHEN FUEL"],["laundry","LAUNDRY"],["miscellaneous","MISCELLANEOUS"],["spoilage","SPOILAGE"],["cleaningSupplies","CLEANING SUPPLIES"],["guestSupplies","GUEST SUPPLIES"],["printingStationery","PRINTING & STATIONERY"],["telephone","TELEPHONE"],["uniform","UNIFORM"],["utensil","UTENSIL"],["contractCleaning","CONTRACT CLEANING"]]}]},
+          {id:"mod",title:"MINOR OPERATING DEPARTMENT — REVENUE / COST / PAYROLL / EXPENSES",source:"modDetails",groups:[{title:"REVENUE",rows:[["businessCenterRevenue","BUSINESS CENTER REVENUE"],["rentCarRevenue","TRANSPORTATION / RENT CAR REVENUE"],["laundryRevenue","LAUNDRY REVENUE"],["spaRevenue","SPA REVENUE"],["telephoneRevenue","TELEPHONE REVENUE"],["sportRecreationRevenue","SPORT & RECREATION REVENUE"],["rentedSpaceRevenue","RENTED SPACE REVENUE"],["miscellaneousRevenue","MISCELLANEOUS OTHER REVENUE"],["otherRevenueDiscounts","OTHER REVENUE DISCOUNTS / ALLOWANCES"]]},{title:"COST OF SALES",rows:[["laundryCost","LAUNDRY COST OF SALES"]]},{title:"PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["bonus","PROV. FOR BONUS"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["payrollOthers","OTHER PAYROLL COST"]]},{title:"OTHER EXPENSES",rows:[["guestSupplies","GUEST SUPPLIES"],["paperSupplies","PAPER SUPPLIES"],["laundryValetSupplies","LAUNDRY & VALET SUPPLIES"],["laundrySupplies","LAUNDRY SUPPLIES"],["casual","CASUAL"],["cleaningSupplies","CLEANING SUPPLIES"],["printingStationery","PRINTING & STATIONERY"],["decoration","DECORATION"],["telephoneFax","TELEPHONE & FAX"],["laundryExpense","LAUNDRY EXPENSE"],["casualOther","CASUAL — OTHER"],["laundryValetOther","LAUNDRY & VALET SUPPLIES — OTHER"],["cleaningOther","CLEANING SUPPLIES — OTHER"],["provisionUniform","PROVISION UNIFORM"],["pteb","PTEB"],["uniform","UNIFORM"],["otherExpenses","OTHERS"]]}]},
+          {id:"ag",title:"ADMINISTRATION & GENERAL — PAYROLL AND GENERAL EXPENSES",source:"agDetails",groups:[{title:"PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["bonusProvision","PROV. FOR BONUS"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"OTHER EXPENSES",rows:[["bankCharges","BANK CHARGES"],["donation","DONATION"],["duesTradeAssoc","DUES & TRADE ASSOCIATIONS"],["entertainment","ENTERTAINMENT"],["laundryUniforms","LAUNDRY / UNIFORMS"],["postageCourier","POSTAGE & COURIER"],["printingStationery","PRINTING & STATIONERY"],["licenceInspection","LICENCE & INSPECTION"],["transportation","TRANSPORTATION"],["travelling","TRAVELLING"],["telephone","TELEPHONE"],["creditCardCommission","CREDIT CARD COMMISSION"],["companyHousing","COMPANY HOUSING"],["auditBrand","AUDIT BRAND"],["contractService","CONTRACT SERVICE"],["payrollSystem","PAYROLL SYSTEM"],["pmsHotelindo","PMS — HOTELINDO"],["edp","EDP"],["provisionUniform","PROVISION UNIFORM"],["others","OTHERS"]]}]},
+          {id:"sm",title:"SALES & MARKETING — PAYROLL AND MARKETING EXPENSES",source:"smDetails",groups:[{title:"PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["bonusProvision","PROV. FOR BONUS"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"OTHER EXPENSES",rows:[["advertisingPromotion","ADVERTISING & PROMOTION"],["brochureCollateral","BROCHURE / COLLATERAL"],["directMail","DIRECT MAIL"],["duesTradeAssoc","DUES & TRADE ASSOCIATIONS"],["entertainment","ENTERTAINMENT"],["laundryUniforms","LAUNDRY / UNIFORMS"],["groupAdvertising","GROUP ADVERTISING"],["printingStationery","PRINTING & STATIONERY"],["telephone","TELEPHONE"],["salesMarketingFee","SALES & MARKETING FEE"],["photography","PHOTOGRAPHY"],["centralizedPromotionalProgram","CENTRALIZED PROMOTIONAL PROGRAM"],["promotionVipGift","PROMOTION FOR VIP GIFT"],["salesMarketingKits","SALES & MARKETING KITS"],["provisionUniform","PROVISION UNIFORM"],["others","OTHERS"],["transportation","TRANSPORTATION"],["salesCallOutside","SALES CALL OUTSIDE"],["tradeShows","TRADE SHOWS"],["travellingExpenses","TRAVELLING EXPENSES"],["printMediaNewspaper","PRINT MEDIA — NEWSPAPER"],["otherMediaMagazine","OTHER MEDIA — MAGAZINE"]]}]},
+          {id:"hrd",title:"HUMAN RESOURCES — PAYROLL AND HR EXPENSES",source:"hrdDetails",groups:[{title:"PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurance","INSURANCE"],["bonusProvision","PROV. FOR BONUS"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"OTHER EXPENSES",rows:[["employeeRelation","EMPLOYEE RELATION"],["casual","CASUAL"],["laundryUniforms","LAUNDRY / UNIFORMS"],["postageCourier","POSTAGE & COURIER"],["paperSupplies","PAPER SUPPLIES"],["cleaningSupplies","CLEANING SUPPLIES"],["printingStationery","PRINTING & STATIONERY"],["socialSportActivity","SOCIAL SPORT & ACTIVITY"],["transportation","TRANSPORTATION"],["telephone","TELEPHONE"],["medicalExpenses","MEDICAL EXPENSES"],["trainingEducation","TRAINING & EDUCATION"],["recruitingAdvertisement","RECRUITING & ADVERTISEMENT"],["housePublication","HOUSE PUBLICATION"],["provisionUniform","PROVISION UNIFORM"],["others","OTHERS"]]}]},
+          {id:"pomec",title:"POMEC & UTILITIES — MAINTENANCE / ENERGY",source:"pomecDetails",groups:[{title:"PAYROLL & RELATED",rows:[["salaryWages","SALARY & WAGES"],["incomeTax","INCOME TAX"],["jamsostek","JAMSOSTEK"],["insurancePayroll","INSURANCE"],["thr","THR"],["mealAllowances","MEAL ALLOWANCES"],["medical","MEDICAL / ASKES"],["otherPayroll","OTHER PAYROLL COST"]]},{title:"MAINTENANCE EXPENSES",rows:[["paintingDecoration","PAINTING & DECORATION"],["engineeringSupplies","ENGINEERING SUPPLIES & EQUIPMENT"],["bulbsLamp","BULBS & LAMP"],["printingStationery","PRINTING & STATIONERY"],["laundryUniform","LAUNDRY UNIFORM"],["provisionUniform","PROVISION FOR UNIFORM"],["acMaintenance","AC MAINTENANCE"],["buildingMaintenance","BUILDING MAINTENANCE"],["electricityMaintenance","ELECTRICITY MAINTENANCE"],["floorCovering","FLOOR COVERING"],["furnitureFixtureRepair","FURNITURE & FIXTURE REPAIRMENT"],["mechanicalElectricalMaintenance","MECHANICAL & ELECTRICAL MAINTENANCE"],["kitchenEquipmentMaintenance","KITCHEN EQUIPMENT MAINTENANCE"],["refrigeratorMaintenance","REFRIGERATOR MAINTENANCE"],["automobileRepair","AUTOMOBILE REPAIR & SERVICES"],["plumbingHeatingMaintenance","PLUMBING / HEATING MAINTENANCE"],["removalWaste","REMOVAL WASTE"],["others","OTHERS"]]},{title:"UTILITIES / ENERGY",rows:[["electricityConsumed","ELECTRICITY CONSUMED"],["waterConsumed","WATER CONSUMED"],["fuelDieselConsumed","FUEL / DIESEL CONSUMED"]]}]}
+        ] as const).map((department,di)=><div key={department.id} className="mb-5 break-inside-auto">
+          <h4 className="mb-2 text-[11px] font-black">{String.fromCharCode(65+di)}. {department.title}</h4>
+          {department.groups.map(group=><div key={group.title} className="mb-3">
+            <p className="bg-slate-200 px-2 py-1 text-[9px] font-black">{group.title}</p>
+            <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">
+              <thead><tr className="bg-slate-800 text-white"><th className="w-[180px] px-2 py-1.5 text-left">Description</th>{form.forecast.monthly.map((month,i)=><th key={month.label} className="px-1 py-1.5 text-right">{monthNames[i].slice(0,3)}</th>)}<th className="bg-teal-700 px-2 py-1.5 text-right">TOTAL</th></tr></thead>
+              <tbody>{group.rows.map(([key,label],ri)=>{
+                const payrollDept=department.id==="room"?(key.startsWith("fo")?"FO":key.startsWith("hk")?"HK":null):department.id==="fb"?"FB":department.id==="mod"?"MOD":department.id==="ag"?"AG":department.id==="sm"?"SM":department.id==="hrd"?"HRD":"POMEC";
+                const isPayroll=payrollInputKey(key);
+                const vals=form.forecast.monthly.map((month,i)=>{
+                  if(isPayroll&&payrollDept)return optional(payrollValueFor(payrollDept,key));
+                  if(department.id==="room"&&key==="roomRevenue")return optional(month.roomDivisionDetails?.roomRevenue||"")??calcMonthly(month,Number(form.yearStart),i,form.statistics.rooms).roomRevenue;
+                  return optional(((month[department.source]||{}) as Record<string,string>)[key]||"");
+                });
+                const total=vals.some(v=>v!==null)?vals.reduce<number>((sum,v)=>sum+(Number(v??0)||0),0):null;
+                return <tr key={key} className={ri%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-2 py-1 font-medium">{label}{isPayroll?<span className="ml-1 text-[7px] font-bold text-indigo-700">MASTER PAYROLL</span>:null}</td>{vals.map((v,i)=><td key={i} className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{v===null?"—":fmt(v,0)}</td>)}<td className="border-b border-slate-200 bg-teal-50 px-2 py-1 text-right font-bold tabular-nums">{total===null?"—":fmt(total,0)}</td></tr>;
+              })}</tbody>
+            </table></div>
+          </div>)}
+        </div>)}
+      </section>
+
+<section className="mt-7 break-before-page print-payroll-master">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-indigo-950 to-sky-800 px-3 py-2 text-sm font-extrabold text-white">6A. LAPORAN PAYROLL — MASTER PAYROLL (STEP 2)</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan ini bersumber langsung dari Master Payroll. Nilai bulanan mengikuti perhitungan payroll pada form, sedangkan nilai tahunan merupakan estimasi 12 bulan. Perubahan data karyawan hanya dilakukan melalui Master Payroll.</p>
+        <h4 className="mb-2 text-[11px] font-black">A. RINCIAN KARYAWAN &amp; BIAYA PAYROLL</h4>
+        <div className="overflow-x-auto"><table className="w-full border-collapse text-[8px]">
+          <thead><tr className="bg-slate-800 text-white"><th className="px-2 py-1.5 text-left">Department</th><th className="px-2 py-1.5 text-left">Position</th><th className="px-1 py-1.5 text-right">HC</th><th className="px-1 py-1.5 text-right">Basic / Month</th><th className="px-1 py-1.5 text-right">Medical</th><th className="px-1 py-1.5 text-right">Meal</th><th className="px-1 py-1.5 text-right">THR / Month</th><th className="px-1 py-1.5 text-right">BPJS Company</th><th className="px-1 py-1.5 text-right">Income Tax</th><th className="px-1 py-1.5 text-right">Insurance</th><th className="px-1 py-1.5 text-right">Other</th><th className="px-2 py-1.5 text-right">Monthly Total</th><th className="px-2 py-1.5 text-right">Annual Total</th></tr></thead>
+          <tbody>{(form.payrollEmployees||[]).map((emp,i)=>{const c=payrollCalc(emp);const active=payrollHasInputs(emp);const n=(v:string)=>optional(v)??0;return <tr key={emp.id} className={i%2?"bg-slate-50":""}><td className="border-b border-slate-200 px-2 py-1">{emp.department||"—"}</td><td className="border-b border-slate-200 px-2 py-1">{emp.position||"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active?fmt(c.count,0):"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active?money(c.basic):"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active?money(c.medical):"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active?money(c.meal):"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{money(c.thr)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{money(c.bpjsCompany)}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active&&c.hasPtkp?money(c.taxMonth):"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active?money(c.insurance):"—"}</td><td className="border-b border-slate-200 px-1 py-1 text-right">{active?money(c.other):"—"}</td><td className="border-b border-slate-200 bg-teal-50 px-2 py-1 text-right font-bold">{active?money(c.total):"—"}</td><td className="border-b border-slate-200 bg-teal-50 px-2 py-1 text-right font-bold">{active?money(c.total*12):"—"}</td></tr>;})}
+          <tr className="bg-slate-200 font-black"><td colSpan={11} className="border-b border-slate-300 px-2 py-1.5">TOTAL PAYROLL &amp; RELATED EXPENSES</td><td className="border-b border-slate-300 px-2 py-1.5 text-right">{money((form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+payrollCalc(emp).total,0))}</td><td className="border-b border-slate-300 px-2 py-1.5 text-right">{money((form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+payrollCalc(emp).total*12,0))}</td></tr>
+          </tbody>
+        </table></div>
+        <h4 className="mb-2 mt-5 text-[11px] font-black">B. PAYROLL DISTRIBUTION — RINGKASAN PER DEPARTEMEN</h4>
+        <div className="rounded-xl border border-slate-200 bg-white p-3">
+          {(() => {
+            const payrollGrandTotal=(form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+payrollCalc(emp).total,0);
+            const payrollDepartments=[["FO","Front Office","#3B82F6"],["HK","Housekeeping","#8B5CF6"],["FB","Food & Beverage","#F59E0B"],["MOD","Minor Operated Dept","#14B8A6"],["AG","Administration & General","#64748B"],["HR","Human Resources","#EC4899"],["SEC","Security","#EF4444"],["SM","Sales & Marketing","#06B6D4"],["POMEC","POMEC & Utilities","#84CC16"]] as const;
+            const payrollHeadcount=(form.payrollEmployees||[]).filter(payrollHasInputs).reduce((sum,emp)=>sum+(Number(emp.headcount)||0),0);
+            return <>
+              <div className="mb-3 grid grid-cols-2 gap-2">
+                <div className="rounded-lg border border-blue-100 bg-blue-50 px-3 py-2"><div className="text-[8px] font-semibold text-blue-700">TOTAL PAYROLL / BULAN</div><div className="mt-0.5 text-sm font-black text-blue-950">{payrollGrandTotal>0?idr(payrollGrandTotal):"—"}</div></div>
+                <div className="rounded-lg border border-emerald-100 bg-emerald-50 px-3 py-2"><div className="text-[8px] font-semibold text-emerald-700">TOTAL STAF</div><div className="mt-0.5 text-sm font-black text-emerald-950">{payrollHeadcount>0?fmt(payrollHeadcount,0)+" staf":"—"}</div></div>
+              </div>
+              <div className="grid grid-cols-2 gap-x-3 gap-y-2">
+                {payrollDepartments.map(([key,label,color])=>{const departmentTotal=payrollDistributionMonthly(key);const people=(form.payrollEmployees||[]).filter(emp=>payrollDistributionMatches(emp,key)&&payrollHasInputs(emp));const headcount=people.reduce((sum,emp)=>sum+(Number(emp.headcount)||0),0);const hasValue=people.length>0;const pct=payrollGrandTotal>0&&hasValue?departmentTotal/payrollGrandTotal*100:null;const width=pct===null?0:Math.min(100,Math.max(0,pct));return <div key={key} className="min-w-0 rounded-lg border border-slate-200 p-2">
+                  <div className="mb-1 flex items-start gap-1.5"><span className="mt-0.5 h-2 w-2 shrink-0 rounded-sm" style={{backgroundColor:color}}/><div className="min-w-0 flex-1 text-[9px] font-bold leading-3 text-slate-800">{label}</div><div className="shrink-0 text-right"><div className="text-[9px] font-black leading-3 text-slate-900">{hasValue?idr(departmentTotal):"—"}</div><div className="text-[8px] font-bold" style={{color}}>{pct===null?"—":fmt(pct,1)+"%"}</div></div></div>
+                  <div className="mb-1 h-1.5 overflow-hidden rounded-full bg-slate-100"><div className="h-full rounded-full" style={{width:width+"%",backgroundColor:color}}/></div>
+                  <div className="text-[8px] leading-3 text-slate-500">{headcount>0?fmt(headcount,0)+" staf":"— staf"}</div>
+                </div>;})}
+              </div>
+              <p className="mt-2 text-[8px] leading-3 text-slate-500">Persentase dihitung dari total payroll bulanan. Diagram menggunakan sumber data Master Payroll yang sama dengan ringkasan pada form.</p>
+            </>;
+          })()}
+        </div>
+        {!(form.payrollEmployees||[]).length?<p className="mt-3 rounded border border-amber-200 bg-amber-50 p-2 text-[9px]">Data Master Payroll belum diisi. Silakan lengkapi Master Payroll agar rincian biaya payroll muncul di laporan.</p>:null}
+      </section>
+
+
+      <section className="mt-7 break-before-page print-final-validation">
+        <h3 className="mb-1 rounded-lg bg-gradient-to-r from-emerald-950 to-teal-800 px-3 py-2 text-sm font-extrabold text-white">7. FINAL VALIDASI &amp; REKOMENDASI CORESTAY</h3>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Ringkasan manajemen berdasarkan angka Budget P&amp;L yang tersedia. Nilai yang belum diisi tetap ditandai — dan tidak dianggap sebagai nol.</p>
+        {(() => {
+          const rev = revenueBudget;
+          const costs = costBudget;
+          const gop = rev!==null && costs!==null ? rev-costs : null;
+          const margin = rev!==null && rev>0 && gop!==null ? gop/rev*100 : null;
+          const payroll = sumGroup(form.accounts,"payroll","budget",allAccountLines);
+          const payrollPct = rev!==null && rev>0 && payroll!==null ? payroll/rev*100 : null;
+          const number = (v:number|null) => v===null ? "—" : new Intl.NumberFormat("id-ID",{maximumFractionDigits:0}).format(v);
+          const percent = (v:number|null) => v===null ? "—" : v.toLocaleString("id-ID",{maximumFractionDigits:1,minimumFractionDigits:1})+"%";
+          const findings:string[]=[];
+          if(rev===null || costs===null) findings.push("Data pendapatan atau biaya Budget P&L belum lengkap; kesimpulan profitabilitas masih terbatas.");
+          if(gop!==null && gop<0) findings.push("GOP negatif: biaya operasional melebihi pendapatan. Tinjau asumsi pendapatan dan akun biaya utama sebelum budget disahkan.");
+          else if(margin!==null && margin<20) findings.push("GOP Margin di bawah indikator awal 20%; evaluasi produktivitas pendapatan dan biaya terbesar. Ambang ini bukan standar universal untuk semua hotel.");
+          if(payrollPct!==null && payrollPct>35) findings.push("Payroll / Revenue melewati indikator awal 35%; tinjau roster, lembur, dan produktivitas tanpa menurunkan standar layanan.");
+          if(!findings.length) findings.push("Belum ada sinyal risiko utama yang dapat disimpulkan dari indikator terisi. Validasi kewajaran asumsi dan bandingkan dengan karakteristik serta kinerja historis hotel.");
+          return <>
+            <div className="grid grid-cols-2 gap-2 text-[10px] sm:grid-cols-4">
+              <div className="rounded-lg border border-slate-200 p-2"><p className="text-slate-500">Total Revenue Budget</p><p className="mt-1 font-black">{number(rev)}</p></div>
+              <div className="rounded-lg border border-slate-200 p-2"><p className="text-slate-500">Operating Costs Budget</p><p className="mt-1 font-black">{number(costs)}</p></div>
+              <div className="rounded-lg border border-slate-200 p-2"><p className="text-slate-500">GOP Budget</p><p className="mt-1 font-black">{number(gop)}</p></div>
+              <div className="rounded-lg border border-slate-200 p-2"><p className="text-slate-500">GOP Margin</p><p className="mt-1 font-black">{percent(margin)}</p></div>
+            </div>
+            <h4 className="mb-2 mt-4 text-[11px] font-black">A. CORE MANAGEMENT INSIGHTS — PROFITABILITY</h4>
+            <p className="text-[10px] leading-4">{margin===null?"Profitabilitas belum dapat dinilai secara memadai dari data yang tersedia.":margin<0?"Budget menunjukkan biaya operasional melebihi pendapatan; risiko kerugian operasional perlu ditangani sebelum persetujuan.":margin<20?"Margin operasional relatif rendah menurut indikator awal; periksa pendapatan, cost of sales, payroll, dan biaya departemen.":"Margin operasional tampak relatif kuat menurut indikator awal; tetap validasi kewajaran asumsi dan kondisi hotel."}</p>
+            <p className="mt-2 text-[10px] leading-4">Payroll Cost / Revenue: <strong>{percent(payrollPct)}</strong>. {payrollPct===null?"Rasio belum dapat dinilai karena payroll atau pendapatan belum lengkap.":"Gunakan rasio ini bersama headcount, roster, tingkat layanan, dan produktivitas departemen."}</p>
+            <h4 className="mb-2 mt-4 text-[11px] font-black">B. KEY FINDINGS &amp; BUSINESS RISKS</h4>
+            <ol className="list-decimal space-y-1 pl-4 text-[10px] leading-4">{findings.map((item,i)=><li key={i}>{item}</li>)}</ol>
+            <h4 className="mb-2 mt-4 text-[11px] font-black">C. RECOMMENDED MANAGEMENT ACTIONS</h4>
+            <table className="w-full border-collapse text-[9px]">
+              <thead><tr className="bg-slate-100 text-left"><th className="border px-2 py-1">Prioritas</th><th className="border px-2 py-1">Tindakan</th><th className="border px-2 py-1">PIC</th></tr></thead>
+              <tbody>
+                <tr><td className="border px-2 py-1 font-bold">P1 · Tinggi</td><td className="border px-2 py-1">Validasi baseline revenue, okupansi/ARR, dan anggaran outlet; pastikan asumsi dapat ditelusuri dan disetujui.</td><td className="border px-2 py-1">Finance + Rooms + Sales &amp; Marketing</td></tr>
+                {(gop!==null&&gop<0)||(margin!==null&&margin<20)?<tr><td className="border px-2 py-1 font-bold">P1 · Tinggi</td><td className="border px-2 py-1">Tinjau akun biaya terbesar dan susun rencana pemulihan GOP; jangan mengurangi kebutuhan layanan secara membabi buta.</td><td className="border px-2 py-1">Finance + seluruh HOD</td></tr>:null}
+                {payrollPct!==null&&payrollPct>35?<tr><td className="border px-2 py-1 font-bold">P2 · Menengah</td><td className="border px-2 py-1">Tinjau roster, lembur, headcount, dan produktivitas payroll.</td><td className="border px-2 py-1">HRD + Department Heads</td></tr>:null}
+                <tr><td className="border px-2 py-1 font-bold">P2 · Menengah</td><td className="border px-2 py-1">Rekonsiliasi Master Payroll terhadap biaya payroll di setiap departemen dan laporan konsolidasi; pastikan setiap karyawan dihitung satu kali.</td><td className="border px-2 py-1">Finance + HRD</td></tr>
+                <tr><td className="border px-2 py-1 font-bold">P2 · Menengah</td><td className="border px-2 py-1">Bandingkan hasil konsolidasi 1 tahun dengan Year 1 pada proyeksi 10 tahun, lalu tinjau pertumbuhan Year 2–10.</td><td className="border px-2 py-1">Finance</td></tr>
+              </tbody>
+            </table>
+            <p className="mt-2 text-[9px] leading-4 text-slate-500">Catatan: insight ini merupakan panduan manajemen berbasis data yang terisi, bukan pengganti validasi akhir aritmetika dan persetujuan manajemen.</p>
+          </>;
+        })()}
+      </section>
+
+
+<div className="report-brand-footer mt-6 flex flex-wrap items-center justify-between gap-3 border-t-2 border-sky-800 pt-3 text-[9px] text-slate-500 print:mt-4"><span className="font-bold tracking-wide text-slate-600">CORESTAY ADVISORY · HOTEL BUDGET &amp; P&amp;L</span><span>CONFIDENTIAL · {form.hotelName||"Hotel"} · {form.yearStart}</span></div>
+
+{orchestrator==="passed"&&<div className="mx-auto mt-5 flex max-w-3xl items-center gap-4 rounded-2xl border-2 border-emerald-600 bg-gradient-to-r from-emerald-50 via-white to-teal-50 p-4 text-emerald-950 print:break-inside-avoid print:border-2 print:border-emerald-700 print:bg-white">
+        <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full border-2 border-emerald-600 bg-emerald-100 text-3xl print:bg-white" aria-hidden="true">✓</div>
+        <div className="min-w-0 flex-1"><p className="text-[10px] font-black uppercase tracking-[.2em] text-emerald-700 print:text-emerald-900">CORESTAY ADVISORY · VALIDATION SEAL</p><h3 className="mt-1 text-base font-black tracking-wide sm:text-lg">✓ CORESTAY VERIFIED — HOTEL BUDGET</h3><p className="mt-1 text-xs font-semibold">LULUS VALIDASI AKHIR · Pemeriksaan konsistensi data dan perhitungan telah diselesaikan.</p>{summary&&<p className="mt-1 text-[10px] leading-4 text-emerald-800 print:text-slate-700">{summary}</p>}</div>
+        <div className="hidden rotate-[-8deg] rounded-lg border-2 border-emerald-600 px-3 py-2 text-center text-[9px] font-black uppercase tracking-widest text-emerald-700 sm:block print:block">PASSED<br/>CORESTAY</div>
+      </div>}
+
+<div className="mt-6 flex flex-wrap justify-end gap-3 print:hidden"><button type="button" onClick={()=>setPreviewOpen(false)} className="rounded-xl border border-slate-200 px-4 py-2.5 text-sm font-bold">Kembali ke form</button><button type="button" onClick={downloadExcel} className="rounded-xl bg-emerald-600 px-4 py-2.5 text-sm font-bold text-white">Download Excel (.xlsx)</button><button type="button" onClick={()=>window.print()} className="rounded-xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white">Print / Save PDF</button></div>
     </article></div>}
 
     <style jsx global>{`

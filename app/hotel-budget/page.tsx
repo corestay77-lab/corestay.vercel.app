@@ -794,8 +794,18 @@ export default function HotelBudgetPage() {
       const roomDeptRevenue=get("ROOMS",year,0), roomDeptCosts=sumPresent([get("ROOM",year,0),get("ROOM",year,1)]);put("ROOM",year,roomDeptRevenue!==null&&roomDeptCosts!==null?roomDeptRevenue-roomDeptCosts:null,2);
       const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2),get("FOOD & BEVERAGE",year,3)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,4);
       const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
-      const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);put("MINOR OPERATING DEPART",year,modDeptRevenue!==null?modDeptRevenue-(modDeptCosts??0):null,4);
-      const deptIncome=revenue!==null?revenue-(deptOperating??0):null;put("TOTAL DEPTMENT INCOME",year,deptIncome);
+      const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);
+      const modIncomeIndex=find("MINOR OPERATING DEPART",4);
+      const modYear1Income=modIncomeIndex>=0?rows[modIncomeIndex].values[0]??null:null;
+      const calculatedModIncome=modDeptRevenue!==null?modDeptRevenue-(modDeptCosts??0):null;
+      // Keep MOD department income projected in Years 2–10 when its source revenue row is blank,
+      // using the existing Year 1 department-income value and selected growth assumptions.
+      const projectedModIncome=calculatedModIncome!==null?calculatedModIncome:(modYear1Income!==null?modYear1Income*growth(year):null);
+      put("MINOR OPERATING DEPART",year,projectedModIncome,4);
+      // Total Department Income is the sum of available departmental income subtotals.
+      // Missing departments stay blank; one available department must still flow into the total.
+      const deptIncome=sumPresent([get("ROOM",year,2),get("FOOD & BEVERAGE",year,4),get("MINOR OPERATING DEPART",year,4)]);
+      put("TOTAL DEPTMENT INCOME",year,deptIncome);
       const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% G O P",year,pct(gop,revenue));

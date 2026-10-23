@@ -210,9 +210,10 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));
   // House Profit follows the hotel consolidated statement: Department Income less Overhead Department.
   const houseProfit=deptIncomeTotal.map((income,i)=>income!==null?income-(overheadTotal[i]??0):null);
-  // GOP is reported before management/marketing fees, per the approved CoreStay accounting rule.
-  const goi=houseProfit;
-  const gop=goi;
+  // Gross Operating Income is House Profit after Basic Management Fee; GOP remains before management fee.
+  const basicManagementFeeMonthly=monthly("basicManagementFee");
+  const goi=houseProfit.map((v,i)=>v!==null?v-(basicManagementFeeMonthly[i]??0):null);
+  const gop=houseProfit;
   // Detailed below-GOP accounts are read from the monthly Owner P&L input table.
   const pnlLabel=(code:string,label:string)=>form.itemLabelOverrides?.["owner:pnl_"+code]?.trim()||label;
   const ownerLabel=(key:string,label:string)=>form.itemLabelOverrides?.["owner:"+key]?.trim()||label;
@@ -775,7 +776,8 @@ export default function HotelBudgetPage() {
         put("TOTAL DEPTMENT INCOME",year,deptIncome);
         const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;
         put("HOUSE PROFIT",year,houseProfit);
-        put("GROSS OPERATING INCOME",year,houseProfit);
+        const basicManagementFee=get("BASIC MANAGEMENT FEE",year);
+        put("GROSS OPERATING INCOME",year,houseProfit!==null?houseProfit-(basicManagementFee??0):null);
         put("GROSS OPERATING PROFIT (GOP)",year,houseProfit);
         put("% G O P",year,pct(houseProfit,revenue));
         continue;
@@ -807,7 +809,8 @@ export default function HotelBudgetPage() {
       const deptIncome=sumPresent([get("ROOM",year,2),get("FOOD & BEVERAGE",year,4),get("MINOR OPERATING DEPART",year,4)]);
       put("TOTAL DEPTMENT INCOME",year,deptIncome);
       const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;put("HOUSE PROFIT",year,houseProfit);
-      const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
+      const basicManagementFee=get("BASIC MANAGEMENT FEE",year);
+      const goi=houseProfit!==null?houseProfit-(basicManagementFee??0):null;put("GROSS OPERATING INCOME",year,goi);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% G O P",year,pct(gop,revenue));
       // Year 1 uses the same partial-input rule as projected years for this key subtotal; all individual blank expense rows stay as em dashes.
       const otherIncome=sumPresent([pnlLabel("81101001","Gain/Loss on Disposal Asset"),pnlLabel("81101002","Deferred Tax"),pnlLabel("81101003","Interest Income"),pnlLabel("81101004","Exchange Rates"),pnlLabel("81101999","Other - Other Income")].map(label=>get(label,year)));
@@ -853,7 +856,8 @@ export default function HotelBudgetPage() {
       put("TOTAL OVERHEAD DEPARTMENT",year,[overheadPayrollValue,overheadOtherValue].some(v=>v!==null)?overheadValue:null);
       const houseProfitValue=deptIncomeValue-overheadValue;
       put("HOUSE PROFIT",year,houseProfitValue);
-      put("GROSS OPERATING INCOME",year,houseProfitValue);
+      const finalBasicManagementFee=get("BASIC MANAGEMENT FEE",year);
+      put("GROSS OPERATING INCOME",year,houseProfitValue-(finalBasicManagementFee??0));
       put("GROSS OPERATING PROFIT (GOP)",year,houseProfitValue);
       put("% G O P",year,pct(houseProfitValue,revenueValue));
       // Recalculate owner-profit subtotals from the finalized projected values. Blank detail inputs remain blank; only the derived formula treats them as zero when upstream profit exists.

@@ -204,7 +204,7 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const departmentalOperatingCost=costParts.map(c=>sumPresent([c.cos,c.payroll,c.deptOther]));
   // A blank total cost bucket is unknown, not zero. Calculate department income only when
   // revenue and at least one valid departmental cost subtotal are available for that month.
-  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null&&cost!==null?revenue[i]!-cost:null);
+  const deptIncomeTotal=departmentalOperatingCost.map((cost,i)=>revenue[i]!==null?revenue[i]!-(cost??0):null);
   // Keep blank account rows blank; partial entered values are subtotalled, but a wholly blank
   // overhead group must not silently produce House Profit = Department Income.
   const overheadTotal=costParts.map(c=>sumPresent([c.overheadPayroll,c.overheadOther]));

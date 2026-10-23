@@ -329,13 +329,24 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   const ownerOtherExpenseLines=[monthly("landLease"),monthly("ownerInsurance"),ffeReplacement,monthly("capitalExpenditure")];
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
-  const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
+  // Sum only entered owner-expense items for calculation; keep each unentered detail cell blank in the report.
+  // This avoids one blank account suppressing other valid entered expenses.
+  const ownerOtherExpenseTotal=monthNames.map((_,i)=>{
+    const entered=ownerOtherExpenseLines.map(line=>line[i]).filter((v):v is number=>v!==null&&Number.isFinite(v));
+    return entered.length?entered.reduce((sum,v)=>sum+v,0):null;
+  });
   // Owner-profit calculations must roll through every month. A blank owner-cost input remains "—" in its detail row,
   // but is treated as no entered deduction for the calculation until the user supplies an amount.
   const osp=gop.map((v,i)=>v!==null?v-(ownerOtherExpenseTotal[i]??0):null);
-  const ownersExpense=monthNames.map((_,i)=>completeSum([monthly("maintenanceFee")[i]??null,monthly("ownerOtherExpenses")[i]??null]));
+  const ownersExpense=monthNames.map((_,i)=>{
+    const entered=[monthly("maintenanceFee")[i],monthly("ownerOtherExpenses")[i]].filter((v):v is number=>v!==null&&Number.isFinite(v));
+    return entered.length?entered.reduce((sum,v)=>sum+v,0):null;
+  });
   const incentiveFee=monthly("incentiveFee");
-  const totalOwnerExpenses=monthNames.map((_,i)=>completeSum([incentiveFee[i]??null,ownersExpense[i]??null]));
+  const totalOwnerExpenses=monthNames.map((_,i)=>{
+    const entered=[incentiveFee[i],ownersExpense[i]].filter((v):v is number=>v!==null&&Number.isFinite(v));
+    return entered.length?entered.reduce((sum,v)=>sum+v,0):null;
+  });
   const nosp=monthNames.map((_,i)=>osp[i]!==null?osp[i]!-(totalOwnerExpenses[i]??0):null);
   const roomUnits=optional(form.statistics.rooms);
   section("OTHER EXPENSES");

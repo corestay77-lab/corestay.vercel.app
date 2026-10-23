@@ -2704,10 +2704,12 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
 
 <section className="mt-7 print-one-year">
         <h3 className="mb-1 rounded-lg bg-gradient-to-r from-sky-950 to-blue-800 px-3 py-2 text-sm font-extrabold text-white">2. 1 YEAR CONSOLIDATED — {form.yearStart}</h3>
-        <p className="mb-3 text-[10px] leading-4 text-slate-600">Consolidated statement mengikuti data input dan perhitungan sumber yang sama. Kolom periode disusun Dec lalu Jan–Nov; nilai kosong tetap — dan persentase dihitung dari basis pendapatan departemen atau total revenue sesuai jenis akun.</p>
+        <p className="mb-3 text-[10px] leading-4 text-slate-600">Laporan konsolidasi tahunan berdasarkan data dan rumus input yang sama. Kolom disusun DEC lalu JAN–NOV, masing-masing dengan nilai dan persentase, diikuti TOTAL / AVG.</p>
         {(() => {
           const order = [11,0,1,2,3,4,5,6,7,8,9,10];
-          const rows = buildConsolidatedRows(consolidatedForm);
+          const consolidatedRows = buildConsolidatedRows(consolidatedForm);
+          const otherIncomeExpenseStart = consolidatedRows.findIndex(line => line.kind === "section" && line.label === "8 OTHER INCOME & EXPENSES");
+          const rows = otherIncomeExpenseStart >= 0 ? consolidatedRows.slice(0, otherIncomeExpenseStart) : consolidatedRows;
           const year = Number(form.yearStart);
           const roomCount = optional(form.statistics.rooms);
           const monthlyStats = order.map(i => {
@@ -2738,17 +2740,15 @@ return <div className="overflow-x-auto rounded-xl border border-slate-200 bg-whi
           ] as const;
           const display = (value: number | null | undefined, kind: string) => value === null || value === undefined || !Number.isFinite(value) ? "—" : kind === "percent" ? fmt(value, 2) + "%" : kind === "count" ? fmt(value, 0) : fmt(value, kind === "rate" ? 2 : 0);
           const rowPct = (value: number | null, base: number | null) => value === null || base === null || base === 0 ? null : value / base * 100;
-          const heading = (label: string) => <tr key={label}><th colSpan={27} className="border-t-2 border-slate-400 bg-slate-200 px-2 py-2 text-left font-black">{label}</th></tr>;
+          const heading = (label: string) => { const tone = label === "REVENUES" ? "border-sky-300 bg-sky-100 text-sky-950" : label === "COST OF SALES" ? "border-amber-300 bg-amber-100 text-amber-950" : label.includes("PAYROLL") ? "border-violet-300 bg-violet-100 text-violet-950" : label === "OTHER EXPENSES" ? "border-orange-300 bg-orange-100 text-orange-950" : label === "DEPARTMENT INCOME" ? "border-teal-300 bg-teal-100 text-teal-950" : label === "OVERHEAD DEPARTMENT" ? "border-indigo-300 bg-indigo-100 text-indigo-950" : label === "OTHER NON OPERATING EXPENSES" ? "border-rose-300 bg-rose-100 text-rose-950" : "border-slate-300 bg-slate-100 text-slate-900"; return <tr key={label}><th colSpan={27} className={"border-t-2 px-2 py-2 text-left font-black " + tone}>{label}</th></tr>; };
           return <div className="overflow-x-auto">
-            <table className="w-full min-w-[1300px] border-collapse text-[8px]">
+            <table className="w-max min-w-full border-collapse text-[10px]">
               <thead>
-                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[130px] px-0.5 py-0.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-2 py-1.5 text-center">TOTAL / AVG</th></tr>
+                <tr className="bg-sky-950 text-white"><th rowSpan={2} className="min-w-[220px] px-2 py-1.5 text-left">CONSOLIDATED</th>{order.map(i => <th key={i} colSpan={2} className="px-1 py-1.5 text-center">{i === 11 ? "DEC" : monthNames[i].slice(0,3).toUpperCase()}</th>)}<th colSpan={2} className="bg-teal-800 px-2 py-1.5 text-center">TOTAL / AVG</th></tr>
                 <tr className="bg-slate-700 text-white">{order.map(i => <Fragment key={i}><th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></Fragment>)}<th className="px-1 py-1 text-right">VALUE</th><th className="px-1 py-1 text-right">%</th></tr>
               </thead>
               <tbody>
-                {heading("STATISTICS")}
-                {statRows.map(line => <tr key={line.label}><th className="border-b border-slate-200 bg-white px-1 py-0.5 text-left font-semibold">{line.label}</th>{order.map((i,j) => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(line.values[j], line.kind)}</td><td className="border-b border-slate-200 px-0.5 py-0.5 text-right">—</td></Fragment>)}<td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{display(line.total, line.kind)}</td><td className="border-b border-slate-200 bg-sky-50 px-0.5 py-0.5 text-right">—</td></tr>)}
-                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={idx % 2 ? "bg-slate-50" : "bg-white"}>
+                {rows.map((line, idx) => line.kind === "section" ? heading(line.label) : <tr key={line.label+"-"+idx} className={["TOTAL OTHER EXPENSES","TOTAL OWNER EXPENSES"].includes(line.label) ? "bg-orange-50 font-bold" : ["OWNER SHARE PROFIT (OSP)","NET OWNER SHARE PROFIT (NOSP)","NET OWNER SHARE PROFIT/UNIT"].includes(line.label) ? "bg-teal-50 font-bold" : ["GROSS OPERATING INCOME","GROSS OPERATING PROFIT (GOP)","HOUSE PROFIT"].includes(line.label) ? "bg-indigo-50 font-bold" : (idx % 2 ? "bg-slate-50" : "bg-white")}>
                   <th className="border-b border-slate-200 px-2 py-2 text-left font-semibold">{line.label}</th>
                   {order.map(i => <Fragment key={i}><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{display(line.values[i], "money")}</td><td className="border-b border-slate-200 px-1 py-1.5 text-right tabular-nums whitespace-nowrap">{line.values[i] === null || line.values[i] === undefined || line.base?.[i] === null || line.base?.[i] === undefined || line.base?.[i] === 0 ? "—" : fmt((line.values[i] as number) / (line.base[i] as number) * 100, 2) + "%"}</td></Fragment>)}
                   <td className="border-b border-slate-200 bg-sky-50 px-2 py-1.5 text-right font-bold tabular-nums whitespace-nowrap">{display(line.total ?? null, "money")}</td>

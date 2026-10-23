@@ -330,11 +330,11 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
-  const osp=gop.map((v,i)=>v!==null&&ownerOtherExpenseTotal[i]!==null?v-ownerOtherExpenseTotal[i]!:null);
+  const osp=gop.map((v,i)=>v!==null?v-(ownerOtherExpenseTotal[i]??0):null);
   const ownersExpense=monthNames.map((_,i)=>completeSum([monthly("maintenanceFee")[i]??null,monthly("ownerOtherExpenses")[i]??null]));
   const incentiveFee=monthly("incentiveFee");
   const totalOwnerExpenses=monthNames.map((_,i)=>completeSum([incentiveFee[i]??null,ownersExpense[i]??null]));
-  const nosp=monthNames.map((_,i)=>osp[i]!==null&&totalOwnerExpenses[i]!==null?osp[i]!-totalOwnerExpenses[i]!:null);
+  const nosp=monthNames.map((_,i)=>osp[i]!==null?osp[i]!-(totalOwnerExpenses[i]??0):null);
   const roomUnits=optional(form.statistics.rooms);
   section("OTHER EXPENSES");
   add(ownerLabel("landLease","LAND LEASE HOLD"),monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
@@ -827,9 +827,9 @@ export default function HotelBudgetPage() {
       const nonOperatingExpenseTotal=sumPresent([get("MANAGEMENT & MARKETING FEES",year),get("INSURANCE GENERAL",year)]);put("TOTAL OTHER EXPENSES",year,nonOperatingExpenseTotal,2);
       const ownerOtherExpenses=completeSum([get("LAND LEASE HOLD",year),get("PROPERTY INSURANCE",year),get("F.F & E REPLACEMENT",year),get("CAPITAL EXPENDITURE",year)]);put("TOTAL OTHER EXPENSES",year,ownerOtherExpenses,3);
       // Keep projected owner profit consistent with Year 1: blank owner-cost groups must not silently become zero.
-      const ospValue=gop!==null&&ownerOtherExpenses!==null?gop-ownerOtherExpenses:null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
+      const ospValue=gop!==null?gop-(ownerOtherExpenses??0):null;put("OWNER SHARE PROFIT (OSP)",year,ospValue);
       const ownerExpenses=completeSum([get("INCENTIVE Fee",year),get("OWNERS EXPENSE",year)]);put("TOTAL OWNER EXPENSES",year,ownerExpenses);
-      const nospValue=ospValue!==null&&ownerExpenses!==null?ospValue-ownerExpenses:null;put("NETT OWNER PROFIT (BEFORE TAX)",year,nospValue);
+      const nospValue=ospValue!==null?ospValue-(ownerExpenses??0):null;put("NET OWNER SHARE PROFIT (NOSP)",year,nospValue);
       const roomUnits=optional(source.statistics.rooms);put("NET OWNER SHARE PROFIT/UNIT",year,nospValue!==null&&roomUnits!==null&&roomUnits>0?nospValue/roomUnits:null);
     }
     // Final integrity pass: recompute the derived subtotal chain from the actual
@@ -856,6 +856,17 @@ export default function HotelBudgetPage() {
       put("GROSS OPERATING INCOME",year,houseProfitValue);
       put("GROSS OPERATING PROFIT (GOP)",year,houseProfitValue);
       put("% G O P",year,pct(houseProfitValue,revenueValue));
+      // Recalculate owner-profit subtotals from the finalized projected values. Blank detail inputs remain blank; only the derived formula treats them as zero when upstream profit exists.
+      const finalGop=get("GROSS OPERATING PROFIT (GOP)",year);
+      const finalOwnerOther=get("TOTAL OTHER EXPENSES",year,3);
+      const finalOsp=finalGop!==null?finalGop-(finalOwnerOther??0):null;
+      put("OWNER SHARE PROFIT (OSP)",year,finalOsp);
+      const finalOwnerExpenses=sumPresent([get("INCENTIVE Fee",year),get("OWNERS EXPENSE",year)]);
+      put("TOTAL OWNER EXPENSES",year,finalOwnerExpenses);
+      const finalNosp=finalOsp!==null?finalOsp-(finalOwnerExpenses??0):null;
+      put("NET OWNER SHARE PROFIT (NOSP)",year,finalNosp);
+      const ownerRoomUnits=optional(source.statistics.rooms);
+      put("NET OWNER SHARE PROFIT/UNIT",year,finalNosp!==null&&ownerRoomUnits!==null&&ownerRoomUnits>0?finalNosp/ownerRoomUnits:null);
     }
     return rows.map(line=>{
       if(line.section)return {...line,total:null,totalPct:null};

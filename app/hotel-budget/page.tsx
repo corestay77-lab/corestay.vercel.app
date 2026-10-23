@@ -753,8 +753,8 @@ export default function HotelBudgetPage() {
       }
     });
     for(let year=0;year<yearCount;year++){
-      // Preserve YEAR 1 exactly as the current 1 Year Consolidated source; only recalculate projected years after manual overrides.
-      if(year===0)continue;
+      // Department Income and GOP must remain calculable when revenue exists but some cost groups are still blank.
+      // Blank cost groups are treated as zero for this subtotal calculation only; their source rows remain blank.
       const revenueParts=[get("ROOMS",year,0),get("FOOD & BEVERAGE",year,0),get("MINOR OPERATING DEPART",year,0)];
       const revenue=sumPresent(revenueParts);
       // Match the exact consolidated statement labels; otherwise put() silently misses the row.
@@ -772,9 +772,11 @@ export default function HotelBudgetPage() {
       const fbDeptRevenue=get("FOOD & BEVERAGE",year,0), fbDeptCosts=sumPresent([get("FOOD & BEVERAGE",year,1),get("FOOD & BEVERAGE",year,2),get("FOOD & BEVERAGE",year,3)]);put("FOOD & BEVERAGE",year,fbDeptRevenue!==null&&fbDeptCosts!==null?fbDeptRevenue-fbDeptCosts:null,4);
       const phoneDeptRevenue=get("TELEPHONE & FACSIMILE",year,0), phoneDeptCosts=sumPresent([get("Telephone & Facsimile",year,0),get("TELEPHONE",year,0),get("TELEPHONE & FACSIMILE",year,1)]);put("TELEPHONE & FACSIMILE",year,phoneDeptRevenue!==null&&phoneDeptCosts!==null?phoneDeptRevenue-phoneDeptCosts:null,1);
       const modDeptRevenue=get("MINOR OPERATING DEPART",year,0), modDeptCosts=sumPresent([get("MINOR OPERATING DEPART",year,1),get("MINOR OPERATING DEPART",year,2),get("MINOR OPERATING DEPART",year,3)]);put("MINOR OPERATING DEPART",year,modDeptRevenue!==null&&modDeptCosts!==null?modDeptRevenue-modDeptCosts:null,4);
-      const deptIncome=revenue!==null&&deptOperating!==null?revenue-deptOperating:null;put("TOTAL DEPTMENT INCOME",year,deptIncome);const houseProfit=deptIncome!==null&&overhead!==null?deptIncome-overhead:null;put("HOUSE PROFIT",year,houseProfit);
+      const deptIncome=revenue!==null?revenue-(deptOperating??0):null;put("TOTAL DEPTMENT INCOME",year,deptIncome);
+      const houseProfit=deptIncome!==null?deptIncome-(overhead??0):null;put("HOUSE PROFIT",year,houseProfit);
       const goi=houseProfit;put("GROSS OPERATING INCOME",year,goi);
       const gop=houseProfit;put("GROSS OPERATING PROFIT (GOP)",year,gop);put("% G O P",year,pct(gop,revenue));
+      // Year 1 uses the same partial-input rule as projected years for this key subtotal; all individual blank expense rows stay as em dashes.
       const otherIncome=sumPresent([pnlLabel("81101001","Gain/Loss on Disposal Asset"),pnlLabel("81101002","Deferred Tax"),pnlLabel("81101003","Interest Income"),pnlLabel("81101004","Exchange Rates"),pnlLabel("81101999","Other - Other Income")].map(label=>get(label,year)));
       const otherExpense=sumPresent([pnlLabel("81201001","Loss and Breakage"),pnlLabel("81201002","Owners Expenses"),pnlLabel("81201003","Property Insurance"),pnlLabel("81201004","Property Tax"),pnlLabel("81201005","Property Rent / Land Assessment"),pnlLabel("81201006","Project & Building Renovation"),pnlLabel("81201007","Consultant Fee"),pnlLabel("81201999","Other - Other Expense")].map(label=>get(label,year)));
       const operatorFee=sumPresent([pnlLabel("81202001","Management Fee"),pnlLabel("81202002","Marketing Fee"),pnlLabel("81202003","Royalty Fee")].map(label=>get(label,year)));

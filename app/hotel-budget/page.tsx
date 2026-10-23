@@ -330,11 +330,13 @@ const buildConsolidatedRows = (form:BudgetForm):ConsolidatedRow[] => {
   // Keep owner-profit calculations unknown when every related input is blank.
   // Partial entered expense details are subtotalled, but an entirely blank group is never treated as zero.
   const ownerOtherExpenseTotal=monthNames.map((_,i)=>completeSum(ownerOtherExpenseLines.map(line=>line[i]??null)));
-  const osp=gop.map((v,i)=>v!==null&&ownerOtherExpenseTotal[i]!==null?v-ownerOtherExpenseTotal[i]!:null);
+  // Owner-profit calculations must roll through every month. A blank owner-cost input remains "—" in its detail row,
+  // but is treated as no entered deduction for the calculation until the user supplies an amount.
+  const osp=gop.map((v,i)=>v!==null?v-(ownerOtherExpenseTotal[i]??0):null);
   const ownersExpense=monthNames.map((_,i)=>completeSum([monthly("maintenanceFee")[i]??null,monthly("ownerOtherExpenses")[i]??null]));
   const incentiveFee=monthly("incentiveFee");
   const totalOwnerExpenses=monthNames.map((_,i)=>completeSum([incentiveFee[i]??null,ownersExpense[i]??null]));
-  const nosp=monthNames.map((_,i)=>osp[i]!==null&&totalOwnerExpenses[i]!==null?osp[i]!-totalOwnerExpenses[i]!:null);
+  const nosp=monthNames.map((_,i)=>osp[i]!==null?osp[i]!-(totalOwnerExpenses[i]??0):null);
   const roomUnits=optional(form.statistics.rooms);
   section("OTHER EXPENSES");
   add(ownerLabel("landLease","LAND LEASE HOLD"),monthly("landLease"),"money","landLease",sumPresent(monthly("landLease")),revenue);
@@ -1304,7 +1306,9 @@ export default function HotelBudgetPage() {
         const agPayroll=payrollFor("AG",row.agPayroll);
         const smPayroll=payrollFor("SM",row.smPayroll);
         const hrdPayroll=payrollFor("HRD",row.hrdPayroll);
-        const pomecPayroll=payrollFor("POMEC",row.pomecPayroll);
+        const pomecPayroll=(form.payrollEmployees||[]).length>0
+          ?(()=>{const pomec=payrollDepartmentHasInputs("POMEC")?payrollDepartmentMonthly("POMEC").total:0;const securityEngineering=payrollDepartmentHasInputs("SEC")?payrollDepartmentMonthly("SEC").total:0;return pomec+securityEngineering>0?String(pomec+securityEngineering):"";})()
+          :row.pomecPayroll;
         const agOtherDetails=sumDetails(row.agDetails,["bankCharges","donation","duesTradeAssoc","entertainment","laundryUniforms","postageCourier","printingStationery","licenceInspection","transportation","travelling","telephone","creditCardCommission","companyHousing","auditBrand","contractService","payrollSystem","pmsHotelindo","edp","provisionUniform","others"]);
         const smOtherDetails=sumDetails(row.smDetails,["advertisingPromotion","brochureCollateral","directMail","duesTradeAssoc","entertainment","laundryUniforms","groupAdvertising","printingStationery","telephone","salesMarketingFee","photography","centralizedPromotionalProgram","promotionVipGift","salesMarketingKits","provisionUniform","others","transportation","salesCallOutside","tradeShows","travellingExpenses","printMediaNewspaper","otherMediaMagazine"]);
         const hrdOtherDetails=sumDetails(row.hrdDetails,["employeeRelation","casual","laundryUniforms","postageCourier","paperSupplies","cleaningSupplies","printingStationery","socialSportActivity","transportation","telephone","medicalExpenses","trainingEducation","recruitingAdvertisement","housePublication","provisionUniform","others"]);
